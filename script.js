@@ -498,8 +498,8 @@ const App = () => {
 
             {tooltip && gameState === 'analysis' && (
                <div className="fixed bg-slate-800 text-white text-xs p-2 rounded-md shadow-lg pointer-events-none z-50" style={{ left: tooltip.x + 15, top: tooltip.y + 15, maxWidth: '200px' }}>
-                {tooltip.content}
-              </div>
+                 {tooltip.content}
+               </div>
             )}
           </div>
 
@@ -520,7 +520,7 @@ const App = () => {
                     <div className="font-medium text-slate-700">Max Distance</div>
                     <div>{performanceMetrics.user.maxDist} m</div>
                     <div>{performanceMetrics.target.maxDist} m</div>
-                   
+                    
                     <div className="font-medium text-slate-700">End Time</div>
                     <div>{performanceMetrics.user.time} s</div>
                     <div>{performanceMetrics.target.time} s</div>
@@ -583,6 +583,3 @@ const Stopwatch = ({ time }) => (
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
-    </script>
-</body>
-</html>
