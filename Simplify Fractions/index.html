@@ -90,7 +90,7 @@
                     Let's do some math!
                     <div class="absolute left-1/2 -translate-x-1/2 bottom-[-10px] w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-[10px] border-t-slate-800"></div>
                 </div>
-                🦜
+                🐤
             </div>
         </div>
 
@@ -100,6 +100,22 @@
                  <div id="difficulty-badge" class="px-3 py-1 rounded-full text-sm font-bold transition-colors duration-300">EASY</div>
             </div>
             
+            <div class="flex justify-center items-center gap-2 sm:gap-4 mb-4 text-slate-700 text-sm border-y-2 border-slate-100 py-2">
+                <span class="font-bold hidden sm:inline">Number Type:</span>
+                <label class="flex items-center space-x-2 cursor-pointer px-2 py-1 rounded-md hover:bg-slate-100">
+                    <input type="radio" name="numberType" value="mixed" class="form-radio text-teal-500 focus:ring-teal-500" checked>
+                    <span>Mixed</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer px-2 py-1 rounded-md hover:bg-slate-100">
+                    <input type="radio" name="numberType" value="positive" class="form-radio text-teal-500 focus:ring-teal-500">
+                    <span>Positive</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer px-2 py-1 rounded-md hover:bg-slate-100">
+                    <input type="radio" name="numberType" value="negative" class="form-radio text-teal-500 focus:ring-teal-500">
+                    <span>Negative</span>
+                </label>
+            </div>
+
             <div class="flex justify-between items-center mb-4 text-slate-700">
                 <div class="font-bold text-lg">Score: <span id="score" class="text-teal-500 text-xl">0</span></div>
                 <div class="font-bold text-lg">Streak: <span id="streak" class="text-teal-500 text-xl">0</span> <span id="streak-fire">🔥</span></div>
@@ -152,6 +168,7 @@
         const closeModalBtn = document.getElementById('close-modal-btn');
         const modalContent = document.getElementById('modal-content');
         const difficultyBadge = document.getElementById('difficulty-badge');
+        const numberTypeRadios = document.querySelectorAll('input[name="numberType"]');
 
         const cockatiel = document.getElementById('cockatiel');
         const speechBubble = document.getElementById('speech-bubble');
@@ -168,6 +185,7 @@
             correctAnswer: '',
             isFirstTry: true,
             difficulty: 'easy', // easy, medium, hard
+            numberType: 'mixed', // mixed, positive, negative
             questionType: 1,
             questionParts: {},
         };
@@ -214,6 +232,18 @@
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
+        function getSignedRandomInt(min, max) {
+            let value = getRandomInt(min, max);
+            if (value === 0) value = 1; // Ensure multipliers are not zero
+            if (state.numberType === 'mixed') {
+                return value * (Math.random() > 0.5 ? 1 : -1);
+            } else if (state.numberType === 'negative') {
+                return -Math.abs(value);
+            }
+            // 'positive' case
+            return Math.abs(value);
+        }
+
         function gcd(a, b) {
             return b === 0 ? a : gcd(b, a % b);
         }
@@ -227,9 +257,9 @@
                 state.questionType = 1;
                 let a, b, c;
                 do {
-                    c = getRandomInt(2, 10) * (Math.random() > 0.5 ? 1 : -1);
-                    const simpA = getRandomInt(1, 5) * (Math.random() > 0.5 ? 1 : -1);
-                    const simpB = getRandomInt(1, 10) * (Math.random() > 0.5 ? 1 : -1);
+                    c = getSignedRandomInt(2, 10);
+                    const simpA = getSignedRandomInt(1, 5);
+                    const simpB = getSignedRandomInt(1, 10);
                     a = simpA * c;
                     b = simpB * c;
                 } while (a === 0 || b === 0);
@@ -249,21 +279,21 @@
                 if (isType2) {
                     // TYPE 2: a(cx+d) / (cx+d) -> factorise numerator
                     state.questionType = 2;
-                    const a = getRandomInt(2, 6) * (Math.random() > 0.5 ? 1 : -1);
+                    const a = getSignedRandomInt(2, 6);
                     const c = getRandomInt(2, 5);
                     const d = getRandomInt(1, 10);
                     state.questionParts = {a, c, d};
 
-                    latexString = `\\frac{${a*c}x ${a*d > 0 ? '+':'-'} ${Math.abs(a*d)}}{${c}x + ${d}}`;
+                    latexString = `\\frac{${a*c}x ${a*d >= 0 ? '+':'-'} ${Math.abs(a*d)}}{${c}x + ${d}}`;
                     state.correctAnswer = a.toString();
                 } else {
                      // TYPE 3: a(dx+e) / b(dx+e) -> factorise both, answer is fraction
                     state.questionType = 3;
                     let a, b;
                     do {
-                        a = getRandomInt(2, 9);
+                        a = getSignedRandomInt(2, 9);
                         b = getRandomInt(2, 9);
-                    } while (a === b || gcd(a,b) !== 1);
+                    } while (Math.abs(a) === b || gcd(Math.abs(a), b) !== 1);
                     const d = getRandomInt(1, 5);
                     const e = getRandomInt(1, 10);
                     state.questionParts = {a, b, d, e};
@@ -276,13 +306,13 @@
                 if (isType4) {
                     // TYPE 4: a(x+b) / (x+b)(x+c) -> factorise quadratic
                     state.questionType = 4;
-                    const a = getRandomInt(2, 5);
-                    const b = getRandomInt(1, 6) * (Math.random() > 0.5 ? 1 : -1);
+                    const a = getSignedRandomInt(2, 5);
+                    const b = getSignedRandomInt(1, 6);
                     let c;
-                    do { c = getRandomInt(1, 6) * (Math.random() > 0.5 ? 1 : -1); } while (b === c);
+                    do { c = getSignedRandomInt(1, 6); } while (b === c);
                     state.questionParts = {a,b,c};
 
-                    const numTerm = `(${a}x ${a*b > 0 ? '+':'-'} ${Math.abs(a*b)})`;
+                    const numTerm = `(${a}x ${a*b >= 0 ? '+':'-'} ${Math.abs(a*b)})`;
                     const denTerm = `(x^2 ${b+c >= 0 ? '+':'-'} ${Math.abs(b+c)}x ${b*c >= 0 ? '+':'-'} ${Math.abs(b*c)})`;
                     latexString = `\\frac{${numTerm}}{${denTerm}}`;
 
@@ -291,9 +321,9 @@
                 } else {
                     // TYPE 5: a(x-b) / (x^2-b^2) -> difference of squares
                     state.questionType = 5;
-                    const a = getRandomInt(2, 6);
+                    const a = getSignedRandomInt(2, 6);
                     const b = getRandomInt(2, 7);
-                    const flip = Math.random() > 0.5; // true for (x-b), false for (x+b)
+                    const flip = Math.random() > 0.5; 
                     state.questionParts = {a,b,flip};
                     
                     const numTerm = `(${a}x ${flip ? '-':'+'} ${Math.abs(a*b)})`;
@@ -589,6 +619,14 @@
                 playClickSound();
                 toggleModal();
             }
+        });
+        
+        numberTypeRadios.forEach(radio => {
+            radio.addEventListener('change', (event) => {
+                playClickSound();
+                state.numberType = event.target.value;
+                generateQuestion();
+            });
         });
 
         document.addEventListener('DOMContentLoaded', () => {
