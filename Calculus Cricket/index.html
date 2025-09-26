@@ -11,7 +11,7 @@
     <!-- KaTeX for LaTeX rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMeaIQcHnPlEJrlzAVmeQpGb1ds remastered" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlVjOTmhYWfWBkber4JutHB6/2BGfn/WZSAp9z1rJGmpC1Jd8oEMCaCllxA" crossorigin="anonymous"></script>
-    
+   
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -60,14 +60,18 @@
 <body class="text-white flex items-center justify-center min-h-screen p-4">
 
     <div class="w-full max-w-2xl bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl p-6 md:p-8 text-center relative overflow-hidden border border-white/20">
-        
+       
         <!-- Out Modal -->
         <div id="out-modal" class="hidden absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-50 p-4 transition-opacity duration-300">
             <h2 class="font-bangers text-6xl text-red-500 animate-pulse">OUT!</h2>
-            <!-- Umpire SVG -->
-            <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="my-4">
-                <path d="M7 17v-4.472c0-1.21.784-2.278 1.94-2.674l4.12-1.424c.484-.167.994.12 1.09.629l.526 2.631c.105.526-.21 1.053-.736 1.158l-4.21 1.052"/>
-                <path d="M12 11.562v-2.312c0-1.35.937-2.5 2.25-2.5h1.5c1.243 0 2.25 1.007 2.25 2.25v2.25m-6-1.5l-2.06 7.21c-.24.84.42 1.63 1.29 1.5l6.51-.81c.87-.11 1.53-.87 1.42-1.74l-1.42-11.36c-.11-.87-.87-1.53-1.74-1.42l-5.65 1.41c-.41.1-.6.58-.45.97l1.1 2.93z"/>
+            <!-- Umpire SVG with raised finger -->
+            <svg width="120" height="120" viewBox="0 0 24 24" fill="none" class="my-4">
+                <path d="M12 6.5C12.8284 6.5 13.5 5.82843 13.5 5C13.5 4.17157 12.8284 3.5 12 3.5C11.1716 3.5 10.5 4.17157 10.5 5C10.5 5.82843 11.1716 6.5 12 6.5Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 9V17" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M10 16L12 17L14 16" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M10 21L12 17L14 21" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 12.5L9 14" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 12.5L15 11V6.5L16 5.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             <p class="text-white/80 text-lg">The correct answer was:</p>
             <p id="correct-answer-modal" class="font-mono text-2xl text-yellow-300 bg-black/50 p-2 rounded mt-2"></p>
@@ -152,17 +156,17 @@
         const outModal = document.getElementById('out-modal');
         const correctAnswerModal = document.getElementById('correct-answer-modal');
         const pointsDisplay = document.getElementById('points-display');
-        
+       
         // Game State
         let state = {};
         const possibleScores = [1, 2, 3, 4, 6];
 
         const levelDetails = [
-            { title: "The Opener: Power Rule" },
-            { title: "Building a Partnership: Polynomials" },
-            { title: "The Googly: Chain Rule" },
-            { title: "Pace & Spin: Product & Quotient Rules" },
-            { title: "The Finisher: Advanced Functions" },
+            { title: "The Opener: Power Rule (Lvl 2 at 20 runs)" },
+            { title: "Building a Partnership: Polynomials (Lvl 3 at 40 runs)" },
+            { title: "The Googly: Chain Rule (Lvl 4 at 70 runs)" },
+            { title: "Pace & Spin: Product & Quotient Rules (Lvl 5 at 100 runs)" },
+            { title: "The Finisher: Advanced Functions (Win after 5 correct)" },
         ];
 
         // --- UTILITY FUNCTIONS ---
@@ -199,9 +203,9 @@
                     const n = getRandomInt(3, 7);
                     const b = getRandomInt(2, 9) * (Math.random() > 0.5 ? 1 : -1);
                     const m = getRandomInt(1, n - 1);
-                    
+                   
                     question = `${a}x^{${n}} ${b > 0 ? '+' : '-'} ${Math.abs(b)}${m === 1 ? 'x' : `x^{${m}}`}`;
-                    
+                   
                     const term1_a = `${a*n}x^${n-1}`;
                     let term2_a = '';
                     if (m > 1) {
@@ -217,7 +221,7 @@
                     const b = getRandomInt(2, 5);
                     const c = getRandomInt(1, 9) * (Math.random() > 0.5 ? 1 : -1);
                     const n = getRandomInt(2, 6);
-                    
+                   
                     question = `${a}(${b}x${c > 0 ? '+' : ''}${c})^{${n}}`;
                     const newCoeff = a * b * n;
                     const newPow = n - 1;
@@ -239,7 +243,7 @@
                         const c = getRandomInt(1, 5);
                         const d = getRandomInt(1, 5);
                         if (a*d - b*c === 0) return generateQuestion();
-                        
+                       
                         question = `\\frac{${a}x+${b}}{${c}x+${d}}`;
                         answer = `${a*d - b*c}/(${c}x+${d})^2`;
                     }
@@ -249,7 +253,7 @@
                     const funcs = ['sin', 'cos', 'exp', 'ln'];
                     const chosenFunc = funcs[getRandomInt(0, 3)];
                     const a = getRandomInt(2, 9);
-                    
+                   
                     switch (chosenFunc) {
                         case 'sin': {
                             const b = getRandomInt(2, 7);
@@ -305,6 +309,37 @@
             }, 2500);
         }
 
+        function checkLevelProgression() {
+            const runs = state.runs;
+            const currentLevel = state.level;
+            let didLevelUp = false;
+
+            if (currentLevel === 1 && runs >= 20) {
+                levelUp(2);
+                didLevelUp = true;
+            } else if (currentLevel === 2 && runs >= 40) {
+                levelUp(3);
+                didLevelUp = true;
+            } else if (currentLevel === 3 && runs >= 70) {
+                levelUp(4);
+                didLevelUp = true;
+            } else if (currentLevel === 4 && runs >= 100) {
+                levelUp(5);
+                didLevelUp = true;
+            } else if (currentLevel === 5) {
+                state.runsInLevel++;
+                if (state.runsInLevel >= 5) {
+                    endGame();
+                    return; // Exit to prevent new question
+                }
+            }
+
+            if (!didLevelUp) {
+                generateQuestion();
+                updateUI();
+            }
+        }
+
         function checkAnswer() {
             const userAnswer = standardizeAnswer(answerInput.value);
             const correctAnswer = standardizeAnswer(state.currentQuestion.answer);
@@ -312,15 +347,8 @@
             if (userAnswer === correctAnswer) {
                 const points = state.currentPoints;
                 state.runs += points;
-                state.runsInLevel++;
                 showFeedback('SIX! A perfect shot!', points);
-
-                if (state.runsInLevel >= 5) {
-                    levelUp();
-                } else {
-                    generateQuestion();
-                    updateUI();
-                }
+                checkLevelProgression();
             } else {
                 submitBtn.disabled = true;
                 answerInput.disabled = true;
@@ -338,26 +366,24 @@
                 }, 3000);
             }
         }
-        
-        function levelUp() {
+       
+        function levelUp(newLevel) {
             submitBtn.disabled = true;
             answerInput.disabled = true;
-            
-            if (state.level < 5) {
-                feedbackDiv.textContent = "Level Complete! Well batted!";
-                feedbackDiv.className = "h-10 mt-2 text-lg font-semibold text-yellow-300";
-                setTimeout(() => {
-                    state.level++;
-                    state.runsInLevel = 0;
-                    generateQuestion();
-                    updateUI();
-                    feedbackDiv.textContent = "";
-                    submitBtn.disabled = false;
-                    answerInput.disabled = false;
-                }, 3000);
-            } else {
-                endGame();
-            }
+           
+            feedbackDiv.textContent = "Level Up! Well batted!";
+            feedbackDiv.className = "h-10 mt-2 text-lg font-semibold text-yellow-300";
+            setTimeout(() => {
+                state.level = newLevel;
+                if (newLevel === 5) {
+                    state.runsInLevel = 0; // Special case for final level
+                }
+                generateQuestion();
+                updateUI();
+                feedbackDiv.textContent = "";
+                submitBtn.disabled = false;
+                answerInput.disabled = false;
+            }, 3000);
         }
 
         function endGame() {
@@ -372,7 +398,6 @@
                 level: 1,
                 runs: 0,
                 wickets: 0,
-                runsInLevel: 0,
                 currentQuestion: {},
                 currentPoints: 0
             };
@@ -381,7 +406,7 @@
             outModal.classList.add('hidden');
             submitBtn.disabled = false;
             answerInput.disabled = false;
-            
+           
             generateQuestion();
             updateUI();
         }
@@ -400,4 +425,3 @@
     </script>
 </body>
 </html>
-
