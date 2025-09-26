@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Calculus: Integration Practice</title>
+
+   
+
+    <!-- Tailwind CSS for styling -->
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+   
+
+    <!-- KaTeX for beautiful math rendering -->
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMmg9pojtxmbqcSPBovmMp/EYGOclxzCXf0AorFWf+gANrFmH" crossorigin="anonymous">
+
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+
+ 
+
+    <!-- Google Fonts: Inter -->
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+ 
+
+    <style>
+
+        body {
+
+            font-family: 'Inter', sans-serif;
+
+        }
+
+        /* Custom styles for KaTeX display */
+
+        .katex-display {
+
+            overflow-x: auto;
+
+            overflow-y: hidden;
+
+            padding: 0.5rem 0;
+
+        }
+
+        /* Simple transition for UI elements */
+
+        .transition-all {
+
+            transition: all 0.3s ease-in-out;
+
+        }
+
+        /* Vertically align KaTeX rendered integral sign with the input box */
+
+        #answer-integral-display .katex {
+
+            vertical-align: middle;
+
+        }
+
+    </style>
+
+</head>
+
+<body class="bg-slate-50 text-slate-800">
+
+ 
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+
+       
+
+        <!-- Header -->
+
+        <header class="text-center mb-10">
+
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900">Integration Practice</h1>
+
+            <p class="mt-2 text-lg text-slate-600">Sharpen your calculus skills for your exams!</p>
+
+        </header>
+
+ 
+
+        <!-- Main Content -->
+
+        <main class="space-y-12">
+
+           
+
+            <!-- Key Concepts Review Section -->
+
+            <div>
+
+                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Key Concepts Review</h2>
+
+                <div class="space-y-3" id="concepts-accordion">
+
+                    <!-- Accordion items will be injected here by JavaScript -->
+
+                </div>
+
+            </div>
+
+ 
+
+            <!-- Practice Zone -->
+
+            <div class="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-slate-200">
+
+                <h2 class="text-2xl font-semibold mb-4 text-center">Integration</h2>
+
+               
+
+                <!-- Graph Display for Area Questions -->
+
+                <div id="graph-container" class="mb-6 hidden">
+
+                    <canvas id="graph-canvas" width="500" height="300" class="mx-auto bg-slate-50 rounded-lg border border-slate-200"></canvas>
+
+                </div>
+
+ 
+
+                <!-- Question Display -->
+
+                <div class="bg-slate-100 rounded-lg p-6 text-center my-6">
+
+                    <div id="question-display" class="text-3xl"></div>
+
+                </div>
+
+ 
+
+                <!-- User Input -->
+
+                <div class="flex flex-col items-center">
+
+                    <label for="user-answer" class="mb-2 font-medium">Your Answer:</label>
+
+                    <div class="flex w-full max-w-md items-center">
+
+                         <div id="answer-integral-display" class="text-3xl mr-2"></div>
+
+                        <input type="text" id="user-answer" placeholder="Enter your answer..." class="flex-grow w-full px-4 py-2 text-lg border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+
+                    </div>
+
+                    <p id="constant-hint" class="text-xs text-slate-500 mt-2">Don't forget the constant of integration, `+ C`!</p>
+
+                </div>
+
+               
+
+                <!-- Action Buttons -->
+
+                <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mt-6">
+
+                    <button id="check-btn" class="w-full sm:w-auto bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700 transition-all transform hover:scale-105">Check Answer</button>
+
+                    <button id="next-btn" class="w-full sm:w-auto bg-slate-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-slate-800 transition-all transform hover:scale-105">New Question</button>
+
+                </div>
+
+ 
+
+                <!-- Feedback Area -->
+
+                <div id="feedback-area" class="mt-6 text-center h-12 flex items-center justify-center">
+
+                    <!-- Feedback message appears here -->
+
+                </div>
+
+               
+
+                <!-- Show Answer -->
+
+                <div class="text-center mt-2">
+
+                    <button id="show-answer-btn" class="text-sm text-blue-600 hover:underline">Stuck? Show Answer</button>
+
+                </div>
+
+                <div id="correct-answer-display" class="hidden text-center mt-2 p-3 bg-blue-50 rounded-lg text-blue-800 font-medium">
+
+                </div>
+
+ 
+
+            </div>
+
+ 
+
+        </main>
+
+       
+
+        <!-- Footer -->
+
+        <footer class="text-center mt-12 text-slate-500">
+
+            <p>&copy; 2025 Calculus Practice. Happy Integrating!</p>
+
+        </footer>
+
+    </div>
+
+ 
+
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function () {
+
+           
+
+            // --- DATA ---
+
+ 
+
+            const concepts = [
+
+                {
+
+                    title: "What is an Indefinite Integral?",
+
+                    content: "Integration is the reverse process of differentiation. It's often used to find the family of functions that have a certain derivative. The symbol for integration is `\\int`. For an indefinite integral, we always add a constant of integration, `C`, because the derivative of a constant is zero."
+
+                },
+
+                {
+
+                    title: "What is a Definite Integral?",
+
+                    content: "A definite integral finds the net area under a curve between two points, `a` and `b`. It gives a specific numerical value. <br> **Fundamental Theorem of Calculus, Part 2:** If `F` is an antiderivative of `f` (i.e., `F'(x) = f(x)`), then `\\int_{a}^{b} f(x)\\,dx = F(b) - F(a)`. You first find the indefinite integral `F(x)`, then evaluate it at the upper bound `b` and subtract its value at the lower bound `a`. You don't need `+ C` for definite integrals because it would cancel out."
+
+                },
+
+                {
+
+                    title: "Area Under a Curve",
+
+                    content: "One of the most powerful applications of definite integrals is finding the area between a function's graph and the x-axis over an interval `[a, b]`. If `f(x) \\ge 0` on `[a, b]`, the area `A` is given by the definite integral: `A = \\int_{a}^{b} f(x)\\,dx`. You solve it exactly like a definite integral."
+
+                },
+
+                {
+
+                    title: "The Power Rule",
+
+                    content: "The power rule for integration is one of the most fundamental rules. To integrate `x^n`, you add one to the power and then divide by the new power. <br> Formula: `\\int x^n \\,dx = \\frac{x^{n+1}}{n+1} + C` (for `n \\neq -1`)"
+
+                },
+
+                {
+
+                    title: "Integration of 1/x",
+
+                    content: "The power rule doesn't work for `n = -1`. The integral of `1/x` is the natural logarithm of the absolute value of x. <br> Formula: `\\int \\frac{1}{x} \\,dx = \\ln|x| + C`"
+
+                },
+
+                {
+
+                    title: "Exponential Functions (e^x)",
+
+                    content: "The exponential function `e^x` is special because its integral (and its derivative) is itself. <br> Formula: `\\int e^x \\,dx = e^x + C`. For a more general case: `\\int e^{ax} \\,dx = \\frac{1}{a}e^{ax} + C`"
+
+                },
+
+                {
+
+                    title: "Trigonometric Functions",
+
+                    content: "The basic trigonometric integrals are the reverse of their derivatives. <br> `\\int \\cos(x) \\,dx = \\sin(x) + C` <br> `\\int \\sin(x) \\,dx = -\\cos(x) + C` <br> `\\int \\sec^2(x) \\,dx = \\tan(x) + C`"
+
+                }
+
+            ];
+
+ 
+
+            const questionBank = [
+
+                // --- Indefinite Integrals ---
+
+                { type: 'indefinite', expression: "3x^2", answer: "x^3 + C" },
+
+                { type: 'indefinite', expression: "x^4", answer: "x^5/5 + C" },
+
+                { type: 'indefinite', expression: "8x^7", answer: "x^8 + C" },
+
+                { type: 'indefinite', expression: "10x", answer: "5x^2 + C" },
+
+                { type: 'indefinite', expression: "5", answer: "5x + C" },
+
+                { type: 'indefinite', expression: "\\sqrt{x}", answer: "2/3*x^(3/2) + C" },
+
+                { type: 'indefinite', expression: "\\frac{1}{x^3}", answer: "-1/(2x^2) + C" },
+
+                { type: 'indefinite', expression: "(x^2 + 2x + 1)", answer: "x^3/3 + x^2 + x + C" },
+
+                { type: 'indefinite', expression: "(6x^2 - 4x)", answer: "2x^3 - 2x^2 + C" },
+
+                { type: 'indefinite', expression: "(12x^3 + 3x^2 - 5)", answer: "3x^4 + x^3 - 5x + C" },
+
+                { type: 'indefinite', expression: "\\frac{1}{x}", answer: "ln|x| + C" },
+
+                { type: 'indefinite', expression: "e^x", answer: "e^x + C" },
+
+                { type: 'indefinite', expression: "\\sin(x)", answer: "-cos(x) + C" },
+
+                { type: 'indefinite', expression: "\\cos(x)", answer: "sin(x) + C" },
+
+                // Harder indefinite integrals
+
+                { type: 'indefinite', expression: "e^{5x}", answer: "1/5*e^(5x) + C" },
+
+                { type: 'indefinite', expression: "\\cos(3x)", answer: "1/3*sin(3x) + C" },
+
+                { type: 'indefinite', expression: "(2x-1)^3", answer: "1/8*(2x-1)^4 + C" }, // u-sub
+
+                { type: 'indefinite', expression: "3x\\sqrt{x^2+1}", answer: "(x^2+1)^(3/2) + C" }, // u-sub
+
+                { type: 'indefinite', expression: "\\frac{5}{x^4}", answer: "-5/(3x^3) + C" },
+
+                { type: 'indefinite', expression: "\\sec(x)\\tan(x)", answer: "sec(x) + C" },
+
+ 
+
+                // --- Definite Integrals ---
+
+                { type: 'definite', expression: '2x', lower: {display: '0', value: 0}, upper: {display: '4', value: 4}, answer: '16' },
+
+                { type: 'definite', expression: '3x^2', lower: {display: '1', value: 1}, upper: {display: '2', value: 2}, answer: '7' },
+
+                { type: 'definite', expression: '5', lower: {display: '-1', value: -1}, upper: {display: '3', value: 3}, answer: '20' },
+
+                { type: 'definite', expression: 'x^3', lower: {display: '0', value: 0}, upper: {display: '2', value: 2}, answer: '4' },
+
+                // Harder definite integrals
+
+                { type: 'definite', expression: '\\sin(x)', lower: {display: '0', value: 0}, upper: {display: '\\pi/2', value: Math.PI/2}, answer: '1' },
+
+                { type: 'definite', expression: 'e^{2x}', lower: {display: '0', value: 0}, upper: {display: 'ln(2)/2', value: Math.log(2)/2}, answer: '0.5' },
+
+                { type: 'definite', expression: '\\frac{1}{x+1}', lower: {display: '0', value: 0}, upper: {display: 'e-1', value: Math.E - 1}, answer: '1' },
+
+                { type: 'definite', expression: '(2x+1)^2', lower: {display: '0', value: 0}, upper: {display: '1', value: 1}, answer: '4.3333' },
+
+ 
+
+                // --- Area Under Curve ---
+
+                { type: 'area', expression: 'x^2', lower: {display: '0', value: 0}, upper: {display: '3', value: 3}, answer: '9', func: x => x*x },
+
+                { type: 'area', expression: '4x', lower: {display: '1', value: 1}, upper: {display: '2', value: 2}, answer: '6', func: x => 4*x },
+
+                { type: 'area', expression: '2x+1', lower: {display: '1', value: 1}, upper: {display: '4', value: 4}, answer: '18', func: x => 2*x + 1 },
+
+                { type: 'area', expression: '6', lower: {display: '2', value: 2}, upper: {display: '7', value: 7}, answer: '30', func: x => 6 },
+
+                // Harder functions
+
+                { type: 'area', expression: '\\sin(x)', lower: {display: '0', value: 0}, upper: {display: '\\pi', value: Math.PI}, answer: '2', func: x => Math.sin(x) },
+
+                { type: 'area', expression: '\\cos(x)', lower: {display: '0', value: 0}, upper: {display: '\\pi/2', value: Math.PI / 2}, answer: '1', func: x => Math.cos(x) },
+
+                { type: 'area', expression: 'e^x', lower: {display: '0', value: 0}, upper: {display: '\\ln(3)', value: Math.log(3)}, answer: '2', func: x => Math.exp(x) },
+
+                { type: 'area', expression: '\\frac{1}{x}', lower: {display: '1', value: 1}, upper: {display: 'e', value: Math.E}, answer: '1', func: x => 1/x }
+
+            ];
+
+ 
+
+            let currentQuestion = null;
+
+ 
+
+            // --- DOM Elements ---
+
+            const questionDisplay = document.getElementById('question-display');
+
+            const userAnswerInput = document.getElementById('user-answer');
+
+            const checkBtn = document.getElementById('check-btn');
+
+            const nextBtn = document.getElementById('next-btn');
+
+            const feedbackArea = document.getElementById('feedback-area');
+
+            const showAnswerBtn = document.getElementById('show-answer-btn');
+
+            const correctAnswerDisplay = document.getElementById('correct-answer-display');
+
+            const accordionContainer = document.getElementById('concepts-accordion');
+
+            const answerIntegralDisplay = document.getElementById('answer-integral-display');
+
+            const constantHint = document.getElementById('constant-hint');
+
+            const graphContainer = document.getElementById('graph-container');
+
+            const graphCanvas = document.getElementById('graph-canvas');
+
+ 
+
+            // --- Functions ---
+
+           
+
+            function buildAccordion() {
+
+                accordionContainer.innerHTML = '';
+
+                concepts.forEach((concept, index) => {
+
+                    const item = document.createElement('div');
+
+                    item.className = 'border border-slate-200 rounded-lg bg-white overflow-hidden';
+
+                    item.innerHTML = `
+
+                        <button class="w-full text-left p-4 font-semibold text-slate-800 hover:bg-slate-50 flex justify-between items-center" data-index="${index}">
+
+                            ${concept.title}
+
+                            <svg class="w-5 h-5 transition-transform transform shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+
+                        </button>
+
+                        <div class="px-4 pb-4 text-slate-600 hidden leading-relaxed">
+
+                            ${concept.content}
+
+                        </div>
+
+                    `;
+
+                    accordionContainer.appendChild(item);
+
+                });
+
+               
+
+                accordionContainer.querySelectorAll('button').forEach(button => {
+
+                    button.addEventListener('click', () => {
+
+                        const content = button.nextElementSibling;
+
+                        const icon = button.querySelector('svg');
+
+                        const isHidden = content.classList.contains('hidden');
+
+                        if(isHidden) {
+
+                            content.classList.remove('hidden');
+
+                            icon.classList.add('rotate-180');
+
+                        } else {
+
+                            content.classList.add('hidden');
+
+                            icon.classList.remove('rotate-180');
+
+                        }
+
+                        renderMathInElement(content, {
+
+                            delimiters: [
+
+                                {left: '$$', right: '$$', display: true},
+
+                                {left: '`', right: '`', display: false},
+
+                                {left: '\\(', right: '\\)', display: false},
+
+                                {left: '\\[', right: '\\]', display: true}
+
+                            ]
+
+                        });
+
+                    });
+
+                });
+
+            }
+
+ 
+
+            function generateQuestion() {
+
+                const randomIndex = Math.floor(Math.random() * questionBank.length);
+
+                currentQuestion = questionBank[randomIndex];
+
+                let questionString = '';
+
+ 
+
+                if (currentQuestion.type === 'definite') {
+
+                    questionString = `\\int_{${currentQuestion.lower.display}}^{${currentQuestion.upper.display}} (${currentQuestion.expression}) \\,dx`;
+
+                    constantHint.classList.add('hidden');
+
+                    graphContainer.classList.add('hidden');
+
+                } else if (currentQuestion.type === 'area') {
+
+                    questionString = `\\text{Find the area under } f(x) = ${currentQuestion.expression} \\text{ from } x=${currentQuestion.lower.display} \\text{ to } x=${currentQuestion.upper.display}`;
+
+                     constantHint.classList.add('hidden');
+
+                     graphContainer.classList.remove('hidden');
+
+                     drawGraph(currentQuestion);
+
+                } else { // indefinite
+
+                    questionString = `\\int ${currentQuestion.expression} \\,dx`;
+
+                    constantHint.classList.remove('hidden');
+
+                    graphContainer.classList.add('hidden');
+
+                }
+
+ 
+
+                try {
+
+                    katex.render(questionString, questionDisplay, {
+
+                        throwOnError: false,
+
+                        displayMode: true
+
+                    });
+
+                } catch (e) {
+
+                    questionDisplay.textContent = questionString; // Fallback
+
+                    console.error("KaTeX rendering error:", e);
+
+                }
+
+            }
+
+           
+
+            function drawGraph(question) {
+
+                const ctx = graphCanvas.getContext('2d');
+
+                const { func, lower, upper } = question; // lower and upper are {display, value} objects
+
+                const width = graphCanvas.width;
+
+                const height = graphCanvas.height;
+
+                const padding = 40;
+
+ 
+
+                // Clear previous drawing
+
+                ctx.clearRect(0, 0, width, height);
+
+                ctx.font = "12px Inter, sans-serif";
+
+ 
+
+                // Find data range using numerical values
+
+                let yMax = 0;
+
+                const startX = Math.min(lower.value, upper.value);
+
+                const endX = Math.max(lower.value, upper.value);
+
+ 
+
+                for (let x = startX; x <= endX; x += (endX - startX) / 200) {
+
+                    // Avoid issues with functions like 1/x at x=0
+
+                    if (x === 0 && question.expression === '\\frac{1}{x}') continue;
+
+                    yMax = Math.max(yMax, func(x));
+
+                }
+
+                yMax *= 1.2; // Add some top margin
+
+                if (yMax === 0) yMax = 10; // handle constant function case
+
+ 
+
+                const xRange = endX - startX;
+
+               
+
+                // Avoid division by zero if the range is zero.
+
+                if (xRange === 0) {
+
+                    ctx.textAlign = 'center';
+
+                    ctx.fillStyle = '#475569';
+
+                    ctx.fillText("Cannot draw a graph for an area with zero width.", width / 2, height / 2);
+
+                    return;
+
+                }
+
+ 
+
+                const xPlotRange = width - 2 * padding;
+
+                const yPlotRange = height - 2 * padding;
+
+ 
+
+                // Mapping functions
+
+                const mapX = (x) => padding + ((x - startX) / xRange) * xPlotRange;
+
+                const mapY = (y) => height - padding - (y / yMax) * yPlotRange;
+
+ 
+
+                // --- Draw Shaded Area ---
+
+                ctx.beginPath();
+
+                ctx.moveTo(mapX(startX), mapY(0));
+
+                for (let x = startX; x <= endX; x += (xRange / 100)) {
+
+                    ctx.lineTo(mapX(x), mapY(func(x)));
+
+                }
+
+                ctx.lineTo(mapX(endX), mapY(0));
+
+                ctx.closePath();
+
+                ctx.fillStyle = "rgba(199, 210, 254, 0.6)"; // indigo-200
+
+                ctx.fill();
+
+ 
+
+                // --- Draw Axes ---
+
+                ctx.strokeStyle = '#94a3b8'; // slate-400
+
+                ctx.lineWidth = 1;
+
+                // Y-Axis
+
+                ctx.beginPath();
+
+                ctx.moveTo(padding, padding / 2);
+
+                ctx.lineTo(padding, height - padding);
+
+                ctx.stroke();
+
+                // X-Axis
+
+                ctx.beginPath();
+
+                ctx.moveTo(padding, height - padding);
+
+                ctx.lineTo(width - padding / 2, height - padding);
+
+                ctx.stroke();
+
+ 
+
+                // --- Draw Function Line ---
+
+                ctx.beginPath();
+
+                ctx.moveTo(mapX(startX), mapY(func(startX)));
+
+                for (let x = startX; x <= endX; x += (xRange/100)) {
+
+                     ctx.lineTo(mapX(x), mapY(func(x)));
+
+                }
+
+                ctx.strokeStyle = "#4f46e5"; // indigo-600
+
+                ctx.lineWidth = 2;
+
+                ctx.stroke();
+
+ 
+
+                // --- Draw Labels & Ticks ---
+
+                ctx.fillStyle = '#475569'; // slate-600
+
+                // X-axis labels (use display values, but format them for canvas)
+
+                const formatLabel = (label) => label.replace(/\\pi/g, 'π').replace(/\\ln/g, 'ln');
+
+                ctx.textAlign = 'center';
+
+                ctx.fillText(formatLabel(lower.display), mapX(lower.value), height - padding + 15);
+
+                ctx.fillText(formatLabel(upper.display), mapX(upper.value), height - padding + 15);
+
+                ctx.fillText('x', width - padding / 2, height - padding + 15);
+
+                // Y-axis labels
+
+                ctx.textAlign = 'right';
+
+                ctx.textBaseline = 'middle';
+
+                ctx.fillText(yMax.toFixed(1), padding - 5, padding);
+
+                ctx.fillText('0', padding - 5, height - padding);
+
+                ctx.fillText('y', padding - 5, padding / 2);
+
+            }
+
+ 
+
+            function normalizeIndefiniteAnswer(str) {
+
+                return str.replace(/\s+/g, '') // remove all spaces
+
+                          .toLowerCase()
+
+                          .replace(/\*+/g, '') // remove multiplication signs
+
+                          .replace(/\+c$/, ''); // remove '+c' from the end
+
+            }
+
+           
+
+            function evaluateNumericAnswer(str) {
+
+                const s = str.trim().toLowerCase();
+
+                // This simple evaluator works for our current question bank.
+
+                // It handles numbers and simple fractions.
+
+                if (s.includes('/')) {
+
+                    const parts = s.split('/');
+
+                    if (parts.length === 2) {
+
+                        const num = parseFloat(parts[0]);
+
+                        const den = parseFloat(parts[1]);
+
+                        if (!isNaN(num) && !isNaN(den) && den !== 0) {
+
+                            return num / den;
+
+                        }
+
+                    }
+
+                }
+
+                return parseFloat(s);
+
+            }
+
+ 
+
+            function checkAnswer() {
+
+                const userAnswer = userAnswerInput.value.trim();
+
+                if (!userAnswer) {
+
+                    showFeedback("Please enter an answer.", "orange");
+
+                    return;
+
+                }
+
+               
+
+                let isCorrect = false;
+
+                if (currentQuestion.type === 'indefinite') {
+
+                    const normalizedUserAnswer = normalizeIndefiniteAnswer(userAnswer);
+
+                    const normalizedCorrectAnswer = normalizeIndefiniteAnswer(currentQuestion.answer);
+
+                    isCorrect = (normalizedUserAnswer === normalizedCorrectAnswer);
+
+ 
+
+                } else { // definite or area
+
+                    const userValue = evaluateNumericAnswer(userAnswer);
+
+                    const correctValue = evaluateNumericAnswer(currentQuestion.answer);
+
+                   
+
+                    if (!isNaN(userValue) && !isNaN(correctValue)) {
+
+                        isCorrect = (Math.abs(userValue - correctValue) < 1e-3); // Increased tolerance slightly for floating point answers
+
+                    }
+
+                }
+
+ 
+
+                if (isCorrect) {
+
+                    showFeedback("Correct! Well done!", "green");
+
+                } else {
+
+                    showFeedback("Not quite. Try again!", "red");
+
+                }
+
+            }
+
+           
+
+            function showFeedback(message, color) {
+
+                feedbackArea.textContent = message;
+
+                let colorClasses = '';
+
+                if (color === 'green') {
+
+                    colorClasses = 'text-green-600 font-bold';
+
+                } else if (color === 'red') {
+
+                    colorClasses = 'text-red-600 font-bold';
+
+                } else if (color === 'orange') {
+
+                    colorClasses = 'text-orange-500 font-bold';
+
+                }
+
+                feedbackArea.className = `mt-6 text-center h-12 flex items-center justify-center text-lg transition-all ${colorClasses}`;
+
+            }
+
+ 
+
+            function resetUI() {
+
+                userAnswerInput.value = '';
+
+                feedbackArea.textContent = '';
+
+                feedbackArea.className = 'mt-6 text-center h-12 flex items-center justify-center';
+
+                correctAnswerDisplay.classList.add('hidden');
+
+                userAnswerInput.focus();
+
+            }
+
+           
+
+            function showAnswer() {
+
+                correctAnswerDisplay.textContent = `Correct Answer: ${currentQuestion.answer}`;
+
+                correctAnswerDisplay.classList.remove('hidden');
+
+                renderMathInElement(correctAnswerDisplay);
+
+            }
+
+ 
+
+            // --- Event Listeners ---
+
+            checkBtn.addEventListener('click', checkAnswer);
+
+            nextBtn.addEventListener('click', () => {
+
+                generateQuestion();
+
+                resetUI();
+
+            });
+
+            showAnswerBtn.addEventListener('click', showAnswer);
+
+           
+
+            userAnswerInput.addEventListener('keydown', (e) => {
+
+                if (e.key === 'Enter') {
+
+                    checkAnswer();
+
+                }
+
+            });
+
+ 
+
+            // --- Initial Load ---
+
+            buildAccordion();
+
+            katex.render("\\int =", answerIntegralDisplay, { throwOnError: false });
+
+            generateQuestion();
+
+            resetUI();
+
+           
+
+            // This is a global function from the auto-render script
+
+            renderMathInElement(document.body, {
+
+                delimiters: [
+
+                    {left: '$$', right: '$$', display: true},
+
+                    {left: '`', right: '`', display: false},
+
+                    {left: '\\(', right: '\\)', display: false},
+
+                    {left: '\\[', right: '\\]', display: true}
+
+                ]
+
+            });
+
+        });
+
+ 
+
+    </script>
+
+ 
+
+</body>
+
+</html>
