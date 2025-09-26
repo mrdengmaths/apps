@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Congruent Triangles Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation; /* Prevents double-tap zoom on mobile */
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        .triangle-canvas {
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
+            border: 4px solid transparent;
+            background-color: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+        }
+        .triangle-canvas.selected {
+            border-color: #3b82f6; /* blue-500 */
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3), 0 8px 10px -6px rgba(59, 130, 246, 0.2);
+        }
+        .btn {
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .btn.selected {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
+        }
+        .feedback-correct {
+            animation: fadeIn 0.5s ease;
+            color: #16a34a; /* green-600 */
+        }
+        .feedback-incorrect {
+            animation: fadeIn 0.5s ease, shake 0.5s ease;
+             color: #dc2626; /* red-600 */
+        }
+        #score-container {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 0.5rem 1.5rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        #streak-fire {
+            display: none;
+            font-size: 2rem;
+            animation: flicker 1.5s infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        @keyframes flicker {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="app" class="w-full max-w-4xl mx-auto bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 md:p-8">
+        
+        <header class="text-center mb-6 relative">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Congruent Triangles Challenge</h1>
+            <div id="score-container" class="absolute top-0 right-0 -mt-12">
+                 <span id="streak-fire">🔥</span>
+                <span>Score: <span id="score">0</span></span>
+            </div>
+            <p class="text-slate-600 mt-2">Select the congruent triangle and the correct reason.</p>
+        </header>
+
+        <!-- Main Triangle Display -->
+        <div class="mb-6 md:mb-8 bg-slate-50/70 p-4 rounded-xl flex justify-center items-center h-[32rem] md:h-[40rem]">
+            <canvas id="main-triangle" width="300" height="300"></canvas>
+        </div>
+
+        <!-- Options: 3 Smaller Triangles -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+            <canvas id="option-1" class="triangle-canvas rounded-xl w-full" height="400"></canvas>
+            <canvas id="option-2" class="triangle-canvas rounded-xl w-full" height="400"></canvas>
+            <canvas id="option-3" class="triangle-canvas rounded-xl w-full" height="400"></canvas>
+        </div>
+
+        <!-- Congruency Test Buttons -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <button id="btn-sss" class="btn p-4 text-lg font-semibold bg-white border-2 border-slate-300 rounded-lg shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">SSS</button>
+            <button id="btn-sas" class="btn p-4 text-lg font-semibold bg-white border-2 border-slate-300 rounded-lg shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">SAS</button>
+            <button id="btn-aas" class="btn p-4 text-lg font-semibold bg-white border-2 border-slate-300 rounded-lg shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">AAS</button>
+            <button id="btn-rhs" class="btn p-4 text-lg font-semibold bg-white border-2 border-slate-300 rounded-lg shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">RHS</button>
+        </div>
+
+        <!-- Action Buttons and Feedback -->
+        <div class="text-center h-20 flex flex-col items-center justify-center">
+             <div id="feedback" class="text-2xl font-bold mb-4"></div>
+             <button id="submit-btn" class="w-full md:w-1/2 bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 transition-colors text-xl">Submit</button>
+             <button id="next-btn" class="hidden w-full md:w-1/2 bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-red-700 transition-colors text-xl">Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        const mainCanvas = document.getElementById('main-triangle');
+        const optionCanvases = [
+            document.getElementById('option-1'),
+            document.getElementById('option-2'),
+            document.getElementById('option-3')
+        ];
+        const reasonButtons = {
+            sss: document.getElementById('btn-sss'),
+            sas: document.getElementById('btn-sas'),
+            aas: document.getElementById('btn-aas'),
+            rhs: document.getElementById('btn-rhs')
+        };
+        const submitBtn = document.getElementById('submit-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const feedbackEl = document.getElementById('feedback');
+        const scoreEl = document.getElementById('score');
+        const streakFireEl = document.getElementById('streak-fire');
+
+        let state = {
+            selectedTriangle: null,
+            selectedReason: null,
+            correctTriangleIndex: -1,
+            correctReason: null,
+            locked: false,
+            score: 0,
+            streak: 0,
+        };
+        
+        // --- Triangle Drawing Logic ---
+        function drawTriangle(ctx, triangle) {
+            const { vertices, labels, rotation } = triangle;
+            const canvas = ctx.canvas;
+            const w = canvas.width;
+            const h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            ctx.save();
+            ctx.translate(w / 2, h / 2);
+            ctx.rotate(rotation * Math.PI / 180);
+
+            // Draw triangle
+            ctx.beginPath();
+            ctx.moveTo(vertices[0].x, vertices[0].y);
+            ctx.lineTo(vertices[1].x, vertices[1].y);
+            ctx.lineTo(vertices[2].x, vertices[2].y);
+            ctx.closePath();
+            ctx.strokeStyle = '#475569'; // slate-600
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Draw labels
+            ctx.fillStyle = '#1e293b'; // slate-800
+            
+            // Side labels
+            if (labels.sides.a) drawSideMarking(ctx, vertices[1], vertices[2], labels.sides.a);
+            if (labels.sides.b) drawSideMarking(ctx, vertices[0], vertices[2], labels.sides.b);
+            if (labels.sides.c) drawSideMarking(ctx, vertices[0], vertices[1], labels.sides.c);
+            
+            // Angle labels
+            if (labels.angles.A) drawAngleMarking(ctx, vertices[0], vertices[2], vertices[1], labels.angles.A);
+            if (labels.angles.B) drawAngleMarking(ctx, vertices[1], vertices[0], vertices[2], labels.angles.B);
+            if (labels.angles.C) drawAngleMarking(ctx, vertices[2], vertices[1], vertices[0], labels.angles.C);
+            
+            ctx.restore();
+        }
+
+        function drawSideMarking(ctx, p1, p2, type) {
+            const midX = (p1.x + p2.x) / 2;
+            const midY = (p1.y + p2.y) / 2;
+            const sideAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            const perpendicularAngle = sideAngle + Math.PI / 2;
+
+            ctx.save();
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 4;
+
+            const tickLength = 22;
+            const tickSpacing = 8;
+            let numTicks;
+            switch (type) {
+                case 'single': numTicks = 1; break;
+                case 'double': numTicks = 2; break;
+                case 'triple': numTicks = 3; break;
+                case 'quadruple': numTicks = 4; break;
+                default: return;
+            }
+
+            const totalWidth = (numTicks - 1) * tickSpacing;
+            const startOffsetX = -totalWidth / 2 * Math.cos(sideAngle);
+            const startOffsetY = -totalWidth / 2 * Math.sin(sideAngle);
+
+            for (let i = 0; i < numTicks; i++) {
+                const spacingX = i * tickSpacing * Math.cos(sideAngle);
+                const spacingY = i * tickSpacing * Math.sin(sideAngle);
+                
+                const tickCenterX = midX + startOffsetX + spacingX;
+                const tickCenterY = midY + startOffsetY + spacingY;
+
+                const endX1 = tickCenterX - tickLength / 2 * Math.cos(perpendicularAngle);
+                const endY1 = tickCenterY - tickLength / 2 * Math.sin(perpendicularAngle);
+                const endX2 = tickCenterX + tickLength / 2 * Math.cos(perpendicularAngle);
+                const endY2 = tickCenterY + tickLength / 2 * Math.sin(perpendicularAngle);
+                
+                ctx.beginPath();
+                ctx.moveTo(endX1, endY1);
+                ctx.lineTo(endX2, endY2);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawAngleMarking(ctx, p, p1, p2, type) {
+            const dx1 = p1.x - p.x;
+            const dy1 = p1.y - p.y;
+            const dx2 = p2.x - p.x;
+            const dy2 = p2.y - p.y;
+
+            let angle1 = Math.atan2(dy1, dx1);
+            let angle2 = Math.atan2(dy2, dx2);
+
+            if (angle1 < angle2) {
+                [angle1, angle2] = [angle2, angle1];
+            }
+            if (angle1 - angle2 > Math.PI) {
+                 angle1 -= 2*Math.PI;
+                [angle1, angle2] = [angle2, angle1];
+            }
+
+            ctx.save();
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 4;
+            
+            if (type === 'right') { // RHS symbol
+                const r = 30;
+                ctx.beginPath();
+                ctx.moveTo(p.x + r * Math.cos(angle2), p.y + r * Math.sin(angle2));
+                ctx.lineTo(p.x + r * (Math.cos(angle2) + Math.cos(angle1)), p.y + r * (Math.sin(angle2) + Math.sin(angle1)));
+                ctx.lineTo(p.x + r * Math.cos(angle1), p.y + r * Math.sin(angle1));
+                ctx.stroke();
+            } else {
+                const baseRadius = 45;
+                const radiusSpacing = 10;
+                let numArcs;
+                switch(type) {
+                    case 'single': numArcs = 1; break;
+                    case 'double': numArcs = 2; break;
+                    case 'triple': numArcs = 3; break;
+                    default: return;
+                }
+
+                for (let i=0; i < numArcs; i++) {
+                    const radius = baseRadius - i * radiusSpacing;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, radius, angle2, angle1);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+        
+        function generateTriangle(scale, a = null, b = null, C = null) {
+            if (!a) a = Math.random() * 50 + 50;
+            if (!b) b = Math.random() * 50 + 50;
+            if (!C) C = Math.random() * 100 + 40;
+
+            const c = Math.sqrt(a * a + b * b - 2 * a * b * Math.cos(C * Math.PI / 180));
+            const B = Math.acos((a * a + c * c - b * b) / (2 * a * c)) * 180 / Math.PI;
+            const A = 180 - B - C;
+            
+            const vertices = [
+                { x: 0, y: 0 },
+                { x: c, y: 0 },
+                { x: b * Math.cos(A * Math.PI / 180), y: -b * Math.sin(A * Math.PI / 180) }
+            ];
+
+            const centerX = (vertices[0].x + vertices[1].x + vertices[2].x) / 3;
+            const centerY = (vertices[0].y + vertices[1].y + vertices[2].y) / 3;
+
+            return {
+                sides: { a, b, c },
+                angles: { A, B, C },
+                vertices: vertices.map(v => ({ x: (v.x - centerX) * scale, y: (v.y - centerY) * scale })),
+                rotation: Math.random() * 360,
+                labels: { sides: {}, angles: {} }
+            };
+        }
+        
+        function generateRightAngledTriangle(scale) {
+            const a = Math.random() * 50 + 50;
+            const b = Math.random() * 50 + 50;
+            const c = Math.sqrt(a*a + b*b);
+            const A = Math.atan(a/b) * 180 / Math.PI;
+            const B = 90 - A;
+
+            const vertices = [ { x: 0, y: 0 }, { x: b, y: 0 }, { x: 0, y: -a } ];
+            const centerX = (vertices[0].x + vertices[1].x + vertices[2].x) / 3;
+            const centerY = (vertices[0].y + vertices[1].y + vertices[2].y) / 3;
+
+            return {
+                sides: { a, b, c },
+                angles: { A, B, C: 90 },
+                vertices: vertices.map(v => ({ x: (v.x - centerX) * scale, y: (v.y - centerY) * scale })),
+                rotation: Math.random() * 360,
+                labels: { sides: {}, angles: {} }
+            };
+        }
+        
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function generateQuestion() {
+            const congruencyTests = ['sss', 'sas', 'aas', 'rhs'];
+            const chosenTest = congruencyTests[Math.floor(Math.random() * congruencyTests.length)];
+            
+            let mainTriangle = (chosenTest === 'rhs') ? generateRightAngledTriangle(4.5) : generateTriangle(4.5);
+            
+            const options = [];
+            let congruentOption = JSON.parse(JSON.stringify(mainTriangle));
+            congruentOption.rotation = Math.random() * 360;
+            congruentOption.vertices = mainTriangle.vertices.map(v => ({x: v.x * 0.7, y: v.y * 0.7}));
+            
+            switch(chosenTest) {
+                case 'sss':
+                    mainTriangle.labels.sides = { a: 'single', b: 'double', c: 'triple' };
+                    break;
+                case 'sas':
+                    mainTriangle.labels = { sides: { c: 'single', b: 'double' }, angles: { A: 'single' } };
+                    break;
+                case 'aas':
+                    mainTriangle.labels = { sides: { a: 'single' }, angles: { A: 'single', C: 'double' } };
+                    break;
+                case 'rhs':
+                    mainTriangle.labels = { sides: { c: 'single' }, angles: { C: 'right'} };
+                    if (Math.random() > 0.5) mainTriangle.labels.sides.a = 'double';
+                    else mainTriangle.labels.sides.b = 'double';
+                    break;
+            }
+            congruentOption.labels = mainTriangle.labels;
+            options.push(congruentOption);
+            
+            const nonCongruentOption1 = JSON.parse(JSON.stringify(congruentOption));
+            nonCongruentOption1.rotation = Math.random() * 360;
+            nonCongruentOption1.labels = scrambleLabels(mainTriangle.labels, chosenTest, 0);
+            options.push(nonCongruentOption1);
+            
+            const nonCongruentOption2 = JSON.parse(JSON.stringify(congruentOption));
+            nonCongruentOption2.rotation = Math.random() * 360;
+            nonCongruentOption2.labels = scrambleLabels(mainTriangle.labels, chosenTest, 1);
+            options.push(nonCongruentOption2);
+
+            const shuffledOptions = shuffleArray(options);
+            state.correctTriangleIndex = shuffledOptions.findIndex(opt => JSON.stringify(opt.labels) === JSON.stringify(mainTriangle.labels));
+            state.correctReason = chosenTest;
+            
+            drawTriangle(mainCanvas.getContext('2d'), mainTriangle);
+            shuffledOptions.forEach((opt, index) => {
+                drawTriangle(optionCanvases[index].getContext('2d'), opt);
+            });
+        }
+
+        function scrambleLabels(originalLabels, test, scrambleType = 0) {
+            const newLabels = { sides: {}, angles: {} };
+            const sideKeys = Object.keys(originalLabels.sides);
+            const sideValues = Object.values(originalLabels.sides);
+            const angleKeys = Object.keys(originalLabels.angles);
+            const angleValues = Object.values(originalLabels.angles);
+
+            switch (test) {
+                case 'sss': {
+                    const [key1, key2, key3] = sideKeys;
+                    const [val1, val2, val3] = sideValues;
+                    if (scrambleType === 0) {
+                        newLabels.sides[key1] = val1;
+                        newLabels.sides[key2] = val2;
+                        newLabels.sides[key3] = 'quadruple';
+                    } else {
+                        newLabels.sides[key1] = val1;
+                        newLabels.sides[key2] = 'quadruple';
+                        newLabels.sides[key3] = val3;
+                    }
+                    return newLabels;
+                }
+                case 'sas': {
+                    const includedAngleKey = angleKeys[0];
+                    const nonIncludedAngleKeys = ['A', 'B', 'C'].filter(key => key !== includedAngleKey);
+                    newLabels.sides = { ...originalLabels.sides };
+                    newLabels.angles[nonIncludedAngleKeys[scrambleType % nonIncludedAngleKeys.length]] = angleValues[0];
+                    return newLabels;
+                }
+                case 'aas': {
+                    const [angleKey1, angleKey2] = angleKeys;
+                    if (scrambleType === 0) {
+                        newLabels.angles = { ...originalLabels.angles };
+                        const includedSideKey = ['a', 'b', 'c'].find(key => key.toUpperCase() !== angleKey1 && key.toUpperCase() !== angleKey2);
+                        newLabels.sides[includedSideKey] = sideValues[0];
+                    } else {
+                        newLabels.sides = { b: 'single', c: 'double' };
+                        newLabels.angles = { A: 'single' };
+                    }
+                    return newLabels;
+                }
+                case 'rhs': {
+                    newLabels.angles = { ...originalLabels.angles };
+                    const hypotenuseMarking = originalLabels.sides.c;
+                    const legMarking = sideValues.find(v => v !== hypotenuseMarking);
+
+                    if (scrambleType === 0) {
+                        newLabels.sides.a = legMarking;
+                        newLabels.sides.b = hypotenuseMarking;
+                    } else {
+                        newLabels.sides.c = hypotenuseMarking;
+                        newLabels.angles.A = 'single';
+                    }
+                    return newLabels;
+                }
+                default: {
+                    let scrambled = JSON.parse(JSON.stringify(originalLabels));
+                    if (sideKeys.length > 1) {
+                        [scrambled.sides[sideKeys[0]], scrambled.sides[sideKeys[1]]] = [scrambled.sides[sideKeys[1]], scrambled.sides[sideKeys[0]]];
+                    }
+                    return scrambled;
+                }
+            }
+        }
+
+        function launchConfetti() {
+            const duration = 1.5 * 1000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+            function randomInRange(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            const interval = setInterval(function() {
+                const timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return clearInterval(interval);
+                const particleCount = 50 * (timeLeft / duration);
+                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+            }, 250);
+        }
+
+        optionCanvases.forEach((canvas, index) => {
+            canvas.addEventListener('click', () => {
+                if (state.locked) return;
+                state.selectedTriangle = index;
+                optionCanvases.forEach((c, i) => c.classList.toggle('selected', i === index));
+            });
+        });
+
+        Object.keys(reasonButtons).forEach(reason => {
+            reasonButtons[reason].addEventListener('click', () => {
+                if (state.locked) return;
+                state.selectedReason = reason;
+                Object.keys(reasonButtons).forEach(r => reasonButtons[r].classList.toggle('selected', r === reason));
+            });
+        });
+
+        submitBtn.addEventListener('click', () => {
+            if (state.selectedTriangle === null || state.selectedReason === null) {
+                feedbackEl.textContent = 'Please make a selection!';
+                feedbackEl.className = 'feedback-incorrect';
+                setTimeout(() => feedbackEl.textContent = '', 2000);
+                return;
+            }
+            
+            state.locked = true;
+            const isTriangleCorrect = state.selectedTriangle === state.correctTriangleIndex;
+            const isReasonCorrect = state.selectedReason === state.correctReason;
+
+            if (isTriangleCorrect && isReasonCorrect) {
+                feedbackEl.textContent = 'Correct!';
+                feedbackEl.className = 'feedback-correct';
+                state.score++;
+                state.streak++;
+                launchConfetti();
+                setTimeout(() => {
+                    resetState();
+                    generateQuestion();
+                }, 2000);
+            } else {
+                state.streak = 0;
+                let errorMsg = 'Incorrect.';
+                if (!isTriangleCorrect) errorMsg += " That's not the right triangle.";
+                if (!isReasonCorrect) errorMsg += ` The correct reason is ${state.correctReason.toUpperCase()}.`;
+                feedbackEl.textContent = errorMsg;
+                feedbackEl.className = 'feedback-incorrect';
+                
+                optionCanvases[state.correctTriangleIndex].style.borderColor = '#16a34a';
+                reasonButtons[state.correctReason].style.backgroundColor = '#16a34a';
+                reasonButtons[state.correctReason].style.color = 'white';
+
+                submitBtn.classList.add('hidden');
+                nextBtn.classList.remove('hidden');
+            }
+            updateScore();
+        });
+
+        nextBtn.addEventListener('click', () => {
+            resetState();
+            generateQuestion();
+        });
+        
+        function updateScore() {
+            scoreEl.textContent = state.score;
+            if (state.streak >= 3) {
+                streakFireEl.style.display = 'inline';
+            } else {
+                streakFireEl.style.display = 'none';
+            }
+        }
+
+        function resetState() {
+            state.selectedTriangle = null;
+            state.selectedReason = null;
+            state.correctTriangleIndex = -1;
+            state.correctReason = null;
+            state.locked = false;
+            
+            optionCanvases.forEach(c => {
+                c.classList.remove('selected');
+                c.style.borderColor = 'transparent';
+            });
+            
+            Object.values(reasonButtons).forEach(btn => {
+                btn.classList.remove('selected');
+                btn.style.backgroundColor = '';
+                btn.style.color = '';
+            });
+            
+            feedbackEl.textContent = '';
+            feedbackEl.className = '';
+            submitBtn.classList.remove('hidden');
+            nextBtn.classList.add('hidden');
+        }
+        
+        function resizeAndDraw() {
+            const dpr = window.devicePixelRatio || 1;
+            
+            const mainRect = mainCanvas.parentElement.getBoundingClientRect();
+            mainCanvas.width = mainRect.width * dpr;
+            mainCanvas.height = mainRect.height * dpr;
+            
+            optionCanvases.forEach(canvas => {
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+            });
+
+            requestAnimationFrame(generateQuestion);
+        }
+        
+        window.addEventListener('resize', resizeAndDraw);
+        setTimeout(resizeAndDraw, 100);
+
+    </script>
+</body>
+</html>
+
+
