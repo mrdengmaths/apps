@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculus Cricket: Differentiation Practice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- KaTeX for LaTeX rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMeaIQcHnPlEJrlzAVmeQpGb1ds remastered" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlVjOTmhYWfWBkber4JutHB6/2BGfn/WZSAp9z1rJGmpC1Jd8oEMCaCllxA" crossorigin="anonymous"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-image: url('https://www.transparenttextures.com/patterns/crissxcross.png'), linear-gradient(to bottom, #2d5a31, #4a8a50);
+            background-attachment: fixed;
+        }
+        .font-bangers {
+            font-family: 'Bangers', cursive;
+        }
+        .cricket-ball {
+            transition: all 0.2s ease-in-out;
+        }
+        .cricket-ball:hover {
+            transform: scale(1.05) rotate(5deg);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .feedback-correct {
+            animation: fadeInCorrect 0.5s ease-out;
+        }
+        @keyframes fadeInCorrect {
+            from { opacity: 0; transform: translateY(20px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        /* Style for the stumps SVG */
+        .stumps {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0.1;
+            width: 80%;
+            max-width: 200px;
+            z-index: 1;
+        }
+        /* Custom styles for disabled button */
+        button:disabled {
+            background-color: #992c2c;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .katex-display {
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="text-white flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl p-6 md:p-8 text-center relative overflow-hidden border border-white/20">
+        
+        <!-- Out Modal -->
+        <div id="out-modal" class="hidden absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-50 p-4 transition-opacity duration-300">
+            <h2 class="font-bangers text-6xl text-red-500 animate-pulse">OUT!</h2>
+            <!-- Umpire SVG -->
+            <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="my-4">
+                <path d="M7 17v-4.472c0-1.21.784-2.278 1.94-2.674l4.12-1.424c.484-.167.994.12 1.09.629l.526 2.631c.105.526-.21 1.053-.736 1.158l-4.21 1.052"/>
+                <path d="M12 11.562v-2.312c0-1.35.937-2.5 2.25-2.5h1.5c1.243 0 2.25 1.007 2.25 2.25v2.25m-6-1.5l-2.06 7.21c-.24.84.42 1.63 1.29 1.5l6.51-.81c.87-.11 1.53-.87 1.42-1.74l-1.42-11.36c-.11-.87-.87-1.53-1.74-1.42l-5.65 1.41c-.41.1-.6.58-.45.97l1.1 2.93z"/>
+            </svg>
+            <p class="text-white/80 text-lg">The correct answer was:</p>
+            <p id="correct-answer-modal" class="font-mono text-2xl text-yellow-300 bg-black/50 p-2 rounded mt-2"></p>
+        </div>
+
+        <!-- Stumps SVG background element -->
+        <svg class="stumps" viewBox="0 0 100 100" preserveAspectRatio="xMidYMax meet">
+            <g fill="#FFFFFF">
+                <rect x="20" y="30" width="5" height="70" rx="2.5"></rect>
+                <rect x="47.5" y="30" width="5" height="70" rx="2.5"></rect>
+                <rect x="75" y="30" width="5" height="70" rx="2.5"></rect>
+                <rect x="18" y="25" width="31" height="5" rx="2.5"></rect>
+                <rect x="50" y="25" width="31" height="5" rx="2.5"></rect>
+            </g>
+        </svg>
+
+        <div class="relative z-10">
+            <header class="mb-6">
+                <h1 class="font-bangers text-5xl md:text-7xl tracking-wider text-yellow-300" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Calculus Cricket</h1>
+                <p class="text-lg text-white/90">Step up to the crease and differentiate!</p>
+            </header>
+
+            <!-- Scoreboard -->
+            <div class="grid grid-cols-3 gap-4 bg-black/30 rounded-lg p-4 mb-6 text-white">
+                <div>
+                    <div class="text-sm uppercase font-semibold text-yellow-300/80">Level</div>
+                    <div id="level-display" class="text-2xl md:text-3xl font-bold">1</div>
+                </div>
+                <div>
+                    <div class="text-sm uppercase font-semibold text-green-300/80">Runs</div>
+                    <div id="runs-display" class="text-2xl md:text-3xl font-bold">0</div>
+                </div>
+                <div>
+                    <div class="text-sm uppercase font-semibold text-red-300/80">Wickets</div>
+                    <div id="wickets-display" class="text-2xl md:text-3xl font-bold">0</div>
+                </div>
+            </div>
+
+            <!-- Game Area -->
+            <main id="game-area" class="bg-black/30 p-6 rounded-lg min-h-[280px] md:min-h-[300px] flex flex-col items-center justify-center space-y-4">
+                <p id="level-title" class="text-xl font-bold text-yellow-300"></p>
+                <p class="text-lg text-yellow-200">This ball is worth <span id="points-display" class="font-bold text-2xl">_</span> runs!</p>
+                <div class="text-2xl md:text-4xl font-mono bg-white/90 text-gray-800 px-4 py-3 rounded-lg shadow-inner min-h-[70px] flex items-center justify-center">
+                    <div class="flex items-center justify-center gap-3">
+                        <span class="text-2xl md:text-4xl">y =</span>
+                        <span id="question"></span>
+                    </div>
+                </div>
+                <p class="text-sm text-white/80">Find dy/dx. Use '^' for powers. No spaces.</p>
+                <div class="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+                    <input type="text" id="answer" placeholder="Enter your derivative..." class="flex-grow w-full text-lg px-4 py-3 bg-white/90 text-gray-900 placeholder-gray-500 rounded-lg border-2 border-transparent focus:outline-none focus:ring-4 focus:ring-yellow-400 focus:border-yellow-500 transition">
+                    <button id="submit-btn" class="cricket-ball w-full sm:w-auto bg-red-700 text-white font-bold text-lg px-8 py-3 rounded-lg shadow-lg hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-400">Howzat!</button>
+                </div>
+                <div id="feedback" class="h-10 mt-2 text-lg font-semibold"></div>
+            </main>
+
+            <!-- Win Screen -->
+            <div id="win-screen" class="hidden bg-green-500/80 p-8 rounded-lg">
+                 <h2 class="font-bangers text-5xl text-white mb-4">CHAMPION!</h2>
+                 <p class="text-2xl text-white mb-4">You've mastered differentiation! Well played!</p>
+                 <p class="text-xl">Final Score: <span id="final-runs"></span> Runs / <span id="final-wickets"></span> Wickets</p>
+                 <button id="play-again-btn" class="mt-6 bg-yellow-400 text-gray-900 font-bold px-8 py-3 rounded-lg text-lg hover:bg-yellow-300">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const levelDisplay = document.getElementById('level-display');
+        const runsDisplay = document.getElementById('runs-display');
+        const wicketsDisplay = document.getElementById('wickets-display');
+        const levelTitle = document.getElementById('level-title');
+        const questionSpan = document.getElementById('question');
+        const answerInput = document.getElementById('answer');
+        const submitBtn = document.getElementById('submit-btn');
+        const feedbackDiv = document.getElementById('feedback');
+        const gameArea = document.getElementById('game-area');
+        const winScreen = document.getElementById('win-screen');
+        const finalRunsSpan = document.getElementById('final-runs');
+        const finalWicketsSpan = document.getElementById('final-wickets');
+        const playAgainBtn = document.getElementById('play-again-btn');
+        const outModal = document.getElementById('out-modal');
+        const correctAnswerModal = document.getElementById('correct-answer-modal');
+        const pointsDisplay = document.getElementById('points-display');
+        
+        // Game State
+        let state = {};
+        const possibleScores = [1, 2, 3, 4, 6];
+
+        const levelDetails = [
+            { title: "The Opener: Power Rule" },
+            { title: "Building a Partnership: Polynomials" },
+            { title: "The Googly: Chain Rule" },
+            { title: "Pace & Spin: Product & Quotient Rules" },
+            { title: "The Finisher: Advanced Functions" },
+        ];
+
+        // --- UTILITY FUNCTIONS ---
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function standardizeAnswer(input) {
+            let clean = input.replace(/\s+/g, '').toLowerCase();
+            clean = clean.replace(/(?<![a-z0-9\d)\]])x/g, '1x');
+            clean = clean.replace(/\(-x/g, '(-1x');
+            clean = clean.replace(/\*\*/g, '^');
+            return clean;
+        }
+
+        // --- QUESTION GENERATION ---
+        function generateQuestion() {
+            state.currentPoints = possibleScores[Math.floor(Math.random() * possibleScores.length)];
+            const level = state.level;
+            let question = '', answer = '';
+
+            switch (level) {
+                case 1: { // ax^n
+                    const a = getRandomInt(2, 9);
+                    const n = getRandomInt(2, 7);
+                    question = `${a}x^{${n}}`;
+                    const newCoeff = a * n;
+                    const newPow = n - 1;
+                    answer = newPow === 1 ? `${newCoeff}x` : `${newCoeff}x^${newPow}`;
+                    break;
+                }
+                case 2: { // ax^n + bx^m
+                    const a = getRandomInt(2, 9);
+                    const n = getRandomInt(3, 7);
+                    const b = getRandomInt(2, 9) * (Math.random() > 0.5 ? 1 : -1);
+                    const m = getRandomInt(1, n - 1);
+                    
+                    question = `${a}x^{${n}} ${b > 0 ? '+' : '-'} ${Math.abs(b)}${m === 1 ? 'x' : `x^{${m}}`}`;
+                    
+                    const term1_a = `${a*n}x^${n-1}`;
+                    let term2_a = '';
+                    if (m > 1) {
+                         term2_a = `${b*m > 0 ? '+' : ''}${b*m}x^${m-1}`;
+                    } else {
+                         term2_a = `${b > 0 ? '+' : ''}${b}`;
+                    }
+                    answer = `${term1_a}${term2_a}`;
+                    break;
+                }
+                case 3: { // a(bx+c)^n
+                    const a = getRandomInt(2, 5);
+                    const b = getRandomInt(2, 5);
+                    const c = getRandomInt(1, 9) * (Math.random() > 0.5 ? 1 : -1);
+                    const n = getRandomInt(2, 6);
+                    
+                    question = `${a}(${b}x${c > 0 ? '+' : ''}${c})^{${n}}`;
+                    const newCoeff = a * b * n;
+                    const newPow = n - 1;
+                    answer = newPow === 1 ? `${newCoeff}(${b}x${c > 0 ? '+' : ''}${c})` : `${newCoeff}(${b}x${c > 0 ? '+' : ''}${c})^${newPow}`;
+                    break;
+                }
+                case 4: { // Product or Quotient
+                    if (Math.random() > 0.5) { // Product Rule: (x^n)(ax+b)
+                        const n = getRandomInt(2, 4);
+                        const a = getRandomInt(2, 5);
+                        const b = getRandomInt(1, 5);
+                        question = `(x^{${n}})(${a}x+${b})`;
+                        const newCoeff1 = a * (n + 1);
+                        const newCoeff2 = b * n;
+                        answer = `${newCoeff1}x^${n}+${newCoeff2}x^${n-1}`;
+                    } else { // Quotient Rule: (ax+b)/(cx+d)
+                        const a = getRandomInt(1, 5);
+                        const b = getRandomInt(1, 5);
+                        const c = getRandomInt(1, 5);
+                        const d = getRandomInt(1, 5);
+                        if (a*d - b*c === 0) return generateQuestion();
+                        
+                        question = `\\frac{${a}x+${b}}{${c}x+${d}}`;
+                        answer = `${a*d - b*c}/(${c}x+${d})^2`;
+                    }
+                    break;
+                }
+                case 5: { // Trig, Exp, Log
+                    const funcs = ['sin', 'cos', 'exp', 'ln'];
+                    const chosenFunc = funcs[getRandomInt(0, 3)];
+                    const a = getRandomInt(2, 9);
+                    
+                    switch (chosenFunc) {
+                        case 'sin': {
+                            const b = getRandomInt(2, 7);
+                            question = `${a}\\sin(${b}x)`;
+                            answer = `${a*b}cos(${b}x)`;
+                            break;
+                        }
+                        case 'cos': {
+                            const b = getRandomInt(2, 7);
+                            question = `${a}\\cos(${b}x)`;
+                            answer = `${-a*b}sin(${b}x)`;
+                            break;
+                        }
+                        case 'exp': {
+                            const b = getRandomInt(2, 7);
+                            question = `${a}e^{${b}x}`;
+                            answer = `${a*b}e^(${b}x)`;
+                            break;
+                        }
+                        case 'ln': {
+                            question = `${a}\\ln(x)`;
+                            answer = `${a}/x`;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+            state.currentQuestion = { question, answer };
+        }
+
+        // --- UI AND STATE MANAGEMENT ---
+        function updateUI() {
+            levelDisplay.textContent = state.level;
+            runsDisplay.textContent = state.runs;
+            wicketsDisplay.textContent = state.wickets;
+            levelTitle.textContent = levelDetails[state.level - 1].title;
+            pointsDisplay.textContent = state.currentPoints;
+            katex.render(state.currentQuestion.question, questionSpan, {
+                throwOnError: false,
+                displayMode: true
+            });
+            answerInput.value = '';
+            answerInput.focus();
+        }
+
+        function showFeedback(message, runsScored) {
+            feedbackDiv.textContent = message + ` You score ${runsScored} runs!`;
+            feedbackDiv.className = 'h-10 mt-2 text-lg font-semibold text-green-300 feedback-correct';
+            setTimeout(() => {
+                feedbackDiv.textContent = '';
+                feedbackDiv.className = 'h-10 mt-2 text-lg font-semibold';
+            }, 2500);
+        }
+
+        function checkAnswer() {
+            const userAnswer = standardizeAnswer(answerInput.value);
+            const correctAnswer = standardizeAnswer(state.currentQuestion.answer);
+
+            if (userAnswer === correctAnswer) {
+                const points = state.currentPoints;
+                state.runs += points;
+                state.runsInLevel++;
+                showFeedback('SIX! A perfect shot!', points);
+
+                if (state.runsInLevel >= 5) {
+                    levelUp();
+                } else {
+                    generateQuestion();
+                    updateUI();
+                }
+            } else {
+                submitBtn.disabled = true;
+                answerInput.disabled = true;
+                outModal.classList.remove('hidden');
+                correctAnswerModal.textContent = state.currentQuestion.answer;
+
+                setTimeout(() => {
+                    outModal.classList.add('hidden');
+                    state.wickets++;
+                    generateQuestion();
+                    updateUI();
+                    submitBtn.disabled = false;
+                    answerInput.disabled = false;
+                    answerInput.focus();
+                }, 3000);
+            }
+        }
+        
+        function levelUp() {
+            submitBtn.disabled = true;
+            answerInput.disabled = true;
+            
+            if (state.level < 5) {
+                feedbackDiv.textContent = "Level Complete! Well batted!";
+                feedbackDiv.className = "h-10 mt-2 text-lg font-semibold text-yellow-300";
+                setTimeout(() => {
+                    state.level++;
+                    state.runsInLevel = 0;
+                    generateQuestion();
+                    updateUI();
+                    feedbackDiv.textContent = "";
+                    submitBtn.disabled = false;
+                    answerInput.disabled = false;
+                }, 3000);
+            } else {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            gameArea.classList.add('hidden');
+            winScreen.classList.remove('hidden');
+            finalRunsSpan.textContent = state.runs;
+            finalWicketsSpan.textContent = state.wickets;
+        }
+
+        function init() {
+            state = {
+                level: 1,
+                runs: 0,
+                wickets: 0,
+                runsInLevel: 0,
+                currentQuestion: {},
+                currentPoints: 0
+            };
+            gameArea.classList.remove('hidden');
+            winScreen.classList.add('hidden');
+            outModal.classList.add('hidden');
+            submitBtn.disabled = false;
+            answerInput.disabled = false;
+            
+            generateQuestion();
+            updateUI();
+        }
+
+        // --- EVENT LISTENERS ---
+        submitBtn.addEventListener('click', checkAnswer);
+        answerInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+        playAgainBtn.addEventListener('click', init);
+
+        // --- INITIALIZE GAME ---
+        init();
+    </script>
+</body>
+</html>
+
