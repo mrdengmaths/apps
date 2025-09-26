@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algebraic Fractions Practice</title>
+    <!-- Chosen Palette: "Sunny Citrus & Teal" -->
+    <!-- Application Structure Plan: The application uses a single-view, task-oriented structure. The user is presented with one task at a time (solving a problem) in a clean, centered card. This design minimizes cognitive load, allowing students to focus solely on the problem. Gamification elements (score, streak, progress) are placed at the top for constant, non-intrusive feedback, motivating continued practice. An educational support modal is available on-demand, providing help without disrupting the primary learning flow. This structure was chosen for its simplicity and directness, which is ideal for a focused practice tool for Year 9 students. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Score, Streak, Progress -> Goal: Inform/Motivate -> Viz/Presentation: Dynamic text and a horizontal progress bar. -> Interaction: Updates automatically on correct answers. -> Justification: Provides immediate positive reinforcement and a sense of accomplishment. -> Library/Method: HTML/CSS/JS.
+        - Report Info: Algebraic Fraction Problem -> Goal: Test Knowledge -> Viz/Presentation: Large, clear text rendered with KaTeX. -> Interaction: User input via text field. -> Justification: Focuses user attention on the primary task. -> Library/Method: HTML/JS/KaTeX.
+        - Report Info: Step-by-step simplification -> Goal: Educate/Support -> Viz/Presentation: A modal window with structured text. -> Interaction: User clicks a button to show/hide. -> Justification: Provides help accessibly without cluttering the main interface. -> Library/Method: HTML/CSS/JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU07EWHeMOSfAaxZbcvSx6SRz8mA7pDRH3dGzFNlAS2uE9/fLkTCea3" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGqsACQJkllfl" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FFFBEB;
+            background-image: radial-gradient(#FBBF24 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .feedback-pop {
+            animation: pop 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .shake-error {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        .main-card {
+            border: 2px solid #111827;
+            box-shadow: 8px 8px 0px #FBBF24;
+            transition: box-shadow 0.2s ease-in-out;
+        }
+        .main-card:hover {
+            box-shadow: 10px 10px 0px #F59E0B;
+        }
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        .cockatiel-happy { animation: happy-bob 0.5s ease-in-out; }
+        @keyframes happy-bob {
+            0%, 100% { transform: translateY(0) rotate(0); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+        .cockatiel-sad { animation: sad-shake 0.5s ease-in-out; }
+        @keyframes sad-shake {
+            0%, 100% { transform: translateX(0) rotate(0); }
+            25% { transform: translateX(-5px) rotate(-3deg); }
+            75% { transform: translateX(5px) rotate(3deg); }
+        }
+        .cockatiel-idle {
+             animation: idle-bob 3s ease-in-out infinite;
+        }
+        @keyframes idle-bob {
+            0%, 100% { transform: translateY(0) rotate(1deg); }
+            50% { transform: translateY(-4px) rotate(-1deg); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="relative w-full max-w-lg">
+         <div id="cockatiel-container" class="hidden lg:block absolute top-1/4 -left-52">
+            <div id="cockatiel" class="relative transition-transform duration-300 text-9xl w-32 h-32 flex items-center justify-center">
+                <div id="speech-bubble" class="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-max bg-white border-2 border-slate-800 rounded-lg px-3 py-1 text-slate-800 font-bold opacity-0 transition-opacity duration-300 pointer-events-none text-base">
+                    Let's do some math!
+                    <div class="absolute left-1/2 -translate-x-1/2 bottom-[-10px] w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-[10px] border-t-slate-800"></div>
+                </div>
+                🦜
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 sm:p-8 main-card">
+            <div class="flex justify-between items-start mb-2">
+                 <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">Algebraic Fractions!</h1>
+                 <div id="difficulty-badge" class="px-3 py-1 rounded-full text-sm font-bold transition-colors duration-300">EASY</div>
+            </div>
+            
+            <div class="flex justify-between items-center mb-4 text-slate-700">
+                <div class="font-bold text-lg">Score: <span id="score" class="text-teal-500 text-xl">0</span></div>
+                <div class="font-bold text-lg">Streak: <span id="streak" class="text-teal-500 text-xl">0</span> <span id="streak-fire">🔥</span></div>
+            </div>
+
+            <div class="w-full bg-slate-200 rounded-full h-3 mb-6 border border-slate-300">
+                <div id="progress-bar" class="bg-gradient-to-r from-amber-400 to-orange-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+
+            <div class="bg-slate-50 rounded-lg p-8 text-center mb-6 min-h-[10rem] flex items-center justify-center border-2 border-slate-200">
+                <p class="text-3xl sm:text-4xl text-slate-800" id="question"></p>
+            </div>
+
+            <div class="mb-4">
+                <input type="text" id="answer-input" class="w-full px-4 py-3 text-lg border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors" placeholder="e.g. 2x+3 or 2/(x+3) or 3/4">
+            </div>
+
+            <div id="feedback" class="text-center min-h-[2rem] mb-4 font-bold text-xl"></div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button id="check-btn" class="w-full bg-teal-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all transform hover:scale-105 shadow-md hover:shadow-lg">Check Answer</button>
+                <button id="next-btn" class="w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all transform hover:scale-105 shadow-md hover:shadow-lg hidden">Next Question</button>
+                <button id="example-btn" class="w-full sm:col-span-2 bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-lg hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition-colors">Show Example</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="example-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-xl shadow-lg p-8 max-w-md w-full border-4 border-teal-400">
+             <h2 class="text-2xl font-bold text-slate-800 mb-4">Worked Example</h2>
+             <div id="modal-content" class="space-y-4 text-lg text-slate-700">
+                <!-- Example content will be rendered here by KaTeX -->
+             </div>
+            <button id="close-modal-btn" class="mt-6 w-full bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">Close</button>
+        </div>
+    </div>
+
+    <script>
+        const questionEl = document.getElementById('question');
+        const answerInput = document.getElementById('answer-input');
+        const checkBtn = document.getElementById('check-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const feedbackEl = document.getElementById('feedback');
+        const scoreEl = document.getElementById('score');
+        const streakEl = document.getElementById('streak');
+        const streakFire = document.getElementById('streak-fire');
+        const progressBar = document.getElementById('progress-bar');
+        const exampleBtn = document.getElementById('example-btn');
+        const exampleModal = document.getElementById('example-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const modalContent = document.getElementById('modal-content');
+        const difficultyBadge = document.getElementById('difficulty-badge');
+
+        const cockatiel = document.getElementById('cockatiel');
+        const speechBubble = document.getElementById('speech-bubble');
+
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+        let confettiPieces = [];
+
+        let state = {
+            score: 0,
+            streak: 0,
+            questionsInRound: 10,
+            questionsAnswered: 0,
+            correctAnswer: '',
+            isFirstTry: true,
+            difficulty: 'easy', // easy, medium, hard
+            questionType: 1,
+            questionParts: {},
+        };
+
+        const correctFeedback = ["Awesome!", "Great job!", "You nailed it!", "Perfect!", "Fantastic!", "Keep it up!"];
+        const incorrectFeedback = {
+            1: ["Not quite. Remember to divide BOTH terms.", "Close! Check the division on the second term.", "Good start, but check all parts of the answer."],
+            2: ["Almost there! Try factorising the numerator first.", "Hint: What's the common factor on top?", "Factorise the top, then see what cancels."],
+            3: ["Good try! Factorise the top AND bottom, then cancel.", "Look for a common factor on the top and bottom.", "Hint: The brackets should be the same!"],
+            4: ["Hint: Try factorising the quadratic denominator.", "The denominator is a quadratic. Can you factorise it?", "Look for two numbers that multiply to make the last term and add to make the middle term."],
+            5: ["Hint: The denominator is a difference of two squares.", "Remember a² - b² = (a-b)(a+b).", "Factorise the denominator first."]
+        };
+
+        let synth, errorSynth, clickSynth;
+
+        function initAudio() {
+            if (synth) return;
+            try {
+                synth = new Tone.PolySynth().toDestination();
+                errorSynth = new Tone.MonoSynth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.1 } }).toDestination();
+                clickSynth = new Tone.MembraneSynth().toDestination();
+            } catch (e) {
+                console.error("Could not initialize audio.", e);
+            }
+        }
+        
+        function playSuccessSound() {
+            if (!synth) return;
+            const now = Tone.now();
+            synth.triggerAttackRelease(["C4", "E4", "G4"], "8n", now);
+        }
+
+        function playErrorSound() {
+            if (!errorSynth) return;
+            errorSynth.triggerAttackRelease("C2", "8n");
+        }
+        
+        function playClickSound() {
+            if (!clickSynth) return;
+            clickSynth.triggerAttackRelease("C2", "8n");
+        }
+
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function gcd(a, b) {
+            return b === 0 ? a : gcd(b, a % b);
+        }
+        
+        function generateQuestion() {
+            state.isFirstTry = true;
+            let latexString = "";
+            
+            if (state.difficulty === 'easy') {
+                // TYPE 1: (ax+b)/c -> simple division
+                state.questionType = 1;
+                let a, b, c;
+                do {
+                    c = getRandomInt(2, 10) * (Math.random() > 0.5 ? 1 : -1);
+                    const simpA = getRandomInt(1, 5) * (Math.random() > 0.5 ? 1 : -1);
+                    const simpB = getRandomInt(1, 10) * (Math.random() > 0.5 ? 1 : -1);
+                    a = simpA * c;
+                    b = simpB * c;
+                } while (a === 0 || b === 0);
+                state.questionParts = {a, b, c};
+
+                const sign = b > 0 ? '+' : '-';
+                latexString = `\\frac{${a}x ${sign} ${Math.abs(b)}}{${c}}`;
+                
+                let answerA = a / c;
+                let answerB = b / c;
+                let answerString = (answerA === 1 ? 'x' : answerA === -1 ? '-x' : `${answerA}x`);
+                answerString += (answerB > 0 ? ` + ${answerB}` : ` - ${Math.abs(answerB)}`);
+                state.correctAnswer = answerString;
+
+            } else if (state.difficulty === 'medium') {
+                const isType2 = Math.random() > 0.5;
+                if (isType2) {
+                    // TYPE 2: a(cx+d) / (cx+d) -> factorise numerator
+                    state.questionType = 2;
+                    const a = getRandomInt(2, 6) * (Math.random() > 0.5 ? 1 : -1);
+                    const c = getRandomInt(2, 5);
+                    const d = getRandomInt(1, 10);
+                    state.questionParts = {a, c, d};
+
+                    latexString = `\\frac{${a*c}x ${a*d > 0 ? '+':'-'} ${Math.abs(a*d)}}{${c}x + ${d}}`;
+                    state.correctAnswer = a.toString();
+                } else {
+                     // TYPE 3: a(dx+e) / b(dx+e) -> factorise both, answer is fraction
+                    state.questionType = 3;
+                    let a, b;
+                    do {
+                        a = getRandomInt(2, 9);
+                        b = getRandomInt(2, 9);
+                    } while (a === b || gcd(a,b) !== 1);
+                    const d = getRandomInt(1, 5);
+                    const e = getRandomInt(1, 10);
+                    state.questionParts = {a, b, d, e};
+
+                    latexString = `\\frac{${a*d}x + ${a*e}}{${b*d}x + ${b*e}}`;
+                    state.correctAnswer = `${a}/${b}`;
+                }
+            } else { // Hard difficulty
+                const isType4 = Math.random() > 0.5;
+                if (isType4) {
+                    // TYPE 4: a(x+b) / (x+b)(x+c) -> factorise quadratic
+                    state.questionType = 4;
+                    const a = getRandomInt(2, 5);
+                    const b = getRandomInt(1, 6) * (Math.random() > 0.5 ? 1 : -1);
+                    let c;
+                    do { c = getRandomInt(1, 6) * (Math.random() > 0.5 ? 1 : -1); } while (b === c);
+                    state.questionParts = {a,b,c};
+
+                    const numTerm = `(${a}x ${a*b > 0 ? '+':'-'} ${Math.abs(a*b)})`;
+                    const denTerm = `(x^2 ${b+c >= 0 ? '+':'-'} ${Math.abs(b+c)}x ${b*c >= 0 ? '+':'-'} ${Math.abs(b*c)})`;
+                    latexString = `\\frac{${numTerm}}{${denTerm}}`;
+
+                    const cSign = c > 0 ? `+${c}` : `${c}`;
+                    state.correctAnswer = `${a}/(x${cSign})`;
+                } else {
+                    // TYPE 5: a(x-b) / (x^2-b^2) -> difference of squares
+                    state.questionType = 5;
+                    const a = getRandomInt(2, 6);
+                    const b = getRandomInt(2, 7);
+                    const flip = Math.random() > 0.5; // true for (x-b), false for (x+b)
+                    state.questionParts = {a,b,flip};
+                    
+                    const numTerm = `(${a}x ${flip ? '-':'+'} ${Math.abs(a*b)})`;
+                    const denTerm = `(x^2 - ${b*b})`;
+                    latexString = `\\frac{${numTerm}}{${denTerm}}`;
+
+                    const remainingTerm = flip ? `x+${b}` : `x-${b}`;
+                    state.correctAnswer = `${a}/(${remainingTerm})`;
+                }
+            }
+            
+            katex.render(latexString, questionEl, { throwOnError: false, displayMode: true });
+            resetUIForNewQuestion();
+        }
+        
+        function normalizeAnswer(str) {
+            return str.replace(/\s/g, '').replace(/[()]/g, '').toLowerCase();
+        }
+        
+        function updateDifficulty() {
+            let leveledUp = false;
+            if (state.difficulty === 'easy' && state.streak >= 3) {
+                state.difficulty = 'medium';
+                leveledUp = true;
+            } else if (state.difficulty === 'medium' && state.streak >= 3) {
+                state.difficulty = 'hard';
+                leveledUp = true;
+            }
+
+            if (leveledUp) {
+                state.streak = 0; // Reset streak for the new level
+                updateCockatiel('happy', `Level up to ${state.difficulty}!`);
+                triggerConfetti();
+            }
+            
+            difficultyBadge.textContent = state.difficulty.toUpperCase();
+            difficultyBadge.classList.remove('bg-green-200', 'text-green-800', 'bg-yellow-200', 'text-yellow-800', 'bg-red-200', 'text-red-800');
+            if (state.difficulty === 'easy') {
+                difficultyBadge.classList.add('bg-green-200', 'text-green-800');
+            } else if (state.difficulty === 'medium') {
+                difficultyBadge.classList.add('bg-yellow-200', 'text-yellow-800');
+            } else {
+                difficultyBadge.classList.add('bg-red-200', 'text-red-800');
+            }
+        }
+
+
+        function checkAnswer() {
+            const userAnswer = answerInput.value.trim();
+            if (userAnswer === '') return;
+
+            const normalizedUserAnswer = normalizeAnswer(userAnswer);
+            const normalizedCorrectAnswer = normalizeAnswer(state.correctAnswer);
+
+            feedbackEl.classList.remove('feedback-pop', 'text-green-600', 'text-pink-600');
+            answerInput.classList.remove('shake-error', 'border-pink-500');
+
+            if (normalizedUserAnswer === normalizedCorrectAnswer) {
+                playSuccessSound();
+                feedbackEl.innerHTML = `${correctFeedback[Math.floor(Math.random() * correctFeedback.length)]} &nbsp; 🎉`;
+                feedbackEl.classList.add('text-green-600', 'feedback-pop');
+                checkBtn.classList.add('hidden');
+                nextBtn.classList.remove('hidden');
+                answerInput.disabled = true;
+
+                if (state.isFirstTry) {
+                    state.score += 10;
+                    state.streak++;
+                    state.questionsAnswered++;
+                    updateDifficulty();
+                }
+                
+                if (!leveledUp) { // Avoid double message on level up
+                    if (state.streak > 0 && state.streak % 5 === 0) {
+                        updateCockatiel('happy', `A ${state.streak} streak! Wow!`);
+                    } else {
+                        updateCockatiel('happy', 'You got it!');
+                    }
+                }
+                updateStats();
+            } else {
+                playErrorSound();
+                state.streak = 0;
+                state.isFirstTry = false;
+                
+                if (state.difficulty === 'hard') state.difficulty = 'medium';
+                else if (state.difficulty === 'medium') state.difficulty = 'easy';
+                
+                const feedbackKey = state.questionType;
+                feedbackEl.textContent = incorrectFeedback[feedbackKey][Math.floor(Math.random() * incorrectFeedback[feedbackKey].length)];
+                
+                feedbackEl.classList.add('text-pink-600');
+                answerInput.classList.add('shake-error', 'border-pink-500');
+                answerInput.focus();
+                updateCockatiel('sad', 'Almost! Give it another shot.');
+                updateStats();
+                updateDifficulty();
+            }
+        }
+        
+        function updateStats() {
+            scoreEl.textContent = state.score;
+            scoreEl.parentElement.classList.add('feedback-pop');
+            streakEl.textContent = state.streak;
+            streakEl.parentElement.classList.add('feedback-pop');
+            streakFire.style.transform = `scale(${1 + state.streak * 0.1})`;
+            streakFire.style.filter = `hue-rotate(${state.streak * 10}deg)`;
+
+            setTimeout(() => {
+                scoreEl.parentElement.classList.remove('feedback-pop');
+                streakEl.parentElement.classList.remove('feedback-pop');
+            }, 500);
+
+            if (state.streak === 0) {
+                 streakFire.style.transform = 'scale(1)';
+                 streakFire.style.filter = 'hue-rotate(0deg)';
+            }
+
+            const questionsThisRound = state.questionsAnswered % state.questionsInRound;
+            const progress = questionsThisRound === 0 && state.questionsAnswered > 0 ? 100 : (questionsThisRound / state.questionsInRound) * 100;
+            progressBar.style.width = `${progress}%`;
+
+            if (progress === 100 && state.questionsAnswered > 0 && (state.questionsAnswered % state.questionsInRound === 0)) {
+                 feedbackEl.innerHTML = `Round Complete! &nbsp; 🥳`;
+                 feedbackEl.classList.add('text-green-600');
+                 triggerConfetti();
+            }
+        }
+
+        function resetUIForNewQuestion() {
+            answerInput.value = '';
+            answerInput.disabled = false;
+            feedbackEl.textContent = '';
+            checkBtn.classList.remove('hidden');
+            nextBtn.classList.add('hidden');
+            answerInput.classList.remove('border-pink-500');
+            answerInput.focus();
+        }
+
+        function renderExample() {
+            let exampleHTML = '';
+            let currentQuestionType = state.questionType;
+            // Show a relevant example, not necessarily the current question's type if it's random
+            if (state.difficulty === 'easy') currentQuestionType = 1;
+            if (state.difficulty === 'medium') currentQuestionType = Math.random() > 0.5 ? 2 : 3;
+            if (state.difficulty === 'hard') currentQuestionType = Math.random() > 0.5 ? 4 : 5;
+            
+            if (currentQuestionType === 1) {
+                exampleHTML = `
+                    <div><p class="font-bold">Problem:</p><span id="ex-problem"></span></div>
+                    <div><p class="font-bold">Step 1: Separate the terms</p><p>Divide each term in the numerator by the denominator.</p><span id="ex-step1"></span></div>
+                    <div><p class="font-bold">Step 2: Simplify each term</p><p>Simplify each fraction individually.</p><span id="ex-step2"></span></div>`;
+                modalContent.innerHTML = exampleHTML;
+                katex.render('\\frac{6x + 9}{3}', document.getElementById('ex-problem'), {displayMode: true});
+                katex.render('\\frac{6x}{3} + \\frac{9}{3}', document.getElementById('ex-step1'), {displayMode: true});
+                katex.render('2x + 3', document.getElementById('ex-step2'), {displayMode: true});
+            } else if (currentQuestionType === 2) {
+                exampleHTML = `
+                    <div><p class="font-bold">Problem:</p><span id="ex-problem"></span></div>
+                    <div><p class="font-bold">Step 1: Factorise the numerator</p><p>Find a common factor in both terms of the numerator.</p><span id="ex-step1"></span></div>
+                    <div><p class="font-bold">Step 2: Rewrite the fraction</p><p>Use the factorised numerator in the fraction.</p><span id="ex-step2"></span></div>
+                    <div><p class="font-bold">Step 3: Cancel common factors</p><p>Cancel the term that appears in both the numerator and denominator.</p><span id="ex-step3"></span></div>`;
+                modalContent.innerHTML = exampleHTML;
+                katex.render('\\frac{4x + 8}{x + 2}', document.getElementById('ex-problem'), {displayMode: true});
+                katex.render('4(x + 2)', document.getElementById('ex-step1'), {displayMode: true});
+                katex.render('\\frac{4(x + 2)}{x + 2}', document.getElementById('ex-step2'), {displayMode: true});
+                katex.render('\\frac{4\\cancel{(x + 2)}}{\\cancel{(x + 2)}} = 4', document.getElementById('ex-step3'), {displayMode: true});
+            } else if (currentQuestionType === 3){
+                 exampleHTML = `
+                    <div><p class="font-bold">Problem:</p><span id="ex-problem"></span></div>
+                    <div><p class="font-bold">Step 1: Factorise the numerator</p><p>Find a common factor for the top terms.</p><span id="ex-step1"></span></div>
+                    <div><p class="font-bold">Step 2: Factorise the denominator</p><p>Find a common factor for the bottom terms.</p><span id="ex-step2"></span></div>
+                    <div><p class="font-bold">Step 3: Cancel common factors</p><p>Cancel the identical brackets from the top and bottom.</p><span id="ex-step3"></span></div>`;
+                modalContent.innerHTML = exampleHTML;
+                katex.render('\\frac{6x + 9}{4x + 6}', document.getElementById('ex-problem'), {displayMode: true});
+                katex.render('3(2x + 3)', document.getElementById('ex-step1'), {displayMode: true});
+                katex.render('2(2x + 3)', document.getElementById('ex-step2'), {displayMode: true});
+                katex.render('\\frac{3\\cancel{(2x + 3)}}{2\\cancel{(2x + 3)}} = \\frac{3}{2}', document.getElementById('ex-step3'), {displayMode: true});
+            } else if (currentQuestionType === 4) {
+                 exampleHTML = `
+                    <div><p class="font-bold">Problem:</p><span id="ex-problem"></span></div>
+                    <div><p class="font-bold">Step 1: Factorise the numerator</p><span id="ex-step1"></span></div>
+                    <div><p class="font-bold">Step 2: Factorise the denominator</p><p>Find two numbers that multiply to 6 and add to 5 (which are 2 and 3).</p><span id="ex-step2"></span></div>
+                    <div><p class="font-bold">Step 3: Cancel common factors</p><span id="ex-step3"></span></div>`;
+                modalContent.innerHTML = exampleHTML;
+                katex.render('\\frac{2x + 4}{x^2 + 5x + 6}', document.getElementById('ex-problem'), {displayMode: true});
+                katex.render('2(x + 2)', document.getElementById('ex-step1'), {displayMode: true});
+                katex.render('(x+2)(x+3)', document.getElementById('ex-step2'), {displayMode: true});
+                katex.render('\\frac{2\\cancel{(x + 2)}}{\\cancel{(x + 2)}(x+3)} = \\frac{2}{x+3}', document.getElementById('ex-step3'), {displayMode: true});
+            } else { // Type 5
+                 exampleHTML = `
+                    <div><p class="font-bold">Problem:</p><span id="ex-problem"></span></div>
+                    <div><p class="font-bold">Step 1: Factorise the numerator</p><span id="ex-step1"></span></div>
+                    <div><p class="font-bold">Step 2: Factorise the denominator</p><p>This is a difference of two squares: a²-b² = (a-b)(a+b).</p><span id="ex-step2"></span></div>
+                    <div><p class="font-bold">Step 3: Cancel common factors</p><span id="ex-step3"></span></div>`;
+                modalContent.innerHTML = exampleHTML;
+                katex.render('\\frac{3x - 9}{x^2 - 9}', document.getElementById('ex-problem'), {displayMode: true});
+                katex.render('3(x - 3)', document.getElementById('ex-step1'), {displayMode: true});
+                katex.render('(x-3)(x+3)', document.getElementById('ex-step2'), {displayMode: true});
+                katex.render('\\frac{3\\cancel{(x - 3)}}{\\cancel{(x - 3)}(x+3)} = \\frac{3}{x+3}', document.getElementById('ex-step3'), {displayMode: true});
+            }
+        }
+        
+        function toggleModal() {
+            if (exampleModal.classList.contains('hidden')) {
+                renderExample();
+            }
+            exampleModal.classList.toggle('hidden');
+        }
+
+        let leveledUp = false; 
+        function updateCockatiel(state, message) {
+            if (!cockatiel) return;
+            cockatiel.classList.remove('cockatiel-happy', 'cockatiel-sad', 'cockatiel-idle');
+            void cockatiel.offsetWidth; 
+            leveledUp = /level up/i.test(message);
+
+            if (state === 'happy') {
+                cockatiel.classList.add('cockatiel-happy');
+            } else if (state === 'sad') {
+                cockatiel.classList.add('cockatiel-sad');
+            }
+
+            speechBubble.textContent = message;
+            speechBubble.style.opacity = '1';
+
+            setTimeout(() => {
+                speechBubble.style.opacity = '0';
+                cockatiel.classList.add('cockatiel-idle');
+            }, 2500);
+        }
+
+        function triggerConfetti() {
+            confettiPieces = [];
+            for (let i = 0; i < 100; i++) {
+                confettiPieces.push({
+                    x: Math.random() * confettiCanvas.width,
+                    y: -20,
+                    size: Math.random() * 8 + 4,
+                    speed: Math.random() * 5 + 2,
+                    angle: Math.random() * Math.PI * 2,
+                    color: `hsl(${Math.random() * 360}, 90%, 65%)`,
+                    rotation: Math.random() * 360
+                });
+            }
+            if (confettiPieces.length > 0) animateConfetti();
+        }
+
+        function animateConfetti() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            
+            let stillAnimating = false;
+            confettiPieces.forEach(p => {
+                p.y += p.speed;
+                p.x += Math.sin(p.angle);
+                p.rotation += p.speed / 2;
+
+                if (p.y < confettiCanvas.height) {
+                    stillAnimating = true;
+                    confettiCtx.save();
+                    confettiCtx.fillStyle = p.color;
+                    confettiCtx.translate(p.x + p.size / 2, p.y + p.size / 2);
+                    confettiCtx.rotate(p.rotation * Math.PI / 180);
+                    confettiCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                    confettiCtx.restore();
+                }
+            });
+
+            if (stillAnimating) {
+                requestAnimationFrame(animateConfetti);
+            } else {
+                 confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            }
+        }
+        
+        document.body.addEventListener('click', initAudio, { once: true });
+
+        checkBtn.addEventListener('click', () => { playClickSound(); checkAnswer(); });
+        nextBtn.addEventListener('click', () => { playClickSound(); generateQuestion(); });
+        answerInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !checkBtn.classList.contains('hidden')) {
+                playClickSound();
+                checkAnswer();
+            }
+        });
+        
+        exampleBtn.addEventListener('click', () => { playClickSound(); toggleModal(); });
+        closeModalBtn.addEventListener('click', () => { playClickSound(); toggleModal(); });
+        exampleModal.addEventListener('click', (e) => {
+            if (e.target === exampleModal) {
+                playClickSound();
+                toggleModal();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDifficulty();
+            generateQuestion();
+            cockatiel.classList.add('cockatiel-idle');
+             setTimeout(() => {
+                speechBubble.textContent = "Let's do some math!";
+                speechBubble.style.opacity = '1';
+            }, 500);
+             setTimeout(() => {
+                speechBubble.style.opacity = '0';
+            }, 3500);
+        });
+    </script>
+
+</body>
+</html>
+
