@@ -1,28 +1,138 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mr. Deng's Maths Apps</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for better typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; text-align: center; margin-top: 50px; }
-        ul { list-style: none; padding: 0; }
-        li { margin: 15px 0; }
-        a { font-size: 1.5rem; text-decoration: none; }
+        /* Use the Inter font family */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Add a subtle background pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle at top right, rgba(121, 143, 223, 0.1), transparent 40%),
+                              radial-gradient(circle at bottom left, rgba(121, 143, 223, 0.1), transparent 40%);
+            background-repeat: no-repeat;
+            background-position: top right, bottom left;
+            z-index: -1;
+        }
     </style>
 </head>
-<body>
-    <h1>Maths Learning Apps 🚀</h1>
-    <p>Choose a topic to practise.</p>
+<body class="bg-slate-50 text-slate-800 antialiased">
 
-    <ul>
-        <li>
-            <a href="./Distance vs Time graph/">Distance vs Time graph</a>
-            <a href="./Set notation in Venn Diagram/">Set notation in Venn Diagram</a>
-            <a href="./Integration Practice/">Integration</a>
-            <a href="./Simplify Fractions/">Simplify Fractions</a>
-            <a href="./Calculus Cricket/">Calculus Cricket</a>
-        </li>
-        </ul>
+    <!-- Header Section -->
+    <header class="text-center py-16 px-4">
+        <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-slate-900">
+            Mr. Deng's Maths Apps 🚀
+        </h1>
+        <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-600">
+            Welcome! I'm a maths teacher at Barker College, and I've built these small web apps to help you practice key topics. Select an app below to get started.
+        </p>
+    </header>
+
+    <!-- Main Content: App Grid -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+
+            <!-- Card 1: Distance vs Time graph -->
+            <a href="./Distance vs Time graph/" class="group block p-8 bg-white rounded-2xl shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out border border-slate-200">
+                <div class="flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 text-blue-600 mb-6">
+                    <!-- SVG Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16V4a1 1 0 00-1-1H4a1 1 0 00-1 1v12a1 1 0 001 1h8a1 1 0 001-1zm-5-4l3-3 2 2 3-3" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 20h18" />
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold text-slate-900">Distance vs Time Graph</h2>
+                <p class="mt-2 text-slate-600">Analyze and interpret graphs that plot distance against time.</p>
+            </a>
+
+            <!-- Card 2: Set notation in Venn Diagram -->
+            <a href="./Set notation in Venn Diagram/" class="group block p-8 bg-white rounded-2xl shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out border border-slate-200">
+                <div class="flex items-center justify-center h-12 w-12 rounded-full bg-green-100 text-green-600 mb-6">
+                    <!-- SVG Icon -->
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.5 14.5a5 5 0 100-10 5 5 0 000 10z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.5 14.5a5 5 0 100-10 5 5 0 000 10z" />
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold text-slate-900">Set Notation & Venn Diagrams</h2>
+                <p class="mt-2 text-slate-600">Master set notation and visualize relationships with Venn diagrams.</p>
+            </a>
+
+            <!-- Card 3: Integration -->
+            <a href="./Integration Practice/" class="group block p-8 bg-white rounded-2xl shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out border border-slate-200">
+                <div class="flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 text-indigo-600 mb-6">
+                    <!-- SVG Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19C9 20.1046 9.89543 21 11 21C12.1046 21 13 20.1046 13 19V5C13 3.89543 12.1046 3 11 3C9.89543 3 9 3.89543 9 5" />
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold text-slate-900">Integration Practice</h2>
+                <p class="mt-2 text-slate-600">Find the area under the curve with definite and indefinite integrals.</p>
+            </a>
+
+            <!-- Card 4: Simplify Fractions -->
+            <a href="./Simplify Fractions/" class="group block p-8 bg-white rounded-2xl shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out border border-slate-200">
+                <div class="flex items-center justify-center h-12 w-12 rounded-full bg-red-100 text-red-600 mb-6">
+                    <!-- SVG Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-3-4v8M17 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2z" />
+                        <line x1="8" y1="12" x2="16" y2="12" />
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold text-slate-900">Simplify Fractions</h2>
+                <p class="mt-2 text-slate-600">Sharpen your skills by simplifying fractions to their lowest terms.</p>
+            </a>
+            
+            <!-- Card 5: Calculus Cricket -->
+            <a href="./Calculus Cricket/" class="group block p-8 bg-white rounded-2xl shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out border border-slate-200">
+                <div class="flex items-center justify-center h-12 w-12 rounded-full bg-amber-100 text-amber-600 mb-6">
+                    <!-- SVG Icon -->
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m14 20-3-3 3-3"/>
+                        <path d="M4 14v6"/>
+                        <path d="M9.5 5.5 16 2l-4 4"/>
+                        <path d="m11 8 5-5"/>
+                        <circle cx="6" cy="6" r="2"/>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold text-slate-900">Calculus Cricket</h2>
+                <p class="mt-2 text-slate-600">A fun game applying calculus concepts to the trajectory of a ball.</p>
+            </a>
+            
+            <!-- Add more cards here as you create more apps -->
+            <div class="group flex flex-col items-center justify-center p-8 bg-slate-100 rounded-2xl border-2 border-dashed border-slate-300">
+                <div class="text-4xl text-slate-400">🧠</div>
+                 <h2 class="mt-4 text-xl font-semibold text-slate-700">More Apps</h2>
+                <p class="mt-2 text-center text-slate-500">New learning tools and practice apps are coming soon!</p>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer Section -->
+    <footer class="text-center py-10 mt-12 border-t border-slate-200">
+        <p class="text-slate-500">&copy; <span id="current-year"></span> Mr. Deng. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        // Set the current year in the footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
 
 </body>
 </html>
