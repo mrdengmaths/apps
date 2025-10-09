@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Like Terms Collector</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: none; /* Prevents scrolling on touch devices when dragging */
+        }
+        .term {
+            cursor: grab;
+            transition: all 0.2s ease-in-out;
+            touch-action: none;
+        }
+        .term:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+        .drop-zone {
+            transition: all 0.2s ease-in-out;
+            min-height: 80px;
+        }
+        .drag-over {
+            background-color: #d1fae5; /* A light green to indicate a valid drop target */
+            border-style: dashed;
+            border-color: #10b981;
+        }
+        .feedback-correct {
+            color: #059669;
+        }
+        .feedback-incorrect {
+            color: #dc2626;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8">
+        
+        <header class="text-center mb-6">
+            <h1 id="main-title" class="text-3xl md:text-4xl font-bold text-gray-800">Like Terms Collector</h1>
+            <div class="mt-2 flex justify-center items-center gap-6 text-gray-700 font-semibold">
+                <span id="level-indicator">Level: 1</span>
+                <span id="score-indicator">Correct: 0 / 5</span>
+            </div>
+            <p id="sub-header" class="text-gray-600 mt-2">Drag the like terms into the box, collect them, and build your final simplified answer!</p>
+        </header>
+
+        <!-- Expression Area -->
+        <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+            <h2 class="text-lg font-semibold text-gray-700 mb-2 text-center">The Expression:</h2>
+            <p id="original-expression-text" class="text-center text-gray-600 font-mono text-xl mb-4 h-8"></p>
+            <div id="expression-container" class="flex flex-wrap justify-center items-center gap-3 text-2xl font-medium min-h-[50px]">
+                <!-- Terms will be generated here -->
+            </div>
+        </div>
+
+        <!-- Like Terms Collection Box -->
+        <div class="mb-6">
+            <h2 id="collection-box-title" class="text-lg font-semibold text-gray-700 mb-3 text-center">1. Drag Like Terms Here</h2>
+            <div id="like-terms-box" class="drop-zone border-2 border-dashed border-blue-400 bg-blue-50 rounded-lg p-4 flex flex-wrap justify-center items-center gap-3">
+                <!-- Drop terms here -->
+            </div>
+            
+            <!-- Level 1 Controls -->
+            <div id="level-1-controls" class="flex justify-center mt-4">
+                <button id="collect-terms-btn-l1" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none">
+                    Collect Terms
+                </button>
+            </div>
+
+            <!-- Level 2 Controls -->
+            <div id="level-2-controls" class="hidden flex justify-center items-center mt-4 gap-4">
+                <input type="number" id="coefficient-input" placeholder="Enter coefficient" class="text-center rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 w-40 py-2">
+                <button id="collect-terms-btn-l2" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none">
+                    Collect Terms
+                </button>
+            </div>
+        </div>
+        
+        <!-- Simplified Terms & Final Answer Box -->
+        <div class="mt-6">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-700 mb-3 text-center">2. Drag Your Final Answer Here</h2>
+                <div id="final-answer-box" class="drop-zone border-2 border-dashed border-green-400 bg-green-50 rounded-lg p-4 flex flex-wrap justify-center items-center gap-3">
+                    <!-- Final answer terms are dropped here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons and Feedback -->
+        <div class="mt-8 text-center">
+            <button id="check-answer-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105 text-lg disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none">
+                Check My Answer
+            </button>
+            <button id="new-question-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105 text-lg ml-4">
+                New Question
+            </button>
+            <div id="feedback-message" class="mt-4 text-xl font-semibold h-8"></div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const expressionContainer = document.getElementById('expression-container');
+        const likeTermsBox = document.getElementById('like-terms-box');
+        const finalAnswerBox = document.getElementById('final-answer-box');
+        const checkAnswerBtn = document.getElementById('check-answer-btn');
+        const newQuestionBtn = document.getElementById('new-question-btn');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const dropZones = document.querySelectorAll('.drop-zone');
+        const collectTermsBtnL1 = document.getElementById('collect-terms-btn-l1');
+        const collectTermsBtnL2 = document.getElementById('collect-terms-btn-l2');
+        const coefficientInput = document.getElementById('coefficient-input');
+        const levelIndicator = document.getElementById('level-indicator');
+        const scoreIndicator = document.getElementById('score-indicator');
+
+        // Game State
+        let draggedElement = null;
+        let originalExpression = [];
+        let correctAnswer = '';
+        let lastFinalAnswerSignature = '';
+        let level = 1;
+        let correctAnswersCount = 0;
+
+        // --- Drag and Drop Logic ---
+
+        function handleDragStart(e) {
+            draggedElement = this;
+            setTimeout(() => this.style.opacity = '0.5', 0);
+            if (e.dataTransfer) {
+                e.dataTransfer.setData('text/plain', null); // For Firefox
+            }
+        }
+
+        function handleDragEnd(e) {
+            this.style.opacity = '1';
+            draggedElement = null;
+        }
+        
+        function handleTouchStart(e) {
+            draggedElement = this;
+            this.style.position = 'absolute';
+            this.style.zIndex = '1000';
+            document.body.appendChild(this);
+            moveAt(e.touches[0].pageX, e.touches[0].pageY);
+        }
+
+        function handleTouchMove(e) {
+            if (!draggedElement) return;
+            e.preventDefault();
+            moveAt(e.touches[0].pageX, e.touches[0].pageY);
+        }
+        
+        function moveAt(pageX, pageY) {
+            draggedElement.style.left = pageX - draggedElement.offsetWidth / 2 + 'px';
+            draggedElement.style.top = pageY - draggedElement.offsetHeight / 2 + 'px';
+        }
+
+        function handleTouchEnd(e) {
+            if (!draggedElement) return;
+            
+            draggedElement.style.position = 'static';
+            draggedElement.style.left = 'auto';
+            draggedElement.style.top = 'auto';
+            draggedElement.style.zIndex = 'auto';
+            
+            const touch = e.changedTouches[0];
+            const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+            const dropZone = dropTarget.closest('.drop-zone');
+            
+            if (dropZone) {
+                dropZone.appendChild(draggedElement);
+            } else {
+                 if(!likeTermsBox.contains(draggedElement) && !finalAnswerBox.contains(draggedElement)){
+                    expressionContainer.appendChild(draggedElement);
+                    redrawExpressionContainer();
+                 }
+            }
+            draggedElement = null;
+        }
+
+        function handleDragOver(e) { e.preventDefault(); }
+        function handleDragEnter(e) { e.preventDefault(); this.classList.add('drag-over'); }
+        function handleDragLeave(e) { this.classList.remove('drag-over'); }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            if (draggedElement) {
+                this.appendChild(draggedElement);
+            }
+        }
+
+        function makeTermDraggable(termElement) {
+            termElement.setAttribute('draggable', true);
+            termElement.addEventListener('dragstart', handleDragStart);
+            termElement.addEventListener('dragend', handleDragEnd);
+            termElement.addEventListener('touchstart', handleTouchStart, {passive: false});
+            termElement.addEventListener('touchmove', handleTouchMove, {passive: false});
+            termElement.addEventListener('touchend', handleTouchEnd);
+        }
+
+        // --- Game Logic ---
+
+        function createTermElement(coefficient, variable) {
+            const term = document.createElement('div');
+            term.className = 'term bg-yellow-200 text-yellow-800 font-bold py-2 px-4 rounded-lg shadow select-none flex items-baseline';
+            term.dataset.coefficient = coefficient;
+            term.dataset.variable = variable;
+            
+            let termHTML = '';
+            if (coefficient !== 0) {
+                if (Math.abs(coefficient) !== 1 || variable === '') {
+                    termHTML += coefficient;
+                } else if (coefficient === -1) {
+                    termHTML += '-';
+                }
+            }
+
+            if (variable.includes('^')) {
+                const [base, exponent] = variable.split('^');
+                termHTML += `${base}<sup>${exponent}</sup>`;
+            } else {
+                termHTML += variable;
+            }
+
+            term.innerHTML = termHTML;
+            makeTermDraggable(term);
+            return term;
+        }
+
+        function generateExpression() {
+            updateScoreDisplay();
+            expressionContainer.innerHTML = '';
+            likeTermsBox.innerHTML = '';
+            finalAnswerBox.innerHTML = '';
+            feedbackMessage.textContent = '';
+            document.getElementById('original-expression-text').textContent = '';
+            lastFinalAnswerSignature = '';
+            
+            let variables = ['x', 'y', 'a', 'b', 'xy', 'z'];
+            
+            if (level === 3) {
+                variables = [];
+                const pronumerals = ['x', 'y', 'a'];
+                pronumerals.forEach(p => {
+                    for (let i = 2; i <= 5; i++) {
+                        variables.push(`${p}^${i}`);
+                    }
+                });
+            }
+
+            const usedVariables = new Set();
+            originalExpression = [];
+
+            const numGroups = Math.floor(Math.random() * 2) + 2;
+            for (let i = 0; i < numGroups; i++) {
+                let variable;
+                do {
+                    variable = variables[Math.floor(Math.random() * variables.length)];
+                } while (usedVariables.has(variable));
+                usedVariables.add(variable);
+
+                const numTermsInGroup = Math.floor(Math.random() * 2) + 2;
+                for (let j = 0; j < numTermsInGroup; j++) {
+                    const coefficient = Math.floor(Math.random() * 19) - 9;
+                    if (coefficient !== 0) {
+                        originalExpression.push({ coefficient, variable });
+                    }
+                }
+            }
+
+            const constant = Math.floor(Math.random() * 19) - 9;
+            if (constant !== 0) {
+                 originalExpression.push({ coefficient: constant, variable: '' });
+            }
+
+            originalExpression.sort(() => Math.random() - 0.5);
+
+            const expressionString = originalExpression.map(({ coefficient, variable }, index) => {
+                let termText = '';
+                const absCoeff = Math.abs(coefficient);
+                if (index > 0) { termText += (coefficient < 0) ? ' - ' : ' + '; } 
+                else { if (coefficient < 0) termText += '-'; }
+                if (absCoeff !== 1 || variable === '') { termText += absCoeff; }
+                
+                if (variable.includes('^')) {
+                    const [base, exponent] = variable.split('^');
+                    termText += `${base}<sup>${exponent}</sup>`;
+                } else {
+                    termText += variable;
+                }
+                return termText;
+            }).join('');
+
+            document.getElementById('original-expression-text').innerHTML = expressionString;
+
+            originalExpression.forEach(({ coefficient, variable }) => {
+                const termEl = createTermElement(coefficient, variable);
+                expressionContainer.appendChild(termEl);
+            });
+
+            redrawExpressionContainer();
+            calculateCorrectAnswer();
+            updateButtonStates();
+        }
+        
+        function calculateCorrectAnswer() {
+            const termMap = new Map();
+            originalExpression.forEach(({coefficient, variable}) => {
+                termMap.set(variable, (termMap.get(variable) || 0) + coefficient);
+            });
+            let result = [];
+            termMap.forEach((coeff, vari) => {
+                if (coeff !== 0) { result.push({coefficient: coeff, variable: vari}); }
+            });
+            result.sort((a, b) => {
+                if (a.variable === '') return 1; if (b.variable === '') return -1;
+                return a.variable.localeCompare(b.variable);
+            });
+            correctAnswer = result.map(t => `${t.coefficient}${t.variable}`).join(',');
+        }
+
+        function collectTerms() {
+            const termsInBox = Array.from(likeTermsBox.children);
+            if (termsInBox.length < 2) {
+                showFeedback('You need at least two terms to collect!', 'incorrect');
+                return;
+            }
+
+            const firstVariable = termsInBox[0].dataset.variable;
+            const areLikeTerms = termsInBox.every(term => term.dataset.variable === firstVariable);
+
+            if (!areLikeTerms) {
+                showFeedback('Oops! Those are not like terms. Returning them.', 'incorrect');
+                termsInBox.forEach(term => expressionContainer.appendChild(term));
+                likeTermsBox.innerHTML = '';
+                redrawExpressionContainer();
+                return;
+            }
+
+            const totalCoefficient = termsInBox.reduce((sum, term) => sum + parseInt(term.dataset.coefficient), 0);
+
+            if (level >= 2) {
+                const userInput = coefficientInput.value;
+                if (userInput === '') {
+                    showFeedback('Please enter the total coefficient!', 'incorrect');
+                    return;
+                }
+                if (parseInt(userInput, 10) !== totalCoefficient) {
+                    showFeedback('That coefficient is not correct. Try again!', 'incorrect');
+                    return;
+                }
+            }
+
+            if (totalCoefficient !== 0) {
+                const simplifiedTerm = createTermElement(totalCoefficient, firstVariable);
+                expressionContainer.appendChild(simplifiedTerm);
+            }
+
+            likeTermsBox.innerHTML = '';
+            coefficientInput.value = '';
+            redrawExpressionContainer();
+            showFeedback('Terms collected successfully!', 'correct');
+            updateButtonStates();
+        }
+
+        function checkAnswer() {
+            const answerTerms = Array.from(finalAnswerBox.children).filter(el => el.classList.contains('term'));
+            const remainingTerms = Array.from(expressionContainer.children).filter(el => el.classList.contains('term')).length;
+
+            if (remainingTerms > 0) {
+                showFeedback('It looks like you haven\'t simplified all the terms yet!', 'incorrect');
+                return;
+            }
+            
+            const studentAnswerArr = answerTerms.map(term => ({
+                coefficient: parseInt(term.dataset.coefficient), variable: term.dataset.variable
+            }));
+            
+            studentAnswerArr.sort((a, b) => {
+                if (a.variable === '') return 1; if (b.variable === '') return -1;
+                return a.variable.localeCompare(b.variable);
+            });
+
+            const studentAnswerStr = studentAnswerArr.map(t => `${t.coefficient}${t.variable}`).join(',');
+            
+            if (studentAnswerStr === correctAnswer) {
+                showFeedback('Excellent! That is the correct simplified expression!', 'correct');
+                checkAnswerBtn.disabled = true;
+                correctAnswersCount++;
+                updateScoreDisplay();
+                updateLevelProgress();
+            } else {
+                showFeedback('Not quite right. Have another look at your terms.', 'incorrect');
+            }
+        }
+        
+        function showFeedback(message, type) {
+            feedbackMessage.textContent = message;
+            feedbackMessage.className = `mt-4 text-xl font-semibold h-8 text-center feedback-${type}`;
+            setTimeout(() => { if (feedbackMessage.textContent === message) { feedbackMessage.textContent = ''; } }, 3000);
+        }
+
+        function updateScoreDisplay() {
+            if (level === 1 || level === 2) {
+                scoreIndicator.textContent = `Correct: ${correctAnswersCount} / 5`;
+            } else {
+                scoreIndicator.textContent = `Correct: ${correctAnswersCount}`;
+            }
+        }
+
+        function updateButtonStates() {
+            const termsInCollectionBox = likeTermsBox.children.length;
+            collectTermsBtnL1.disabled = termsInCollectionBox < 2;
+            collectTermsBtnL2.disabled = termsInCollectionBox < 2;
+            const totalTermsLeft = Array.from(expressionContainer.children).filter(el => el.classList.contains('term')).length + termsInCollectionBox;
+            checkAnswerBtn.disabled = finalAnswerBox.children.length === 0 || totalTermsLeft > 0;
+        }
+
+        function redrawExpressionContainer() {
+            const allTermElements = Array.from(expressionContainer.querySelectorAll('.term'));
+            expressionContainer.innerHTML = '';
+
+            allTermElements.forEach((term, index) => {
+                const coefficient = parseInt(term.dataset.coefficient, 10);
+                if (index > 0 && coefficient >= 0) {
+                    const plus = document.createElement('span');
+                    plus.className = 'text-2xl font-medium text-gray-600';
+                    plus.textContent = '+';
+                    expressionContainer.appendChild(plus);
+                }
+                expressionContainer.appendChild(term);
+            });
+        }
+
+        function redrawFinalAnswerBox() {
+            const allTermElements = Array.from(finalAnswerBox.querySelectorAll('.term'));
+            const currentSignature = allTermElements.map(el => el.textContent).join(',');
+
+            if (currentSignature === lastFinalAnswerSignature) return;
+            lastFinalAnswerSignature = currentSignature;
+            finalAnswerBox.innerHTML = '';
+
+            allTermElements.forEach((term, index) => {
+                const coefficient = parseInt(term.dataset.coefficient, 10);
+                if (index > 0 && coefficient >= 0) {
+                    const plus = document.createElement('span');
+                    plus.className = 'text-2xl font-medium text-gray-600';
+                    plus.textContent = '+';
+                    finalAnswerBox.appendChild(plus);
+                }
+                finalAnswerBox.appendChild(term);
+            });
+        }
+        
+        function updateLevelProgress() {
+            if (level === 1 && correctAnswersCount >= 5) {
+                newQuestionBtn.textContent = 'Next Level';
+                newQuestionBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                newQuestionBtn.classList.add('bg-purple-600', 'hover:bg-purple-700');
+            } else if (level === 2 && correctAnswersCount >= 5) {
+                newQuestionBtn.textContent = 'Next Level';
+                newQuestionBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                newQuestionBtn.classList.add('bg-teal-600', 'hover:bg-teal-700');
+            }
+        }
+        
+        function startLevel2() {
+            level = 2;
+            correctAnswersCount = 0;
+            levelIndicator.textContent = 'Level: 2';
+            updateScoreDisplay();
+
+            document.getElementById('level-1-controls').classList.add('hidden');
+            document.getElementById('level-2-controls').classList.remove('hidden');
+            
+            document.getElementById('main-title').textContent = 'Like Terms Collector - Level 2';
+            document.getElementById('collection-box-title').textContent = '1. Drag Like Terms & Enter Coefficient';
+
+            newQuestionBtn.textContent = 'New Question';
+            newQuestionBtn.classList.remove('bg-purple-600', 'hover:bg-purple-700');
+            newQuestionBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+            
+            generateExpression();
+        }
+
+        function startLevel3() {
+            level = 3;
+            correctAnswersCount = 0;
+            levelIndicator.textContent = 'Level: 3';
+            updateScoreDisplay();
+            
+            document.getElementById('main-title').textContent = 'Like Terms Collector - Level 3';
+            document.getElementById('sub-header').textContent = 'Now with powers! Collect the terms with the same variable and power.';
+
+            newQuestionBtn.textContent = 'New Question';
+            newQuestionBtn.classList.remove('bg-teal-600', 'hover:bg-teal-700');
+            newQuestionBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+
+            generateExpression();
+        }
+
+        // --- Event Listeners ---
+        collectTermsBtnL1.addEventListener('click', collectTerms);
+        collectTermsBtnL2.addEventListener('click', collectTerms);
+        checkAnswerBtn.addEventListener('click', checkAnswer);
+
+        newQuestionBtn.addEventListener('click', () => {
+            const btnText = newQuestionBtn.textContent;
+            if (btnText === 'Next Level' && level === 1) {
+                startLevel2();
+            } else if (btnText === 'Next Level' && level === 2) {
+                startLevel3();
+            } else {
+                generateExpression();
+            }
+        });
+
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', handleDragOver);
+            zone.addEventListener('dragenter', handleDragEnter);
+            zone.addEventListener('dragleave', handleDragLeave);
+            zone.addEventListener('drop', handleDrop);
+        });
+        
+        const observer = new MutationObserver((mutationsList) => {
+            for (const mutation of mutationsList) {
+                if (mutation.target === finalAnswerBox) redrawFinalAnswerBox();
+            }
+            updateButtonStates();
+        });
+        [likeTermsBox, finalAnswerBox, expressionContainer].forEach(container => {
+            observer.observe(container, { childList: true });
+        });
+        
+        // Initial setup
+        generateExpression();
+    </script>
+</body>
+</html>
+
