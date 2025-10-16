@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let canvasSize = { width: 500, height: 500 };
     let workingCanvas;
     let correctAttempts = 0;
-    let sketchCheckAllowed = true; // --- NEW: Prevent multiple checks
+    let sketchCheckAllowed = true;
     
     // --- Handwriting Canvas Setup (Optimized for High-DPI) ---
     function setupHandwritingCanvas(canvasId, undoBtnId) {
@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function generateNewQuestion() {
         currentQuestion = questionGenerator.parabolaStandard();
-        sketchCheckAllowed = true; // --- NEW: Re-enable check on new question
+        sketchCheckAllowed = true;
 
         questionEl.innerHTML = `Sketch the graph of: $$${currentQuestion.katex}$$`;
         renderMathInElement(questionEl);
@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
         inputsSolutionEl.classList.add('hidden');
         showInputsSolutionBtn.classList.add('hidden');
         showSolutionBtn.textContent = 'Show Curve';
-        checkShapeBtn.disabled = false; // --- NEW: Re-enable button
+        checkShapeBtn.disabled = false;
         redrawAll();
     }
     
@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function checkShape() {
-        if (!currentQuestion || !sketchCheckAllowed) return; // --- NEW: Check if allowed
+        if (!currentQuestion || !sketchCheckAllowed) return;
         const shapeHints = analyzeShape(currentQuestion, drawingHistory);
         shapeFeedbackEl.classList.remove('hidden', 'bg-green-200/20', 'text-green-300', 'bg-red-200/20', 'text-red-300');
         if (shapeHints.length === 0) {
@@ -314,8 +314,8 @@ document.addEventListener('DOMContentLoaded', () => {
             triggerConfetti();
             correctAttempts++;
             correctAttemptsEl.textContent = correctAttempts;
-            sketchCheckAllowed = false; // --- NEW: Disable after correct answer
-            checkShapeBtn.disabled = true; // --- NEW: Visually disable button
+            sketchCheckAllowed = false;
+            checkShapeBtn.disabled = true;
         } else {
             shapeFeedbackEl.classList.add('bg-red-200/20', 'text-red-300');
             shapeFeedbackEl.innerHTML = shapeHints.join('<br>');
@@ -378,19 +378,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- NEW: Fullscreen Logic ---
+    // --- FIXED: Fullscreen Logic ---
     function toggleFullScreen() {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen();
-        } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            }
+        const doc = window.document;
+        const docEl = doc.documentElement;
+
+        const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
+        const cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+        if(!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+            requestFullScreen.call(docEl);
+        }
+        else {
+            cancelFullScreen.call(doc);
         }
     }
 
     function updateFullscreenIcons() {
-        if (document.fullscreenElement) {
+        const doc = window.document;
+        if (doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement) {
             fullscreenOpenIcon.classList.add('hidden');
             fullscreenCloseIcon.classList.remove('hidden');
         } else {
@@ -399,12 +405,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- NEW: Anti-Cheating Measures ---
+    // --- Anti-Cheating Measures ---
     function preventCheating() {
-        // Disable right-click context menu
         document.addEventListener('contextmenu', event => event.preventDefault());
-
-        // Disable common developer tool keyboard shortcuts
         document.addEventListener('keydown', event => {
             if (event.key === 'F12' || 
                (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'J' || event.key === 'C')) ||
@@ -413,7 +416,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
 
     // --- Initial Setup and Event Listeners ---
     workingCanvas = setupHandwritingCanvas('working-canvas', 'undo-working-btn');
@@ -435,7 +437,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     fullscreenBtn.addEventListener('click', toggleFullScreen);
+    // FIXED: Add all vendor-prefixed event listeners
     document.addEventListener('fullscreenchange', updateFullscreenIcons);
+    document.addEventListener('webkitfullscreenchange', updateFullscreenIcons);
+    document.addEventListener('mozfullscreenchange', updateFullscreenIcons);
+    document.addEventListener('MSFullscreenChange', updateFullscreenIcons);
+
 
     undoBtn.addEventListener('click', () => { drawingHistory.pop(); redrawAll(); });
     canvas.addEventListener('mousedown', startDrawing);
