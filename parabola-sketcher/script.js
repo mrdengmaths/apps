@@ -21,8 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const solutionCanvas = document.getElementById('solution-canvas');
     const ctx = canvas.getContext('2d');
     const solutionCtx = solutionCanvas.getContext('2d');
-    const keyPointContainer = document.getElementById('key-point-container');
-    const keyPointLabel = document.getElementById('key-point-label');
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+    const fullscreenOpenIcon = document.getElementById('fullscreen-open-icon');
+    const fullscreenCloseIcon = document.getElementById('fullscreen-close-icon');
+    const correctAttemptsEl = document.getElementById('correct-attempts');
 
     // --- State variables ---
     let drawing = false;
@@ -32,6 +34,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let scale;
     let canvasSize = { width: 500, height: 500 };
     let workingCanvas;
+    let correctAttempts = 0;
+    let sketchCheckAllowed = true; // --- NEW: Prevent multiple checks
     
     // --- Handwriting Canvas Setup (Optimized for High-DPI) ---
     function setupHandwritingCanvas(canvasId, undoBtnId) {
@@ -197,6 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function generateNewQuestion() {
         currentQuestion = questionGenerator.parabolaStandard();
+        sketchCheckAllowed = true; // --- NEW: Re-enable check on new question
 
         questionEl.innerHTML = `Sketch the graph of: $$${currentQuestion.katex}$$`;
         renderMathInElement(questionEl);
@@ -211,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
         inputsSolutionEl.classList.add('hidden');
         showInputsSolutionBtn.classList.add('hidden');
         showSolutionBtn.textContent = 'Show Curve';
+        checkShapeBtn.disabled = false; // --- NEW: Re-enable button
         redrawAll();
     }
     
@@ -299,13 +305,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function checkShape() {
-        if (!currentQuestion) return;
+        if (!currentQuestion || !sketchCheckAllowed) return; // --- NEW: Check if allowed
         const shapeHints = analyzeShape(currentQuestion, drawingHistory);
         shapeFeedbackEl.classList.remove('hidden', 'bg-green-200/20', 'text-green-300', 'bg-red-200/20', 'text-red-300');
         if (shapeHints.length === 0) {
             shapeFeedbackEl.classList.add('bg-green-200/20', 'text-green-300');
             shapeFeedbackEl.textContent = "Excellent sketch! The shape and position look great.";
             triggerConfetti();
+            correctAttempts++;
+            correctAttemptsEl.textContent = correctAttempts;
+            sketchCheckAllowed = false; // --- NEW: Disable after correct answer
+            checkShapeBtn.disabled = true; // --- NEW: Visually disable button
         } else {
             shapeFeedbackEl.classList.add('bg-red-200/20', 'text-red-300');
             shapeFeedbackEl.innerHTML = shapeHints.join('<br>');
@@ -368,6 +378,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- NEW: Fullscreen Logic ---
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+    }
+
+    function updateFullscreenIcons() {
+        if (document.fullscreenElement) {
+            fullscreenOpenIcon.classList.add('hidden');
+            fullscreenCloseIcon.classList.remove('hidden');
+        } else {
+            fullscreenOpenIcon.classList.remove('hidden');
+            fullscreenCloseIcon.classList.add('hidden');
+        }
+    }
+
+    // --- NEW: Anti-Cheating Measures ---
+    function preventCheating() {
+        // Disable right-click context menu
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // Disable common developer tool keyboard shortcuts
+        document.addEventListener('keydown', event => {
+            if (event.key === 'F12' || 
+               (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'J' || event.key === 'C')) ||
+               (event.metaKey && event.altKey && (event.key === 'i' || event.key === 'j' || event.key === 'c'))) {
+                event.preventDefault();
+            }
+        });
+    }
+
+
     // --- Initial Setup and Event Listeners ---
     workingCanvas = setupHandwritingCanvas('working-canvas', 'undo-working-btn');
     
@@ -387,6 +434,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    fullscreenBtn.addEventListener('click', toggleFullScreen);
+    document.addEventListener('fullscreenchange', updateFullscreenIcons);
+
     undoBtn.addEventListener('click', () => { drawingHistory.pop(); redrawAll(); });
     canvas.addEventListener('mousedown', startDrawing);
     canvas.addEventListener('mousemove', draw);
@@ -397,6 +447,8 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('touchend', stopDrawing);
     window.addEventListener('resize', () => { resizeCanvas(); if(workingCanvas) workingCanvas.resize(); });
 
+    // --- Initialize App ---
+    preventCheating();
     resizeCanvas();
     if(workingCanvas) workingCanvas.resize();
     generateNewQuestion();
