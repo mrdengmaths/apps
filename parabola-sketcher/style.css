@@ -101,7 +101,7 @@ input[type="number"]::-webkit-outer-spin-button {
     box-shadow: 0 0 15px rgba(99, 102, 241, 0.6), 0 0 25px rgba(167, 139, 250, 0.5);
 }
 
-/* New Styles for Fullscreen and Score Counter */
+/* Styles for Fullscreen and Score Counter */
 .fullscreen-btn {
     background: none;
     border: none;
@@ -137,5 +137,12 @@ input[type="number"]::-webkit-outer-spin-button {
     font-size: 1.125rem;
     font-weight: 700;
     color: #22c55e; /* green-500 */
+}
+
+/* --- NEW: Styles for level selection --- */
+.level-btn.active {
+    background-color: #4f46e5; /* indigo-600 */
+    color: white;
+    font-weight: 600;
 }
 

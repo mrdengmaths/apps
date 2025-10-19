@@ -25,6 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const fullscreenOpenIcon = document.getElementById('fullscreen-open-icon');
     const fullscreenCloseIcon = document.getElementById('fullscreen-close-icon');
     const correctAttemptsEl = document.getElementById('correct-attempts');
+    const level1Btn = document.getElementById('level-1-btn');
+    const level2Btn = document.getElementById('level-2-btn');
+    const level3Btn = document.getElementById('level-3-btn');
 
     // --- State variables ---
     let drawing = false;
@@ -36,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let workingCanvas;
     let correctAttempts = 0;
     let sketchCheckAllowed = true;
+    let currentLevel = 1; // --- NEW: Track current level
     
     // --- Handwriting Canvas Setup (Optimized for High-DPI) ---
     function setupHandwritingCanvas(canvasId, undoBtnId) {
@@ -76,19 +80,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         function getPos(evt) { const rect = canvas.getBoundingClientRect(); const isTouch = !!evt.touches; return { x: (isTouch ? evt.touches[0].clientX : evt.clientX) - rect.left, y: (isTouch ? evt.touches[0].clientY : evt.clientY) - rect.top }; }
-        
         function start(e) { e.preventDefault(); drawing = true; currentPath = []; currentPath.push(getPos(e)); }
         function stop() { if (!drawing) return; drawing = false; if (currentPath.length > 1) paths.push(currentPath); }
-        
         function draw(e) { 
-            if (!drawing) return; 
-            e.preventDefault(); 
-            const pos = getPos(e); 
-            currentPath.push(pos);
-            ctx.strokeStyle = '#e2e8f0'; 
-            ctx.lineWidth = 2; 
-            ctx.lineCap = 'round'; 
-            ctx.lineJoin = 'round';
+            if (!drawing) return; e.preventDefault(); 
+            const pos = getPos(e); currentPath.push(pos);
+            ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
             ctx.beginPath(); 
             if(currentPath.length > 1) { 
                 ctx.moveTo(currentPath[currentPath.length - 2].x, currentPath[currentPath.length - 2].y); 
@@ -102,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.addEventListener('mouseup', stop); canvas.addEventListener('mouseout', stop);
         canvas.addEventListener('touchstart', start); canvas.addEventListener('touchmove', draw);
         canvas.addEventListener('touchend', stop);
-
         const clear = () => { paths = []; redraw(); };
         return { clear, resize };
     }
@@ -112,20 +108,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = canvas.parentElement; 
         const size = Math.min(container.clientWidth, container.clientHeight);
         const dpr = window.devicePixelRatio || 1;
-
-        canvas.width = size * dpr; 
-        canvas.height = size * dpr;
-        canvas.style.width = `${size}px`;
-        canvas.style.height = `${size}px`;
-        
-        solutionCanvas.width = size * dpr; 
-        solutionCanvas.height = size * dpr;
-        solutionCanvas.style.width = `${size}px`;
-        solutionCanvas.style.height = `${size}px`;
-
-        ctx.scale(dpr, dpr);
-        solutionCtx.scale(dpr, dpr);
-
+        canvas.width = size * dpr; canvas.height = size * dpr;
+        canvas.style.width = `${size}px`; canvas.style.height = `${size}px`;
+        solutionCanvas.width = size * dpr; solutionCanvas.height = size * dpr;
+        solutionCanvas.style.width = `${size}px`; solutionCanvas.style.height = `${size}px`;
+        ctx.scale(dpr, dpr); solutionCtx.scale(dpr, dpr);
         canvasSize = { width: size, height: size };
         scale = size / 22;
         redrawAll();
@@ -149,8 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function redrawAll() {
         drawGrid();
         ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-        ctx.strokeStyle = '#a78bfa'; // Lavender color for drawing
-        ctx.setLineDash([]); // Always solid for user drawing
+        ctx.strokeStyle = '#a78bfa'; ctx.setLineDash([]);
         drawingHistory.forEach(item => {
             if (item.path.length < 2) return;
             ctx.beginPath(); ctx.moveTo(item.path[0].x, item.path[0].y);
@@ -163,15 +149,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function startDrawing(e) { e.preventDefault(); drawing = true; currentPath = []; currentPath.push(getPos(e)); }
     function stopDrawing() { if (!drawing) return; drawing = false; if (currentPath.length > 1) { drawingHistory.push({ path: currentPath }); } redrawAll(); }
     function draw(e) { 
-        if (!drawing) return; 
-        e.preventDefault(); 
-        const pos = getPos(e); 
-        currentPath.push(pos); 
-        ctx.setLineDash([]);
-        ctx.strokeStyle = '#a78bfa';
-        ctx.lineWidth = 3;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        if (!drawing) return; e.preventDefault(); 
+        const pos = getPos(e); currentPath.push(pos); 
+        ctx.setLineDash([]); ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 3;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         ctx.beginPath(); 
         if(currentPath.length > 1) { 
             ctx.moveTo(currentPath[currentPath.length-2].x, currentPath[currentPath.length-2].y); 
@@ -180,17 +161,48 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.stroke(); 
     }
 
-    // --- Question Generation ---
+    // --- Question Generation (NOW WITH LEVELS) ---
     function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-    
-    const questionGenerator = {
-        parabolaStandard: () => {
+    function randNonZero(min, max) { let val = 0; while (val === 0) { val = randInt(min, max); } return val; }
+
+    const questionGenerators = {
+        level1: () => {
+            let a, c, katex;
+            // 50% chance of y=ax^2, 50% chance of y=x^2+c
+            if (Math.random() < 0.5) {
+                // y = ax^2
+                a = randNonZero(-3, 3);
+                c = 0;
+                const a_str = Math.abs(a) === 1 ? (a === 1 ? '' : '-') : a;
+                katex = `y = ${a_str}x^2`;
+            } else {
+                // y = x^2 + c
+                a = 1;
+                c = randNonZero(-8, 8);
+                const c_sign = c >= 0 ? '+' : '-';
+                katex = `y = x^2 ${c_sign} ${Math.abs(c)}`;
+            }
+            const xInts = a > 0 && c <= 0 ? [Math.sqrt(-c/a), -Math.sqrt(-c/a)] : [];
+            return { type: 'parabola', katex, yInts: [c], xInts, plot: x => a*x*x + c, vertex: {h: 0, k: c} };
+        },
+        level2: () => {
+            // y = ax^2 + c
+            const a = randNonZero(-3, 3);
+            const c = randNonZero(-8, 8);
+            const a_str = Math.abs(a) === 1 ? (a === 1 ? '' : '-') : a;
+            const c_sign = c >= 0 ? '+' : '-';
+            const katex = `y = ${a_str}x^2 ${c_sign} ${Math.abs(c)}`;
+            const xInts = (a > 0 && c <= 0) || (a < 0 && c >= 0) ? [Math.sqrt(-c/a), -Math.sqrt(-c/a)] : [];
+            return { type: 'parabola', katex, yInts: [c], xInts, plot: x => a*x*x + c, vertex: {h: 0, k: c} };
+        },
+        level3: () => {
+            // y = ax^2 + bx + c (factorisable)
             const a = [-1, 1][randInt(0,1)]; let r1 = randInt(-8, 8); let r2 = randInt(-8, 8);
             while ((r1 + r2) % 2 !== 0 || r1 === r2) { r1 = randInt(-8, 8); r2 = randInt(-8, 8); }
             const h = (r1 + r2) / 2; const k = a * (h - r1) * (h - r2);
-            if (Math.abs(h) > 10 || Math.abs(k) > 10) return questionGenerator.parabolaStandard();
+            if (Math.abs(h) > 10 || Math.abs(k) > 10) return questionGenerators.level3();
             const b = -a * (r1 + r2); const c = a * r1 * r2;
-            if (Math.abs(c) > 10) return questionGenerator.parabolaStandard();
+            if (Math.abs(c) > 10) return questionGenerators.level3();
             const b_sign = b >= 0 ? '+' : '-'; const c_sign = c >= 0 ? '+' : '-';
             const a_str = Math.abs(a) === 1 ? (a === 1 ? '' : '-') : a;
             const b_str = Math.abs(b) !== 0 ? ` ${b_sign} ${Math.abs(b)}x` : '';
@@ -200,9 +212,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function generateNewQuestion() {
-        currentQuestion = questionGenerator.parabolaStandard();
+        switch(currentLevel) {
+            case 1: currentQuestion = questionGenerators.level1(); break;
+            case 2: currentQuestion = questionGenerators.level2(); break;
+            case 3: currentQuestion = questionGenerators.level3(); break;
+            default: currentQuestion = questionGenerators.level1();
+        }
+        
         sketchCheckAllowed = true;
-
         questionEl.innerHTML = `Sketch the graph of: $$${currentQuestion.katex}$$`;
         renderMathInElement(questionEl);
         
@@ -230,19 +247,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function checkInputs() {
         if (!currentQuestion) return;
-        
         feedbackEl.classList.remove('hidden');
         showInputsSolutionBtn.classList.add('hidden');
         inputsSolutionEl.classList.add('hidden');
-
         const userXInts = Array.from(document.querySelectorAll('.x-intercept-input')).map(i => parseFloat(i.value)).filter(v => !isNaN(v));
         const userYInts = Array.from(document.querySelectorAll('.y-intercept-input')).map(i => parseFloat(i.value)).filter(v => !isNaN(v));
-        const correctXInts = currentQuestion.xInts;
-        const correctYInts = currentQuestion.yInts;
-        
+        const correctXInts = currentQuestion.xInts.filter(n => n !== null && isFinite(n));
+        const correctYInts = currentQuestion.yInts.filter(n => n !== null && isFinite(n));
         const xIntsCorrect = compareNumericArrays(userXInts, correctXInts);
         const yIntsCorrect = compareNumericArrays(userYInts, correctYInts);
-
         let vertexCorrect = true;
         const userKX = parseFloat(document.getElementById('key-point-x').value); 
         const userKY = parseFloat(document.getElementById('key-point-y').value); 
@@ -257,10 +270,9 @@ document.addEventListener('DOMContentLoaded', () => {
             feedbackEl.textContent = 'Great! All your values are correct. Now try sketching the graph.';
         } else {
             let hints = [];
-            if (!xIntsCorrect) hints.push("Check your x-intercepts. Hint: set y=0.");
-            if (!yIntsCorrect) hints.push("Check your y-intercept. Hint: set x=0.");
+            if (!xIntsCorrect) hints.push("Check your x-intercepts.");
+            if (!yIntsCorrect) hints.push("Check your y-intercept.");
             if (!vertexCorrect) hints.push("Check the coordinates of the vertex.");
-            
             feedbackEl.classList.add('bg-red-200/20', 'text-red-300');
             feedbackEl.innerHTML = `Not quite. <br> ${hints.join('<br>')}`;
             showInputsSolutionBtn.classList.remove('hidden');
@@ -271,14 +283,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (allDrawnPaths.length === 0) return ["You haven't drawn the graph yet!"];
         const fullPath = allDrawnPaths.flatMap(p => p.path);
         if (fullPath.length < 10) return ["Please draw a more complete curve."];
-        
-        let totalDeviation = 0;
-        let pointsCompared = 0;
+        let totalDeviation = 0; let pointsCompared = 0;
         const origin = { x: canvasSize.width / 2, y: canvasSize.height / 2 };
-
         const findYatX = (xPixel, path) => {
-            let closestPoint = null;
-            let minDistance = Infinity;
+            let closestPoint = null; let minDistance = Infinity;
             path.forEach(p => {
                 const dist = Math.abs(p.x - xPixel);
                 if (dist < minDistance) { minDistance = dist; closestPoint = p; }
@@ -286,7 +294,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (closestPoint && minDistance < scale * 0.5) { return closestPoint.y; }
             return null;
         };
-
         for (let xCoord = -10; xCoord <= 10; xCoord++) {
             const trueYCoord = question.plot(xCoord);
             if (trueYCoord === null || isNaN(trueYCoord) || !isFinite(trueYCoord) || Math.abs(trueYCoord) > 10) continue;
@@ -311,28 +318,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (shapeHints.length === 0) {
             shapeFeedbackEl.classList.add('bg-green-200/20', 'text-green-300');
             shapeFeedbackEl.textContent = "Excellent sketch! The shape and position look great.";
-            triggerConfetti();
-            correctAttempts++;
+            triggerConfetti(); correctAttempts++;
             correctAttemptsEl.textContent = correctAttempts;
-            sketchCheckAllowed = false;
-            checkShapeBtn.disabled = true;
+            sketchCheckAllowed = false; checkShapeBtn.disabled = true;
         } else {
             shapeFeedbackEl.classList.add('bg-red-200/20', 'text-red-300');
             shapeFeedbackEl.innerHTML = shapeHints.join('<br>');
         }
     }
 
-    // --- Solution and other helper functions ---
     function showInputsSolution() {
         if(!currentQuestion) return;
         const { xInts, yInts, vertex } = currentQuestion;
         let html = [];
         const formatNum = (n) => n.toFixed(2).replace(/\.00$/, '');
-        
-        html.push(`<strong>X-Intercepts:</strong> ${xInts.map(formatNum).join(', ')}`);
-        html.push(`<strong>Y-Intercept:</strong> ${yInts.map(formatNum).join(', ')}`);
+        const clean = (arr) => arr.filter(n => n !== null && isFinite(n));
+        const cleanXInts = clean(xInts);
+        html.push(`<strong>X-Intercepts:</strong> ${cleanXInts.length > 0 ? cleanXInts.map(formatNum).join(', ') : 'None'}`);
+        html.push(`<strong>Y-Intercept:</strong> ${clean(yInts).map(formatNum).join(', ')}`);
         if (vertex) { html.push(`<strong>Vertex:</strong> (${formatNum(vertex.h)}, ${formatNum(vertex.k)})`); }
-        
         inputsSolutionEl.innerHTML = html.join('<br>');
         inputsSolutionEl.classList.remove('hidden');
     }
@@ -344,7 +348,6 @@ document.addEventListener('DOMContentLoaded', () => {
         solutionCtx.clearRect(0,0,w,h);
         solutionCtx.lineWidth = 3; solutionCtx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
         solutionCtx.beginPath();
-        
         let firstPoint = true;
         for (let px = 0; px < w; px++) {
             const x = (px - origin.x) / scale; const y = currentQuestion.plot(x);
@@ -378,20 +381,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- FIXED: Fullscreen Logic ---
     function toggleFullScreen() {
-        const doc = window.document;
-        const docEl = doc.documentElement;
-
+        const doc = window.document; const docEl = doc.documentElement;
         const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
         const cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
-
-        if(!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
-            requestFullScreen.call(docEl);
-        }
-        else {
-            cancelFullScreen.call(doc);
-        }
+        if(!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) { requestFullScreen.call(docEl); }
+        else { cancelFullScreen.call(doc); }
     }
 
     function updateFullscreenIcons() {
@@ -405,44 +400,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Anti-Cheating Measures ---
     function preventCheating() {
         document.addEventListener('contextmenu', event => event.preventDefault());
         document.addEventListener('keydown', event => {
-            if (event.key === 'F12' || 
-               (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'J' || event.key === 'C')) ||
-               (event.metaKey && event.altKey && (event.key === 'i' || event.key === 'j' || event.key === 'c'))) {
+            if (event.key === 'F12' || (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'J' || event.key === 'C')) || (event.metaKey && event.altKey && (event.key === 'i' || event.key === 'j' || event.key === 'c'))) {
                 event.preventDefault();
             }
         });
     }
 
+    // --- NEW: Level Selection Logic ---
+    function setLevel(level) {
+        currentLevel = level;
+        [level1Btn, level2Btn, level3Btn].forEach(btn => btn.classList.remove('active'));
+        if (level === 1) level1Btn.classList.add('active');
+        if (level === 2) level2Btn.classList.add('active');
+        if (level === 3) level3Btn.classList.add('active');
+        generateNewQuestion();
+    }
+
     // --- Initial Setup and Event Listeners ---
     workingCanvas = setupHandwritingCanvas('working-canvas', 'undo-working-btn');
-    
     newQuestionBtn.addEventListener('click', generateNewQuestion);
     checkInputsBtn.addEventListener('click', checkInputs);
     showInputsSolutionBtn.addEventListener('click', showInputsSolution);
     checkShapeBtn.addEventListener('click', checkShape);
+    level1Btn.addEventListener('click', () => setLevel(1));
+    level2Btn.addEventListener('click', () => setLevel(2));
+    level3Btn.addEventListener('click', () => setLevel(3));
     
     showSolutionBtn.addEventListener('click', () => {
         const isHidden = solutionCanvas.classList.contains('hidden');
-        if (isHidden) {
-            drawSolution();
-            showSolutionBtn.textContent = 'Hide Curve';
-        } else {
-            solutionCanvas.classList.add('hidden');
-            showSolutionBtn.textContent = 'Show Curve';
-        }
+        if (isHidden) { drawSolution(); showSolutionBtn.textContent = 'Hide Curve'; } 
+        else { solutionCanvas.classList.add('hidden'); showSolutionBtn.textContent = 'Show Curve'; }
     });
 
     fullscreenBtn.addEventListener('click', toggleFullScreen);
-    // FIXED: Add all vendor-prefixed event listeners
-    document.addEventListener('fullscreenchange', updateFullscreenIcons);
-    document.addEventListener('webkitfullscreenchange', updateFullscreenIcons);
-    document.addEventListener('mozfullscreenchange', updateFullscreenIcons);
-    document.addEventListener('MSFullscreenChange', updateFullscreenIcons);
-
+    ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach( event =>
+        document.addEventListener(event, updateFullscreenIcons)
+    );
 
     undoBtn.addEventListener('click', () => { drawingHistory.pop(); redrawAll(); });
     canvas.addEventListener('mousedown', startDrawing);

@@ -4,17 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parabola Sketcher</title>
-    
-    <!-- External Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- KaTeX for beautiful math rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-    <!-- Your Custom Stylesheet -->
-    <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-gradient-to-br from-slate-900 to-slate-800 text-slate-200">
 
@@ -22,15 +18,11 @@
 
     <div class="main-container">
         <header class="bg-slate-900/70 backdrop-blur-sm border-b border-slate-700 p-3 z-10 flex items-center justify-between">
-            <!-- Fullscreen Button -->
             <button id="fullscreen-btn" class="fullscreen-btn" title="Toggle Fullscreen">
-                <svg id="fullscreen-open-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-                <svg id="fullscreen-close-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 0-2-2h-3M3 16h3a2 2 0 0 0 2-2v-3"/></svg>
+                <svg id="fullscreen-open-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                <svg id="fullscreen-close-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></svg>
             </button>
-            
-            <h1 class="text-xl md:text-2xl font-bold text-slate-100">Parabola Sketcher</h1>
-            
-            <!-- Correct Attempts Counter -->
+            <h1 class="text-xl md:text-2xl font-bold text-center text-slate-100">Parabola Sketcher</h1>
             <div class="score-container">
                 <span class="score-label">Correct:</span>
                 <span id="correct-attempts" class="score-value">0</span>
@@ -42,6 +34,17 @@
                 
                 <!-- Left Panel: Question and Inputs -->
                 <div class="bg-slate-800/50 border border-slate-700 p-4 rounded-lg shadow-lg flex flex-col space-y-3">
+                    
+                    <!-- Level Selection -->
+                    <div class="mb-2">
+                        <label class="block text-sm font-medium text-slate-400 mb-2 text-center">Select Difficulty Level</label>
+                        <div class="flex justify-center rounded-lg border border-slate-600 bg-slate-700 p-1">
+                            <button id="level-1-btn" class="level-btn active flex-1 py-2 px-4 rounded-md transition-colors text-slate-300 text-sm">Level 1</button>
+                            <button id="level-2-btn" class="level-btn flex-1 py-2 px-4 rounded-md transition-colors text-slate-300 text-sm">Level 2</button>
+                            <button id="level-3-btn" class="level-btn flex-1 py-2 px-4 rounded-md transition-colors text-slate-300 text-sm">Level 3</button>
+                        </div>
+                    </div>
+
                     <div class="text-center">
                         <div class="flex justify-center items-center gap-4 mb-1">
                             <h2 class="text-lg font-semibold">Step 1: Key Features</h2>
@@ -51,7 +54,7 @@
                         </div>
                     </div>
                     
-                    <div class="flex-grow space-y-4">
+                    <div class="flex-grow space-y-3">
                         <div>
                             <label class="block text-sm font-medium text-slate-400 mb-1">Your Working & Notes</label>
                             <div id="working-canvas-container" class="handwriting-canvas-container">
@@ -59,48 +62,47 @@
                                 <button id="undo-working-btn" class="handwriting-undo-btn">&#8634;</button>
                             </div>
                         </div>
-                        
-                        <!-- Intercepts on the same row -->
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">X-Intercepts</label>
+                             <div>
+                                <label class="block text-sm font-medium text-slate-400 mb-1">X-Intercepts (enter numbers only)</label>
                                 <div id="x-intercepts-container" class="flex flex-wrap gap-2">
                                     <input type="number" step="any" class="x-intercept-input w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500">
                                     <input type="number" step="any" class="x-intercept-input w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500">
                                 </div>
                             </div>
-                             <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">Y-Intercept</label>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-400 mb-1">Y-Intercept (enter number only)</label>
                                 <div id="y-intercepts-container" class="flex flex-wrap gap-2">
                                     <input type="number" step="any" class="y-intercept-input w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500">
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Vertex Input -->
-                        <div id="key-point-container">
-                            <label id="key-point-label" class="block text-sm font-medium text-slate-400 mb-1">Vertex (h, k)</label>
-                            <div class="flex items-center gap-2">
-                                <span class="font-mono text-slate-400">(</span>
-                                <input type="number" step="any" id="key-point-x" class="w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500" placeholder="h">
-                                <span class="font-mono text-slate-400">,</span>
-                                <input type="number" step="any" id="key-point-y" class="w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500" placeholder="k">
-                                <span class="font-mono text-slate-400">)</span>
-                            </div>
+                        <div>
+                             <label class="block text-sm font-medium text-slate-400 mb-1">Vertex (h, k)</label>
+                             <div class="flex items-center gap-2">
+                                 <span class="font-mono text-slate-400">(</span>
+                                 <input type="number" step="any" id="key-point-x" class="w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500" placeholder="h">
+                                 <span class="font-mono text-slate-400">,</span>
+                                 <input type="number" step="any" id="key-point-y" class="w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500" placeholder="k">
+                                 <span class="font-mono text-slate-400">)</span>
+                             </div>
                         </div>
                     </div>
 
                     <div id="feedback-container">
                         <div id="feedback" class="p-3 rounded-md text-center font-medium hidden"></div>
                         <div class="flex justify-center items-center gap-4 mt-2">
-                            <button id="show-inputs-solution-btn" class="bg-amber-600 text-white font-bold py-1 px-4 text-sm rounded-lg hover:bg-amber-700 transition-colors duration-300 hidden btn-glow">Show Correct Values</button>
+                             <button id="show-inputs-solution-btn" class="bg-amber-600 text-white font-bold py-1 px-4 text-sm rounded-lg hover:bg-amber-700 transition-colors duration-300 hidden btn-glow">Show Correct Values</button>
                         </div>
                         <div id="inputs-solution" class="p-3 mt-2 bg-slate-700/50 border border-slate-600 rounded-md text-sm text-left hidden prose prose-invert max-w-none"></div>
                     </div>
 
+
                     <div class="grid grid-cols-2 gap-4 pt-3 border-t border-slate-700">
                         <button id="new-question-btn" class="w-full bg-slate-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-500 transition-colors duration-300">New Question</button>
-                        <button id="check-inputs-btn" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-2 px-4 rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 btn-glow">Check Values</button>
+                         <button id="check-inputs-btn" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-2 px-4 rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 btn-glow">Check Values</button>
                     </div>
                 </div>
 
@@ -124,8 +126,6 @@
             </div>
         </main>
     </div>
-
-    <!-- Your Custom JavaScript -->
     <script src="script.js"></script>
 </body>
 </html>
