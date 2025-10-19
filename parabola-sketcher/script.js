@@ -161,31 +161,52 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.stroke(); 
     }
 
-    // --- Question Generation (NOW WITH LEVELS) ---
+    // --- Question Generation (NOW WITH LEVELS & FRACTIONS) ---
     function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
     function randNonZero(min, max) { let val = 0; while (val === 0) { val = randInt(min, max); } return val; }
+    
+    // --- NEW: Helper to format 'a' value for KaTeX, including fractions ---
+    function formatA(a) {
+        if (Math.abs(a) === 1) {
+            return a === 1 ? '' : '-';
+        }
+        if (Number.isInteger(a)) {
+            return a.toString();
+        }
+        // Handle fractions
+        const sign = a < 0 ? '-' : '';
+        const absA = Math.abs(a);
+        const denominator = 1 / absA;
+        // Use Math.round to avoid floating point issues (e.g., 1/3 becomes 0.333...)
+        return `${sign}\\frac{1}{${Math.round(denominator)}}`;
+    }
 
     const questionGenerators = {
         level1: () => {
+            // --- MODIFIED: Include fractional 'a' values ---
+            const aValues = [-3, -2, -1, -1/2, -1/3, -1/4, 1/4, 1/3, 1/2, 1, 2, 3];
             let a, c, katex;
-            if (Math.random() < 0.5) {
-                a = randNonZero(-3, 3);
+
+            if (Math.random() < 0.5) { // y = ax^2
+                a = aValues[Math.floor(Math.random() * aValues.length)];
                 c = 0;
-                const a_str = Math.abs(a) === 1 ? (a === 1 ? '' : '-') : a;
+                const a_str = formatA(a);
                 katex = `y = ${a_str}x^2`;
-            } else {
+            } else { // y = x^2 + c
                 a = 1;
                 c = randNonZero(-8, 8);
                 const c_sign = c >= 0 ? '+' : '-';
                 katex = `y = x^2 ${c_sign} ${Math.abs(c)}`;
             }
-            const xInts = a > 0 && c <= 0 ? [Math.sqrt(-c/a), -Math.sqrt(-c/a)] : (a < 0 && c >= 0 ? [Math.sqrt(-c/a), -Math.sqrt(-c/a)] : []);
+            const xInts = (a > 0 && c <= 0) || (a < 0 && c >= 0) ? [Math.sqrt(-c/a), -Math.sqrt(-c/a)] : [];
             return { type: 'parabola', katex, yInts: [c], xInts, plot: x => a*x*x + c, vertex: {h: 0, k: c} };
         },
         level2: () => {
-            const a = randNonZero(-3, 3);
+            // --- MODIFIED: Include fractional 'a' values ---
+            const aValues = [-3, -2, -1, -1/2, -1/3, -1/4, 1/4, 1/3, 1/2, 1, 2, 3];
+            const a = aValues[Math.floor(Math.random() * aValues.length)];
             const c = randNonZero(-8, 8);
-            const a_str = Math.abs(a) === 1 ? (a === 1 ? '' : '-') : a;
+            const a_str = formatA(a);
             const c_sign = c >= 0 ? '+' : '-';
             const katex = `y = ${a_str}x^2 ${c_sign} ${Math.abs(c)}`;
             const xInts = (a > 0 && c <= 0) || (a < 0 && c >= 0) ? [Math.sqrt(-c/a), -Math.sqrt(-c/a)] : [];
@@ -217,7 +238,6 @@ document.addEventListener('DOMContentLoaded', () => {
         sketchCheckAllowed = true;
         questionEl.innerHTML = `Sketch the graph of: $$${currentQuestion.katex}$$`;
         
-        // --- FIX: Re-render math with correct settings ---
         renderMathInElement(questionEl, {
             delimiters: [
                 {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}
