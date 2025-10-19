@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let workingCanvas;
     let correctAttempts = 0;
     let sketchCheckAllowed = true;
-    let currentLevel = 1; // --- NEW: Track current level
+    let currentLevel = 1;
     
     // --- Handwriting Canvas Setup (Optimized for High-DPI) ---
     function setupHandwritingCanvas(canvasId, undoBtnId) {
@@ -168,25 +168,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const questionGenerators = {
         level1: () => {
             let a, c, katex;
-            // 50% chance of y=ax^2, 50% chance of y=x^2+c
             if (Math.random() < 0.5) {
-                // y = ax^2
                 a = randNonZero(-3, 3);
                 c = 0;
                 const a_str = Math.abs(a) === 1 ? (a === 1 ? '' : '-') : a;
                 katex = `y = ${a_str}x^2`;
             } else {
-                // y = x^2 + c
                 a = 1;
                 c = randNonZero(-8, 8);
                 const c_sign = c >= 0 ? '+' : '-';
                 katex = `y = x^2 ${c_sign} ${Math.abs(c)}`;
             }
-            const xInts = a > 0 && c <= 0 ? [Math.sqrt(-c/a), -Math.sqrt(-c/a)] : [];
+            const xInts = a > 0 && c <= 0 ? [Math.sqrt(-c/a), -Math.sqrt(-c/a)] : (a < 0 && c >= 0 ? [Math.sqrt(-c/a), -Math.sqrt(-c/a)] : []);
             return { type: 'parabola', katex, yInts: [c], xInts, plot: x => a*x*x + c, vertex: {h: 0, k: c} };
         },
         level2: () => {
-            // y = ax^2 + c
             const a = randNonZero(-3, 3);
             const c = randNonZero(-8, 8);
             const a_str = Math.abs(a) === 1 ? (a === 1 ? '' : '-') : a;
@@ -196,7 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return { type: 'parabola', katex, yInts: [c], xInts, plot: x => a*x*x + c, vertex: {h: 0, k: c} };
         },
         level3: () => {
-            // y = ax^2 + bx + c (factorisable)
             const a = [-1, 1][randInt(0,1)]; let r1 = randInt(-8, 8); let r2 = randInt(-8, 8);
             while ((r1 + r2) % 2 !== 0 || r1 === r2) { r1 = randInt(-8, 8); r2 = randInt(-8, 8); }
             const h = (r1 + r2) / 2; const k = a * (h - r1) * (h - r2);
@@ -221,7 +216,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         sketchCheckAllowed = true;
         questionEl.innerHTML = `Sketch the graph of: $$${currentQuestion.katex}$$`;
-        renderMathInElement(questionEl);
+        
+        // --- FIX: Re-render math with correct settings ---
+        renderMathInElement(questionEl, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}
+            ]
+        });
         
         // Reset UI
         drawingHistory = [];
