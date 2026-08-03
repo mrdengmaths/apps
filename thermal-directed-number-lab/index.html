@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Thermal Directed Number Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background 1s ease;
+        }
+
+        /* Physics Elements rely on JS for position, but need absolute */
+        .cube {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            position: absolute; /* Controlled by JS physics loop */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.2rem;
+            cursor: grab;
+            box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), 
+                        inset -2px -2px 5px rgba(0,0,0,0.2),
+                        4px 4px 10px rgba(0,0,0,0.15);
+            user-select: none;
+            will-change: transform;
+            z-index: 10;
+        }
+
+        .cube:active {
+            cursor: grabbing;
+        }
+
+        .hot-cube {
+            background: linear-gradient(135deg, #ff6b6b, #c0392b);
+            border: 2px solid #ff8787;
+            color: white;
+            box-shadow: 0 0 15px rgba(255, 50, 50, 0.4);
+        }
+
+        .cold-cube {
+            background: linear-gradient(135deg, #a2d9ff, #4facfe);
+            border: 2px solid #d4f1ff;
+            color: #004e92;
+            box-shadow: 0 0 15px rgba(100, 200, 255, 0.4);
+        }
+        
+        /* Particle Effects */
+        @keyframes steam {
+            0% { opacity: 0; transform: translateY(0) scale(0.5); }
+            50% { opacity: 0.6; }
+            100% { opacity: 0; transform: translateY(-20px) scale(1.5); }
+        }
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1.2) rotate(45deg); }
+        }
+
+        .hot-cube::after {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 10px;
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.6);
+            filter: blur(4px);
+            border-radius: 50%;
+            animation: steam 2s infinite;
+            pointer-events: none;
+        }
+
+        .cold-cube::after {
+            content: '✦';
+            position: absolute;
+            top: -8px;
+            right: -5px;
+            color: white;
+            font-size: 12px;
+            animation: sparkle 2s infinite;
+            pointer-events: none;
+        }
+
+        /* The Tub */
+        .tub-container {
+            background: linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(0, 100, 255, 0.1));
+            border: 4px solid rgba(255, 255, 255, 0.4);
+            border-top: none;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .water-surface {
+            position: absolute;
+            top: 15%; /* Water level */
+            left: 0;
+            width: 100%;
+            height: 85%;
+            background: linear-gradient(to bottom, rgba(66, 153, 225, 0.2), rgba(66, 153, 225, 0.4));
+            border-top: 2px solid rgba(255, 255, 255, 0.5);
+            z-index: 0;
+        }
+
+        /* Thermometer */
+        .thermometer-glass {
+            background: rgba(255,255,255,0.9);
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .mercury {
+            transition: height 1s cubic-bezier(0.4, 0, 0.2, 1), background-color 1s ease;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        /* Bin Styles */
+        .bin-container {
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        /* Mini cube in bin */
+        .mini-cube {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        @keyframes popIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .value-text {
+            transition: opacity 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm p-4 z-20 flex justify-between items-center shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-blue-600 rounded-lg text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/><path d="M10 20h4"/></svg>
+            </div>
+            <h1 class="text-xl font-bold tracking-tight text-slate-800 hidden sm:block">Thermal Directed Number Lab</h1>
+            <h1 class="text-xl font-bold tracking-tight text-slate-800 sm:hidden">Thermal Lab</h1>
+        </div>
+        
+        <div class="flex gap-3">
+            <button onclick="toggleInstructions()" class="px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition">
+                ? Help
+            </button>
+            <button onclick="resetLab()" class="px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.76 9.76 0 0 0-4.7-9"/><path d="M3 3v5h5"/></svg>
+                Reset
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
+        
+        <!-- Left: Teacher Controls -->
+        <aside class="w-full lg:w-72 bg-white border-r border-slate-200 p-6 flex flex-col gap-6 z-10 shadow-lg shrink-0 overflow-y-auto">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Teacher Controls</h2>
+            
+            <!-- Add Cubes Buttons -->
+             <div class="grid grid-cols-2 gap-3">
+                <button onclick="addCube('hot')" class="flex flex-col items-center gap-1 p-3 rounded-xl bg-red-50 border border-red-200 hover:bg-red-100 active:scale-95 transition group">
+                    <div class="w-10 h-10 rounded-lg bg-red-500 text-white flex items-center justify-center font-bold shadow-sm group-hover:scale-110 transition">+1</div>
+                    <span class="text-xs font-bold text-red-700 uppercase">Add Hot</span>
+                </button>
+
+                <button onclick="addCube('cold')" class="flex flex-col items-center gap-1 p-3 rounded-xl bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 active:scale-95 transition group">
+                    <div class="w-10 h-10 rounded-lg bg-cyan-500 text-white flex items-center justify-center font-bold shadow-sm group-hover:scale-110 transition">-1</div>
+                    <span class="text-xs font-bold text-cyan-700 uppercase">Add Ice</span>
+                </button>
+            </div>
+
+            <!-- Randomize -->
+            <div class="space-y-2">
+                <button onclick="randomizeState()" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 font-bold rounded-lg hover:bg-indigo-100 transition border border-indigo-200 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    Randomise Mix
+                </button>
+            </div>
+
+            <hr class="border-slate-100">
+
+            <!-- Toggle: Thermometer -->
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-slate-700">Show Thermometer</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggleThermometer" class="sr-only peer" checked onchange="handleToggleChange('thermometer', this.checked)">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                </label>
+            </div>
+
+            <!-- Toggle: Cube Values -->
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-slate-700">Show Cube Values</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggleValues" class="sr-only peer" checked onchange="handleToggleChange('values', this.checked)">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                </label>
+            </div>
+
+            <div class="mt-auto p-4 bg-amber-50 rounded-lg text-xs text-amber-800 border border-amber-100">
+                <p class="font-bold mb-1">Pedagogy Note:</p>
+                Demonstrate subtraction by clicking to <strong>remove</strong> cubes. Removing a negative (ice) causes the temperature to rise. Click removed cubes to return them.
+            </div>
+        </aside>
+
+        <!-- Center: Visualization -->
+        <section class="flex-1 relative flex items-center justify-center p-4 lg:p-10 gap-8 lg:gap-16 overflow-hidden">
+            
+            <!-- Thermometer (Removed opacity-0 here) -->
+            <div class="flex flex-col items-center h-[500px] w-24 relative shrink-0 transition-opacity duration-500" id="thermometerContainer">
+                <div class="thermometer-glass w-6 h-full rounded-full border border-slate-300 relative overflow-hidden flex flex-col justify-end">
+                    <!-- Mercury -->
+                    <div id="mercury" class="mercury w-full bg-red-500" style="height: 50%;"></div>
+                </div>
+                <!-- Bulb -->
+                <div id="bulb" class="w-16 h-16 rounded-full bg-red-500 -mt-4 border-4 border-white shadow-lg z-10 transition-colors duration-1000"></div>
+                
+                <!-- Labels -->
+                <div class="absolute -right-12 top-0 h-full flex flex-col justify-between py-4 text-xs font-mono font-bold text-slate-500">
+                    <span>+20</span>
+                    <span>+10</span>
+                    <span>0</span>
+                    <span>-10</span>
+                    <span>-20</span>
+                </div>
+
+                <div id="tempDisplay" class="absolute -left-16 top-1/2 -translate-y-1/2 bg-white px-3 py-1 rounded shadow border font-mono font-bold text-lg transition-opacity duration-300">
+                    0°
+                </div>
+            </div>
+
+            <!-- The Tub -->
+            <div class="relative w-full max-w-2xl h-[400px] shrink-0">
+                <!-- Tub Top Rim (Visual Depth) -->
+                <div class="absolute -top-4 left-0 w-full h-8 bg-white opacity-20 rounded-[100%] z-20 pointer-events-none"></div>
+                
+                <div class="tub-container w-full h-full rounded-b-3xl relative" id="tub">
+                    <div class="water-surface"></div>
+                    <!-- Cubes injected here -->
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Bottom Controls: Removed Cubes Bins -->
+    <footer class="bg-white border-t border-slate-200 p-6 z-20 shrink-0">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row gap-6">
+            
+            <!-- Removed Hot Bin -->
+            <div class="flex-1 flex flex-col gap-2">
+                <h3 class="text-xs font-bold uppercase text-red-600 tracking-wide">Removed Hot Cubes (Subtracted +1)</h3>
+                <div id="removedHotBin" class="bin-container flex-1 bg-red-50/50 rounded-xl p-3 border-2 border-red-100 min-h-[80px] flex flex-wrap gap-2 content-start transition-colors hover:border-red-200">
+                    <!-- Removed cubes land here -->
+                </div>
+            </div>
+
+            <!-- Removed Cold Bin -->
+            <div class="flex-1 flex flex-col gap-2">
+                <h3 class="text-xs font-bold uppercase text-cyan-600 tracking-wide">Removed Ice Cubes (Subtracted -1)</h3>
+                <div id="removedColdBin" class="bin-container flex-1 bg-cyan-50/50 rounded-xl p-3 border-2 border-cyan-100 min-h-[80px] flex flex-wrap gap-2 content-start transition-colors hover:border-cyan-200">
+                    <!-- Removed cubes land here -->
+                </div>
+            </div>
+
+        </div>
+    </footer>
+
+    <!-- Instructions Modal -->
+    <div id="instructionModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl transform transition-all">
+            <h3 class="text-2xl font-bold mb-4 text-slate-800">How to use the Lab</h3>
+            <ul class="space-y-4">
+                <li class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded bg-red-100 text-red-600 flex items-center justify-center font-bold shrink-0">+1</div>
+                    <p class="text-slate-600 text-sm"><strong>Add Hot Cubes</strong> to increase the temperature.</p>
+                </li>
+                <li class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded bg-cyan-100 text-cyan-600 flex items-center justify-center font-bold shrink-0">-1</div>
+                    <p class="text-slate-600 text-sm"><strong>Add Ice Cubes</strong> to decrease the temperature.</p>
+                </li>
+                <li class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded border-2 border-dashed border-slate-300 flex items-center justify-center shrink-0">👆</div>
+                    <p class="text-slate-600 text-sm"><strong>Click any cube</strong> in the tub to remove it. Click removed cubes to return them.</p>
+                </li>
+            </ul>
+            <button onclick="toggleInstructions()" class="mt-8 w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition">Got it!</button>
+        </div>
+    </div>
+
+    <script>
+        // --- State ---
+        let cubes = []; // Stores physics objects: { id, type, x, y, vx, vy, ax, ay, rotation }
+        let config = {
+            showThermometer: true, // Default ON
+            showValues: true
+        };
+        const MAX_TEMP = 20;
+        const MIN_TEMP = -20;
+        const TUB_LIMIT = 50; 
+        
+        // Physics Config
+        const CUBE_SIZE = 50;
+        const GRAVITY = 0.4;
+        const BUOYANCY = 0.6; 
+        const DRAG_WATER = 0.92;
+        const DRAG_AIR = 0.99;
+        const WALL_BOUNCE = -0.6;
+        const SEPARATION_FORCE = 0.5;
+
+        // --- DOM Elements ---
+        const tubEl = document.getElementById('tub');
+        const mercuryEl = document.getElementById('mercury');
+        const bulbEl = document.getElementById('bulb');
+        const tempDisplayEl = document.getElementById('tempDisplay');
+        const bodyEl = document.body;
+        const thermometerContainer = document.getElementById('thermometerContainer');
+
+        // --- Core Functions ---
+
+        function handleToggleChange(type, isChecked) {
+            if (type === 'thermometer') {
+                config.showThermometer = isChecked;
+                if (isChecked) {
+                    thermometerContainer.classList.remove('opacity-0');
+                } else {
+                    thermometerContainer.classList.add('opacity-0');
+                }
+            } else if (type === 'values') {
+                config.showValues = isChecked;
+                const textEls = document.querySelectorAll('.value-text');
+                textEls.forEach(el => el.style.opacity = isChecked ? '1' : '0');
+            }
+        }
+
+        function updateThermometer() {
+            const hotCount = cubes.filter(c => c.type === 'hot').length;
+            const coldCount = cubes.filter(c => c.type === 'cold').length;
+            const netTemp = hotCount - coldCount;
+
+            // 1. Calculate Mercury Height
+            let percent = 50 + (netTemp * 2.5);
+            percent = Math.max(0, Math.min(100, percent));
+            
+            mercuryEl.style.height = `${percent}%`;
+
+            // 2. Color Logic
+            let color = '#ef4444'; // Red
+            if (netTemp < 0) color = '#3b82f6'; // Blue
+            if (netTemp === 0) color = '#a855f7'; // Purple
+            
+            mercuryEl.style.backgroundColor = color;
+            mercuryEl.style.boxShadow = `0 0 15px ${color}`;
+            bulbEl.style.backgroundColor = color;
+            bulbEl.style.borderColor = netTemp < 0 ? '#dbeafe' : '#fee2e2';
+
+            // 3. Update Text
+            tempDisplayEl.innerText = (netTemp > 0 ? '+' : '') + netTemp + '°';
+
+            // 4. Global Ambience
+            updateAmbience(netTemp);
+        }
+
+        function updateAmbience(temp) {
+            if (temp > 5) {
+                bodyEl.style.background = `linear-gradient(to bottom right, #fff7ed, #fed7aa)`;
+            } else if (temp < -5) {
+                bodyEl.style.background = `linear-gradient(to bottom right, #f0f9ff, #bae6fd)`;
+            } else {
+                bodyEl.style.background = `linear-gradient(to bottom right, #f8fafc, #e2e8f0)`;
+            }
+        }
+
+        function randomizeState() {
+            resetLab();
+            // Wait a tiny bit for cleanup
+            setTimeout(() => {
+                const hotCount = Math.floor(Math.random() * 8) + 1;
+                const coldCount = Math.floor(Math.random() * 8) + 1;
+                
+                // Add hot cubes with slight delays
+                for(let i=0; i<hotCount; i++) {
+                    setTimeout(() => addCube('hot'), i * 100);
+                }
+                // Add cold cubes
+                for(let i=0; i<coldCount; i++) {
+                    setTimeout(() => addCube('cold'), (hotCount * 100) + (i * 100));
+                }
+            }, 100);
+        }
+
+        function addCube(type) {
+            if (cubes.length >= TUB_LIMIT) return;
+
+            const id = Date.now() + Math.random();
+            const tubRect = tubEl.getBoundingClientRect();
+            
+            // Spawn at top random x
+            const x = Math.random() * (tubRect.width - CUBE_SIZE - 20) + 10;
+            const y = -60; // Start above visible area
+
+            // Initial Velocity (drop in)
+            const vx = (Math.random() - 0.5) * 2;
+            const vy = Math.random() * 5;
+
+            const cube = { 
+                id, type, 
+                x, y, 
+                vx, vy, 
+                rotation: Math.random() * 360
+            };
+            
+            cubes.push(cube);
+            renderCubeDOM(cube);
+            updateThermometer();
+        }
+
+        function removeCube(id) {
+            // Find logic object
+            const index = cubes.findIndex(c => c.id === id);
+            if (index === -1) return;
+            const cubeData = cubes[index];
+            const el = document.getElementById(`cube-${id}`);
+
+            // Remove from physics engine immediately
+            cubes.splice(index, 1);
+            updateThermometer();
+
+            // Animate trajectory if element exists
+            if (el) {
+                animateTrajectory(el, cubeData.type);
+            }
+        }
+
+        function animateTrajectory(el, type) {
+            const rect = el.getBoundingClientRect();
+            const targetId = type === 'hot' ? 'removedHotBin' : 'removedColdBin';
+            const targetEl = document.getElementById(targetId);
+            const targetRect = targetEl.getBoundingClientRect();
+
+            // 1. Create a "ghost" clone and append to the body
+            // This prevents the tub's overflow:hidden or backdrop-filter from clipping the animation
+            const ghost = el.cloneNode(true);
+            
+            // Immediately remove the real element from the tub
+            el.remove();
+            
+            // Style the ghost to match the clicked position perfectly
+            ghost.style.position = 'fixed';
+            ghost.style.left = `${rect.left}px`;
+            ghost.style.top = `${rect.top}px`;
+            ghost.style.transform = 'none'; // reset physics rotation so our new pos holds true
+            ghost.style.margin = '0';
+            ghost.style.zIndex = '9999'; // Very high z-index to guarantee visibility
+            ghost.style.pointerEvents = 'none';
+            
+            document.body.appendChild(ghost);
+
+            // 2. Trigger reflow
+            ghost.offsetHeight; 
+
+            // 3. Set up the animation transition (0.4s for speed)
+            ghost.style.transition = 'all 0.4s cubic-bezier(0.25, 1, 0.5, 1)'; 
+
+            // 4. Move to target center of the Bin
+            const centerX = targetRect.left + targetRect.width / 2 - rect.width / 2;
+            const centerY = targetRect.top + targetRect.height / 2 - rect.height / 2;
+
+            ghost.style.left = `${centerX}px`;
+            ghost.style.top = `${centerY}px`;
+            ghost.style.transform = 'scale(0.5)'; // Shrink down as it moves to the bin
+            ghost.style.opacity = '0.5';
+
+            // 5. Cleanup and add static version to bin
+            setTimeout(() => {
+                ghost.remove();
+                addStaticCubeToBin(type, targetId);
+            }, 400); // 400ms matching transition
+        }
+
+        function addStaticCubeToBin(type, containerId) {
+            const container = document.getElementById(containerId);
+            const miniCube = document.createElement('div');
+            // classes for mini visual representation
+            const baseClass = "mini-cube w-10 h-10 rounded-lg border-2 flex items-center justify-center font-bold text-sm shrink-0 shadow-sm cursor-pointer hover:scale-110 transition-transform";
+            const typeClass = type === 'hot' 
+                ? 'bg-red-100 border-red-400 text-red-700' 
+                : 'bg-cyan-100 border-cyan-400 text-cyan-700';
+            
+            miniCube.className = `${baseClass} ${typeClass}`;
+            miniCube.innerText = type === 'hot' ? '+1' : '-1';
+            
+            // Add handler to return to tub
+            miniCube.onclick = () => returnCubeToTub(miniCube, type);
+            
+            container.appendChild(miniCube);
+        }
+
+        function returnCubeToTub(el, type) {
+            if (cubes.length >= TUB_LIMIT) return;
+
+            const rect = el.getBoundingClientRect();
+            const tubRect = tubEl.getBoundingClientRect();
+
+            // Create flying ghost appended directly to document body to ensure visibility
+            const ghost = el.cloneNode(true);
+            ghost.style.position = 'fixed';
+            ghost.style.left = `${rect.left}px`;
+            ghost.style.top = `${rect.top}px`;
+            ghost.style.zIndex = '9999';
+            ghost.style.margin = '0';
+            ghost.style.pointerEvents = 'none';
+            // Faster return animation
+            ghost.style.transition = 'all 0.4s ease-in';
+            
+            document.body.appendChild(ghost);
+
+            // Remove original from bin
+            el.remove();
+
+            // Force reflow
+            ghost.offsetHeight;
+
+            // Target position: Random X at top of tub
+            // Matches roughly where addCube spawns them
+            const targetX = tubRect.left + 20 + (Math.random() * (tubRect.width - 90));
+            const targetY = tubRect.top - 50;
+
+            ghost.style.left = `${targetX}px`;
+            ghost.style.top = `${targetY}px`;
+            ghost.style.transform = 'scale(1.2)'; // Grow slightly to full size
+            ghost.style.opacity = '0'; // Fade out right as it plops in
+
+            setTimeout(() => {
+                ghost.remove();
+                addCube(type);
+            }, 400); // Matching 400ms transition
+        }
+
+        function renderCubeDOM(cube) {
+            const el = document.createElement('div');
+            el.id = `cube-${cube.id}`;
+            el.className = `cube ${cube.type === 'hot' ? 'hot-cube' : 'cold-cube'}`;
+            
+            const valueSpan = document.createElement('span');
+            valueSpan.className = 'value-text';
+            valueSpan.innerText = cube.type === 'hot' ? '+1' : '-1';
+            valueSpan.style.opacity = config.showValues ? '1' : '0';
+            el.appendChild(valueSpan);
+
+            el.onclick = (e) => {
+                e.stopPropagation();
+                removeCube(cube.id);
+            };
+
+            tubEl.appendChild(el);
+        }
+
+        function resetLab() {
+            cubes = [];
+            tubEl.querySelectorAll('.cube').forEach(el => el.remove());
+            document.getElementById('removedHotBin').innerHTML = '';
+            document.getElementById('removedColdBin').innerHTML = '';
+            updateThermometer();
+        }
+
+        // --- Physics Engine ---
+        function updatePhysics() {
+            if (cubes.length === 0) {
+                requestAnimationFrame(updatePhysics);
+                return;
+            }
+
+            const tubRect = tubEl.getBoundingClientRect();
+            // Water starts at 15% down
+            const waterLevel = tubRect.height * 0.15; 
+            const bottom = tubRect.height - CUBE_SIZE;
+            const right = tubRect.width - CUBE_SIZE;
+
+            cubes.forEach(c => {
+                // 1. Apply Forces
+                c.vy += GRAVITY;
+
+                // Buoyancy (Spring logic)
+                const cubeCenterY = c.y + (CUBE_SIZE / 2);
+                
+                if (cubeCenterY > waterLevel) {
+                    const displacement = cubeCenterY - (waterLevel + 20); 
+                    const buoyancyForce = displacement * 0.05; 
+                    
+                    c.vy -= buoyancyForce;
+                    
+                    // Apply Water Drag
+                    c.vx *= DRAG_WATER;
+                    c.vy *= DRAG_WATER;
+                } else {
+                    // Air Drag
+                    c.vx *= DRAG_AIR;
+                    c.vy *= DRAG_AIR;
+                }
+
+                // 2. Update Position
+                c.x += c.vx;
+                c.y += c.vy;
+
+                // 3. Wall Collisions
+                if (c.x < 0) {
+                    c.x = 0;
+                    c.vx *= WALL_BOUNCE;
+                } else if (c.x > right) {
+                    c.x = right;
+                    c.vx *= WALL_BOUNCE;
+                }
+
+                if (c.y > bottom) {
+                    c.y = bottom;
+                    c.vy *= WALL_BOUNCE;
+                } 
+                if (c.y < -100) c.y = -100; 
+
+                // 4. Cube-Cube Collisions (Repulsion)
+                cubes.forEach(other => {
+                    if (c.id === other.id) return;
+                    
+                    const dx = c.x - other.x;
+                    const dy = c.y - other.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const minDist = CUBE_SIZE; 
+
+                    if (dist < minDist && dist > 0) {
+                        const overlap = minDist - dist;
+                        const angle = Math.atan2(dy, dx);
+                        
+                        const forceX = Math.cos(angle) * overlap * 0.05;
+                        const forceY = Math.sin(angle) * overlap * 0.05;
+                        
+                        c.vx += forceX;
+                        c.vy += forceY;
+                        
+                        c.rotation += (Math.random() - 0.5) * 5;
+                    }
+                });
+            });
+
+            // 5. Render
+            cubes.forEach(c => {
+                const el = document.getElementById(`cube-${c.id}`);
+                if (el) {
+                    el.style.transform = `translate(${c.x}px, ${c.y}px) rotate(${c.rotation}deg)`;
+                }
+            });
+
+            requestAnimationFrame(updatePhysics);
+        }
+
+        // Start Physics Loop
+        requestAnimationFrame(updatePhysics);
+
+        function toggleInstructions() {
+            const modal = document.getElementById('instructionModal');
+            modal.classList.toggle('hidden');
+        }
+
+        document.getElementById('instructionModal').addEventListener('click', (e) => {
+            if (e.target.id === 'instructionModal') toggleInstructions();
+        });
+
+        // Initialize
+        updateThermometer();
+        
+        window.addEventListener('resize', () => {
+            const tubRect = tubEl.getBoundingClientRect();
+            cubes.forEach(c => {
+                if (c.x > tubRect.width - CUBE_SIZE) c.x = tubRect.width - CUBE_SIZE - 10;
+            });
+        });
+
+    </script>
+</body>
+</html>

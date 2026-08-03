@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equivalent Fraction Quest</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Styles & Animations */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1b4b; /* Deep Indigo Background */
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Chrome, Safari, Edge, Opera */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        /* Firefox */
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        .fraction-line {
+            width: 100%;
+            height: 4px;
+            background-color: white;
+            border-radius: 2px;
+            margin: 4px 0;
+        }
+
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* Confetti Animation */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            z-index: 1000;
+            animation: fall 3s linear forwards;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* Toast Animation */
+        .toast-enter {
+            animation: slideUpFade 0.4s ease-out forwards;
+        }
+        .toast-exit {
+            animation: slideDownFade 0.4s ease-in forwards;
+        }
+
+        @keyframes slideUpFade {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes slideDownFade {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(100%); opacity: 0; }
+        }
+
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Top Bar -->
+    <header class="bg-indigo-900 shadow-md border-b border-indigo-700 sticky top-0 z-10">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center text-lg font-bold">
+            <div class="flex items-center gap-2">
+                <span class="text-indigo-300">Round:</span>
+                <span id="roundDisplay" class="bg-indigo-800 px-3 py-1 rounded-md text-white">1 / 10</span>
+            </div>
+            <div class="text-2xl tracking-wider font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-200">
+                Equivalent Fraction Quest
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-indigo-300">Total Score:</span>
+                <span id="scoreDisplay" class="bg-indigo-800 px-3 py-1 rounded-md text-yellow-400 font-mono text-xl">0</span>
+            </div>
+        </div>
+        <!-- Timer Bar -->
+        <div class="w-full bg-indigo-950 h-3">
+            <div id="timerBar" class="h-full bg-gradient-to-r from-green-400 to-emerald-500 w-full transition-all duration-100 ease-linear"></div>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-grow flex flex-col items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-indigo-900 to-purple-900">
+        
+        <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-8 shadow-2xl max-w-3xl w-full flex flex-col items-center">
+            
+            <h2 class="text-2xl font-semibold mb-2 text-indigo-200">Find the missing number!</h2>
+            <div id="roundScoreDisplay" class="text-sm font-mono text-emerald-300 mb-8 bg-emerald-900/50 px-3 py-1 rounded-full border border-emerald-500/30">
+                Current Potential Points: 1000
+            </div>
+
+            <!-- Equation Area -->
+            <div id="equationArea" class="flex items-center justify-center gap-6 text-6xl font-bold font-mono my-8 select-none">
+                <!-- Dynamically populated by JS -->
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap justify-center gap-4 mt-8 w-full">
+                <button id="btnHelp" class="px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white rounded-xl font-bold transition-all transform hover:scale-105 shadow-lg flex items-center gap-2 text-lg">
+                    <span>❓</span> Help
+                </button>
+                <button id="btnSubmit" class="px-10 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white rounded-xl font-bold transition-all transform hover:scale-105 shadow-lg shadow-green-500/30 text-xl flex-grow max-w-xs">
+                    Submit Answer
+                </button>
+                <button id="btnRanks" class="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold transition-all transform hover:scale-105 shadow-lg flex items-center gap-2 text-lg">
+                    <span>🏆</span> Ranks & Titles
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 w-full max-w-xl z-50 flex flex-col gap-2 px-4 pointer-events-none">
+        <!-- Toasts injected here -->
+    </div>
+
+    <!-- Modals -->
+    <!-- Help Modal -->
+    <div id="helpModal" class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop hidden opacity-0 transition-opacity duration-300 px-4">
+        <div class="bg-slate-800 border-2 border-indigo-500 rounded-2xl p-8 max-w-lg w-full shadow-2xl transform scale-95 transition-transform duration-300">
+            <h3 class="text-3xl font-bold mb-4 text-blue-400 flex items-center gap-2"><span>❓</span> The Golden Rule</h3>
+            <div class="text-lg text-slate-200 space-y-4">
+                <p><strong>Whatever you multiply or divide the top by, you MUST do the exact same to the bottom to keep them equal!</strong></p>
+                <div class="bg-slate-700 p-4 rounded-xl text-center font-mono text-2xl my-4 border border-slate-600 shadow-inner">
+                    <div class="flex justify-center items-center gap-4">
+                        <div class="flex flex-col items-center">
+                            <span>1</span>
+                            <div class="fraction-line bg-slate-300"></div>
+                            <span>2</span>
+                        </div>
+                        <div class="flex flex-col text-sm text-yellow-400 items-center justify-center">
+                            <span>x 3 &rarr;</span>
+                            <span class="opacity-0">.</span>
+                            <span>x 3 &rarr;</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-green-400">3</span>
+                            <div class="fraction-line bg-slate-300"></div>
+                            <span class="text-green-400">6</span>
+                        </div>
+                    </div>
+                </div>
+                <p>Fractions are about multiplying and dividing, <em>never</em> adding or subtracting from the top and bottom!</p>
+            </div>
+            <button class="mt-8 w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-lg transition-colors close-modal">
+                Got it!
+            </button>
+        </div>
+    </div>
+
+    <!-- Ranks Modal -->
+    <div id="ranksModal" class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop hidden opacity-0 transition-opacity duration-300 px-4">
+        <div class="bg-slate-800 border-2 border-purple-500 rounded-2xl p-8 max-w-lg w-full shadow-2xl transform scale-95 transition-transform duration-300">
+            <h3 class="text-3xl font-bold mb-6 text-purple-400 flex items-center gap-2"><span>🏆</span> Score Brackets & Titles</h3>
+            <ul class="space-y-4 text-lg">
+                <li class="flex justify-between items-center bg-slate-700/50 p-3 rounded-lg border border-slate-600">
+                    <span class="font-bold text-yellow-400">👑✨ Fraction Grandmaster</span>
+                    <span class="text-slate-300 font-mono">> 8500 pts</span>
+                </li>
+                <li class="flex justify-between items-center bg-slate-700/50 p-3 rounded-lg border border-slate-600">
+                    <span class="font-bold text-blue-300">🧭🔭 Equivalent Explorer</span>
+                    <span class="text-slate-300 font-mono">6000 - 8500 pts</span>
+                </li>
+                <li class="flex justify-between items-center bg-slate-700/50 p-3 rounded-lg border border-slate-600">
+                    <span class="font-bold text-orange-300">⚔️🛡️ Math Challenger</span>
+                    <span class="text-slate-300 font-mono">3000 - 5999 pts</span>
+                </li>
+                <li class="flex justify-between items-center bg-slate-700/50 p-3 rounded-lg border border-slate-600">
+                    <span class="font-bold text-green-300">📚🌱 Fraction Apprentice</span>
+                    <span class="text-slate-300 font-mono">< 3000 pts</span>
+                </li>
+            </ul>
+            <button class="mt-8 w-full py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-lg transition-colors close-modal">
+                Back to Game
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="gameOverModal" class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop hidden opacity-0 transition-opacity duration-300 px-4">
+        <div class="bg-indigo-900 border-4 border-yellow-400 rounded-3xl p-10 max-w-md w-full shadow-2xl transform scale-95 transition-transform duration-300 text-center relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
+            <h2 class="text-4xl font-extrabold mb-2 text-white drop-shadow-md">Game Over!</h2>
+            <p class="text-xl text-indigo-200 mb-6">Your Final Score</p>
+            
+            <div class="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-500 mb-6 font-mono drop-shadow-lg" id="finalScoreDisplay">
+                0
+            </div>
+
+            <div class="bg-indigo-950/50 border border-indigo-500 p-4 rounded-xl mb-8">
+                <p class="text-sm text-indigo-300 uppercase tracking-widest font-bold mb-1">Achieved Rank</p>
+                <div id="finalTitleDisplay" class="text-2xl font-bold text-white">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+
+            <button id="btnPlayAgain" class="w-full py-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-indigo-950 rounded-xl font-black text-xl transition-transform transform hover:scale-105 shadow-xl shadow-yellow-500/20">
+                Play Again!
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // IIFE to scope variables and prevent console cheating
+        (() => {
+            // --- Game State ---
+            const maxRounds = 10;
+            let currentRound = 1;
+            let totalScore = 0;
+            let roundScore = 1000;
+            let timerInterval = null;
+            let isRoundActive = false;
+
+            // Problem Data
+            let pLeftN, pLeftD, pRightN, pRightD;
+            let multiplier;
+            let missingIndex; // 0: LeftN, 1: LeftD, 2: RightN, 3: RightD
+
+            // Simplified base fractions appropriate for Year 7
+            const baseFractions = [
+                {n: 1, d: 2}, {n: 1, d: 3}, {n: 2, d: 3}, {n: 1, d: 4}, 
+                {n: 3, d: 4}, {n: 1, d: 5}, {n: 2, d: 5}, {n: 3, d: 5}, 
+                {n: 4, d: 5}, {n: 1, d: 6}, {n: 5, d: 6}, {n: 1, d: 7}, 
+                {n: 2, d: 7}, {n: 3, d: 7}, {n: 4, d: 7}, {n: 1, d: 8}, 
+                {n: 3, d: 8}, {n: 5, d: 8}, {n: 7, d: 8}, {n: 1, d: 9},
+                {n: 2, d: 9}, {n: 4, d: 9}, {n: 5, d: 9}, {n: 7, d: 9},
+                {n: 1, d: 10}, {n: 3, d: 10}, {n: 7, d: 10}, {n: 9, d: 10}
+            ];
+
+            // --- DOM Elements ---
+            const elRound = document.getElementById('roundDisplay');
+            const elTotalScore = document.getElementById('scoreDisplay');
+            const elRoundScore = document.getElementById('roundScoreDisplay');
+            const elTimerBar = document.getElementById('timerBar');
+            const elEquationArea = document.getElementById('equationArea');
+            
+            const btnSubmit = document.getElementById('btnSubmit');
+            const btnHelp = document.getElementById('btnHelp');
+            const btnRanks = document.getElementById('btnRanks');
+            const btnPlayAgain = document.getElementById('btnPlayAgain');
+
+            const toastContainer = document.getElementById('toastContainer');
+            
+            const helpModal = document.getElementById('helpModal');
+            const ranksModal = document.getElementById('ranksModal');
+            const gameOverModal = document.getElementById('gameOverModal');
+
+            // --- Initialization ---
+            function initGame() {
+                currentRound = 1;
+                totalScore = 0;
+                updateTopBar();
+                closeAllModals();
+                startRound();
+            }
+
+            function startRound() {
+                isRoundActive = true;
+                roundScore = 1000;
+                elRound.innerText = `${currentRound} / ${maxRounds}`;
+                updateRoundScoreDisplay();
+                elTimerBar.style.width = '100%';
+                
+                generateProblem();
+                renderEquation();
+                
+                // Clear any existing timer
+                if(timerInterval) clearInterval(timerInterval);
+                
+                // Start Timer (Decreases score by 3 points every 100ms -> 30 points/sec -> max ~33 seconds to reach 100)
+                timerInterval = setInterval(() => {
+                    if (roundScore > 100) {
+                        roundScore -= 3;
+                        if (roundScore < 100) roundScore = 100;
+                        updateRoundScoreDisplay();
+                        
+                        // Update Bar Width
+                        const percentage = Math.max(10, (roundScore / 1000) * 100);
+                        elTimerBar.style.width = `${percentage}%`;
+                        
+                        // Color change based on time
+                        if (percentage < 30) {
+                            elTimerBar.className = "h-full bg-gradient-to-r from-red-500 to-rose-600 w-full transition-all duration-100 ease-linear";
+                        } else if (percentage < 60) {
+                            elTimerBar.className = "h-full bg-gradient-to-r from-yellow-400 to-orange-500 w-full transition-all duration-100 ease-linear";
+                        } else {
+                            elTimerBar.className = "h-full bg-gradient-to-r from-green-400 to-emerald-500 w-full transition-all duration-100 ease-linear";
+                        }
+                    }
+                }, 100);
+            }
+
+            // --- Problem Logic ---
+            function generateProblem() {
+                const base = baseFractions[Math.floor(Math.random() * baseFractions.length)];
+                pLeftN = base.n;
+                pLeftD = base.d;
+                
+                // Multiplier between 2 and 7
+                multiplier = Math.floor(Math.random() * 6) + 2; 
+                
+                pRightN = pLeftN * multiplier;
+                pRightD = pLeftD * multiplier;
+
+                // Randomly choose which one to hide (0 to 3)
+                missingIndex = Math.floor(Math.random() * 4);
+            }
+
+            function renderEquation() {
+                elEquationArea.innerHTML = '';
+                
+                // Helper to create fraction div
+                const createFraction = (n, d, isLeft) => {
+                    const container = document.createElement('div');
+                    container.className = "flex flex-col items-center gap-2";
+                    
+                    const createPart = (val, isNum) => {
+                        const idx = isLeft ? (isNum ? 0 : 1) : (isNum ? 2 : 3);
+                        if (idx === missingIndex) {
+                            const input = document.createElement('input');
+                            input.type = "number";
+                            input.id = "answerInput";
+                            input.autocomplete = "off";
+                            input.className = "w-20 h-20 text-center text-4xl text-indigo-950 font-black rounded-xl border-4 border-indigo-300 focus:outline-none focus:border-yellow-400 focus:ring-4 focus:ring-yellow-400/50 transition-all bg-white shadow-inner";
+                            // Submit on enter
+                            input.addEventListener('keypress', (e) => {
+                                if (e.key === 'Enter') handleSubmission();
+                            });
+                            return input;
+                        } else {
+                            const span = document.createElement('span');
+                            span.innerText = val;
+                            span.className = "drop-shadow-md";
+                            return span;
+                        }
+                    };
+
+                    container.appendChild(createPart(n, true));
+                    const line = document.createElement('div');
+                    line.className = "fraction-line shadow-sm";
+                    container.appendChild(line);
+                    container.appendChild(createPart(d, false));
+                    
+                    return container;
+                };
+
+                elEquationArea.appendChild(createFraction(pLeftN, pLeftD, true));
+                
+                const equals = document.createElement('div');
+                equals.innerText = "=";
+                equals.className = "text-yellow-400 drop-shadow-md px-2";
+                elEquationArea.appendChild(equals);
+                
+                elEquationArea.appendChild(createFraction(pRightN, pRightD, false));
+
+                // Auto-focus input
+                setTimeout(() => {
+                    const input = document.getElementById('answerInput');
+                    if(input) input.focus();
+                }, 50);
+            }
+
+            // --- Interaction & Feedback Logic ---
+            function handleSubmission() {
+                if (!isRoundActive) return;
+                
+                const inputEl = document.getElementById('answerInput');
+                if (!inputEl) return;
+                
+                const answer = parseInt(inputEl.value, 10);
+                if (isNaN(answer)) {
+                    showToast("Please enter a number!", "bg-slate-700 border-slate-500 text-white");
+                    inputEl.classList.add('shake');
+                    setTimeout(() => inputEl.classList.remove('shake'), 500);
+                    return;
+                }
+
+                // Determine Correct Answer and Diff for addition mistake
+                let correctAnswer;
+                let additionMistakeTriggered = false;
+                let additionMistakeMsg = "";
+                let diff;
+
+                switch(missingIndex) {
+                    case 0: // Missing pLeftN
+                        correctAnswer = pLeftN;
+                        diff = pRightD - pLeftD;
+                        if (answer + diff === pRightN) {
+                            additionMistakeTriggered = true;
+                            additionMistakeMsg = `Careful! Equivalent fractions are made by MULTIPLYING, not adding. You don't subtract ${diff} from the top and bottom; you need to figure out what you multiply by ${multiplier} to get ${pRightN}.`;
+                        }
+                        break;
+                    case 1: // Missing pLeftD
+                        correctAnswer = pLeftD;
+                        diff = pRightN - pLeftN;
+                        if (answer + diff === pRightD) {
+                            additionMistakeTriggered = true;
+                            additionMistakeMsg = `Careful! Equivalent fractions are made by MULTIPLYING, not adding. You don't subtract ${diff} from the top and bottom; you need to figure out what you multiply by ${multiplier} to get ${pRightD}.`;
+                        }
+                        break;
+                    case 2: // Missing pRightN
+                        correctAnswer = pRightN;
+                        diff = pRightD - pLeftD;
+                        if (answer === pLeftN + diff) {
+                            additionMistakeTriggered = true;
+                            additionMistakeMsg = `Careful! Equivalent fractions are made by MULTIPLYING, not adding. You don't add ${diff} to the top and bottom; you need to figure out what you MULTIPLY ${pLeftD} by to get ${pRightD}.`;
+                        }
+                        break;
+                    case 3: // Missing pRightD
+                        correctAnswer = pRightD;
+                        diff = pRightN - pLeftN;
+                        if (answer === pLeftD + diff) {
+                            additionMistakeTriggered = true;
+                            additionMistakeMsg = `Careful! Equivalent fractions are made by MULTIPLYING, not adding. You don't add ${diff} to the top and bottom; you need to figure out what you MULTIPLY ${pLeftN} by to get ${pRightN}.`;
+                        }
+                        break;
+                }
+
+                // Check Result
+                if (answer === correctAnswer) {
+                    // Correct!
+                    isRoundActive = false;
+                    clearInterval(timerInterval);
+                    inputEl.className = "w-20 h-20 text-center text-4xl text-white font-black rounded-xl border-4 border-green-400 bg-green-500 shadow-lg shadow-green-500/50 transition-all";
+                    inputEl.disabled = true;
+                    
+                    totalScore += roundScore;
+                    updateTopBar();
+                    
+                    triggerConfetti();
+                    showToast(`Spot on! <strong>${multiplier}</strong> is the magic number! <span class="text-green-300 ml-2">+${roundScore} pts</span>`, "bg-slate-800 border-green-500 text-white shadow-green-500/20");
+                    
+                    setTimeout(() => {
+                        if (currentRound < maxRounds) {
+                            currentRound++;
+                            startRound();
+                        } else {
+                            endGame();
+                        }
+                    }, 2500);
+
+                } else {
+                    // Wrong Answer Penalty
+                    roundScore = Math.max(100, roundScore - 100);
+                    updateRoundScoreDisplay();
+                    inputEl.value = "";
+                    inputEl.classList.add('shake', 'border-red-500', 'focus:border-red-500', 'focus:ring-red-500/50');
+                    setTimeout(() => {
+                        inputEl.classList.remove('shake', 'border-red-500', 'focus:border-red-500', 'focus:ring-red-500/50');
+                        inputEl.focus();
+                    }, 500);
+
+                    if (additionMistakeTriggered) {
+                        showToast(additionMistakeMsg, "bg-red-900 border-red-500 text-red-50 shadow-red-500/20");
+                    } else {
+                        // General Pedagogy Feedback
+                        let generalMsg = "";
+                        if (missingIndex === 0) {
+                            generalMsg = `Not quite! Look at the bottom numbers (denominators). How do we get from ${pLeftD} to ${pRightD}? We multiply by ${multiplier}! So, what top number multiplied by ${multiplier} gives ${pRightN}? Try again!`;
+                        } else if (missingIndex === 2) {
+                            generalMsg = `Not quite! Look at the bottom numbers (denominators). How do we get from ${pLeftD} to ${pRightD}? We multiply by ${multiplier}! So, to keep the fraction balanced, you must multiply the top number (${pLeftN}) by ${multiplier} as well. Try again!`;
+                        } else if (missingIndex === 1) {
+                            generalMsg = `Oops! Look at the top numbers (numerators). How do we get from ${pLeftN} to ${pRightN}? We multiply by ${multiplier}! So, what bottom number multiplied by ${multiplier} gives ${pRightD}?`;
+                        } else if (missingIndex === 3) {
+                            generalMsg = `Oops! Look at the top numbers (numerators). How do we get from ${pLeftN} to ${pRightN}? We multiply by ${multiplier}! Apply that exact same rule to the bottom number. What is ${pLeftD} × ${multiplier}?`;
+                        }
+                        showToast(generalMsg, "bg-slate-800 border-orange-500 text-orange-50 shadow-orange-500/20");
+                    }
+                }
+            }
+
+            // --- UI Updaters ---
+            function updateTopBar() {
+                elTotalScore.innerText = totalScore;
+            }
+
+            function updateRoundScoreDisplay() {
+                elRoundScore.innerText = `Current Potential Points: ${roundScore}`;
+            }
+
+            function showToast(htmlMessage, customClasses) {
+                const toast = document.createElement('div');
+                toast.className = `p-4 rounded-xl border-l-8 shadow-xl text-lg toast-enter font-medium ${customClasses}`;
+                toast.innerHTML = htmlMessage;
+                
+                toastContainer.appendChild(toast);
+                
+                // Remove after 6 seconds
+                setTimeout(() => {
+                    toast.classList.replace('toast-enter', 'toast-exit');
+                    setTimeout(() => {
+                        if(toast.parentElement) toast.remove();
+                    }, 400);
+                }, 6000);
+            }
+
+            function triggerConfetti() {
+                for (let i = 0; i < 40; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.classList.add('confetti');
+                    
+                    // Randomize color
+                    const colors = ['#f43f5e', '#fbbf24', '#34d399', '#3b82f6', '#a855f7'];
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    
+                    // Randomize start position
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.top = '-10px';
+                    
+                    // Randomize animation duration and delay
+                    const duration = Math.random() * 2 + 2; // 2s to 4s
+                    confetti.style.animationDuration = duration + 's';
+                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    
+                    document.body.appendChild(confetti);
+                    
+                    // Cleanup
+                    setTimeout(() => {
+                        if(confetti.parentElement) confetti.remove();
+                    }, duration * 1000 + 500);
+                }
+            }
+
+            // --- End Game & Ranks ---
+            function getTitle(score) {
+                if(score >= 8500) return "Fraction Grandmaster 👑✨";
+                if(score >= 6000) return "Equivalent Explorer 🧭🔭";
+                if(score >= 3000) return "Math Challenger ⚔️🛡️";
+                return "Fraction Apprentice 📚🌱";
+            }
+
+            function endGame() {
+                isRoundActive = false;
+                if(timerInterval) clearInterval(timerInterval);
+                
+                document.getElementById('finalScoreDisplay').innerText = totalScore;
+                
+                const titleStr = getTitle(totalScore);
+                const titleEl = document.getElementById('finalTitleDisplay');
+                titleEl.innerText = titleStr;
+                
+                // Colorize title dynamically
+                if(totalScore >= 8500) titleEl.className = "text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 drop-shadow";
+                else if(totalScore >= 6000) titleEl.className = "text-2xl font-bold text-blue-300";
+                else if(totalScore >= 3000) titleEl.className = "text-2xl font-bold text-orange-300";
+                else titleEl.className = "text-2xl font-bold text-green-300";
+
+                openModal(gameOverModal);
+            }
+
+            // --- Modal Logic ---
+            function openModal(modal) {
+                modal.classList.remove('hidden');
+                // slight delay to allow display:block to apply before animating opacity
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    modal.firstElementChild.classList.remove('scale-95');
+                    modal.firstElementChild.classList.add('scale-100');
+                }, 10);
+            }
+
+            function closeModal(modal) {
+                modal.classList.add('opacity-0');
+                modal.firstElementChild.classList.remove('scale-100');
+                modal.firstElementChild.classList.add('scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    // Refocus input if round is active
+                    if(isRoundActive) {
+                        const input = document.getElementById('answerInput');
+                        if(input) input.focus();
+                    }
+                }, 300);
+            }
+
+            function closeAllModals() {
+                [helpModal, ranksModal, gameOverModal].forEach(m => {
+                    if(!m.classList.contains('hidden')) closeModal(m);
+                });
+            }
+
+            // --- Event Listeners ---
+            btnSubmit.addEventListener('click', handleSubmission);
+            btnHelp.addEventListener('click', () => openModal(helpModal));
+            btnRanks.addEventListener('click', () => openModal(ranksModal));
+            btnPlayAgain.addEventListener('click', initGame);
+
+            // Close modals on clicking backdrop or close buttons
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                backdrop.addEventListener('click', (e) => {
+                    if (e.target === backdrop && backdrop.id !== 'gameOverModal') {
+                        closeModal(backdrop);
+                    }
+                });
+            });
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    closeModal(e.target.closest('.modal-backdrop'));
+                });
+            });
+
+            // Start game on load
+            window.onload = initGame;
+
+        })();
+    </script>
+</body>
+</html>
