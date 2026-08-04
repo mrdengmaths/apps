@@ -178,9 +178,10 @@
                 </g>
 
                 <!-- Crosshairs -->
-                <g id="crosshairs-group" class="fade-element">
+                <g id="crosshairs-group" class="fade-element" style="pointer-events: none;">
                     <line id="dash-v" class="dash-line" x1="0" y1="0" x2="0" y2="0" />
                     <line id="dash-h" class="dash-line" x1="0" y1="0" x2="0" y2="0" />
+                    <circle id="intersection-halo" cx="0" cy="0" r="14" fill="none" stroke-width="2.5" class="fade-element" style="display: none;" />
                     <circle id="intersection-dot" cx="0" cy="0" r="8" filter="url(#shadow)" />
                 </g>
 
@@ -194,6 +195,9 @@
                     <line id="dist-line" class="distance-line" x1="0" y1="100" x2="0" y2="100" />
                 </g>
                 <text id="distance-text-group" class="fade-element" text-anchor="middle" x="300" y="70">0</text>
+
+                <!-- Square Hitbox for dragging -->
+                <rect id="square-hitbox" x="90" y="200" width="420" height="420" fill="transparent" class="fade-element" style="cursor: crosshair; display: none;" />
 
                 <!-- Interactive dots -->
                 <g id="dots-group" class="fade-element">
@@ -255,7 +259,9 @@
             p1Left: document.getElementById('p1_left'),
             dashV: document.getElementById('dash-v'),
             dashH: document.getElementById('dash-h'),
-            intersectDot: document.getElementById('intersection-dot')
+            intersectDot: document.getElementById('intersection-dot'),
+            intersectHalo: document.getElementById('intersection-halo'),
+            squareHitbox: document.getElementById('square-hitbox')
         };
 
         function updateLogic() {
@@ -310,6 +316,12 @@
                 els.intersectDot.setAttribute('cy', intersectY);
                 els.intersectDot.style.fill = currentColor;
 
+                if (currentStep >= 7) {
+                    els.intersectHalo.setAttribute('cx', intersectX);
+                    els.intersectHalo.setAttribute('cy', intersectY);
+                    els.intersectHalo.style.stroke = currentColor;
+                }
+
                 if (paintMode && !isDrawingDiagonal && !isRasterScanning && isDragging) {
                     leaveTrace(intersectX, intersectY, currentColor, true);
                 }
@@ -328,6 +340,10 @@
             if (evt.target.classList.contains('dot-hitbox')) {
                 isDragging = true;
                 activeDotId = evt.target.getAttribute('data-target');
+            } else if (evt.target.id === 'square-hitbox') {
+                isDragging = true;
+                activeDotId = 'square';
+                drag(evt); 
             }
         }
 
@@ -335,9 +351,18 @@
             if (isDragging && activeDotId) {
                 evt.preventDefault();
                 let coord = getMousePos(evt);
-                let newX = Math.max(LINE_START, Math.min(LINE_END, coord.x));
-                if (activeDotId === 'dot1') d1x = newX;
-                else d2x = newX;
+                
+                if (activeDotId === 'square') {
+                    let boundedX = Math.max(LINE_START, Math.min(LINE_END, coord.x));
+                    let boundedY = Math.max(SQUARE_Y, Math.min(SQUARE_Y + LINE_LENGTH, coord.y));
+                    d2x = boundedX;
+                    d1x = LINE_START + (boundedY - SQUARE_Y);
+                } else {
+                    let newX = Math.max(LINE_START, Math.min(LINE_END, coord.x));
+                    if (activeDotId === 'dot1') d1x = newX;
+                    else d2x = newX;
+                }
+                
                 updateLogic();
             }
         }
@@ -393,12 +418,12 @@
 
         function animateRasterScan() {
             if (!isRasterScanning) return;
-            let speed = getSpeed() * 2;
+            let speed = getSpeed() * 15; 
             for(let i=0; i<speed; i++) {
                 scanD2 += 1.5;
                 if (scanD2 > LINE_END) {
                     scanD2 = LINE_START;
-                    scanD1 += 2; 
+                    scanD1 += 3; 
                 }
                 if (scanD1 > LINE_END) { isRasterScanning = false; break; }
                 
@@ -440,10 +465,26 @@
                 case 6:
                     show('full-square-group');
                     show('crosshairs-group');
+                    els.squareHitbox.style.display = 'block';
+                    setTimeout(() => els.squareHitbox.classList.add('visible'), 50);
                     updateLogic();
                     break;
                 case 7: 
                     paintMode = true; 
+                    
+                    els.intersectHalo.style.display = 'block';
+                    setTimeout(() => els.intersectHalo.classList.add('visible'), 50);
+                    els.intersectDot.setAttribute('r', '5'); // Target visual look
+                    
+                    // Leave an initial splash of paint so the user sees the mode changed
+                    let lx1 = (d1x - LINE_START) / SCALE_FACTOR;
+                    let lx2 = (d2x - LINE_START) / SCALE_FACTOR;
+                    let rndDist = Math.round(Math.abs(lx1 - lx2));
+                    let initCol = rndDist === 0 ? COL_ZERO : (rndDist <= 10 ? COL_GREEN : COL_RED);
+                    
+                    for (let p = 0; p < 5; p++) {
+                        leaveTrace(d2x, SQUARE_Y + (d1x - LINE_START), initCol, true);
+                    }
                     break;
                 case 8:
                     paintMode = true;
