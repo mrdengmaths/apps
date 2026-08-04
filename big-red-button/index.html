@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Distance of Two Points Concept</title>
+    <title>Distance Concept Demonstration</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&display=swap');
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-            color: #334155;
+            background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+            color: #f8fafc;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -21,27 +23,20 @@
 
         #container {
             width: 100%;
-            max-width: 800px;
-            position: relative;
+            max-width: 900px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
-        .instruction {
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-            text-align: center;
-            color: #64748b;
-        }
-
         #canvas-area {
             position: relative;
             width: 600px;
-            height: 800px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            height: 700px;
+            background: #0f172a;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+            border: 1px solid #1e293b;
             overflow: hidden;
         }
 
@@ -50,481 +45,430 @@
             height: 100%;
         }
 
+        /* Smooth Fades */
         .fade-element {
             opacity: 0;
-            transition: opacity 0.5s ease-in-out;
+            transition: opacity 0.8s ease-in-out;
+            pointer-events: none;
         }
-
-        .visible {
+        .fade-element.visible {
             opacity: 1;
+            pointer-events: auto;
         }
 
+        /* Interactive Elements */
         .dot {
             cursor: grab;
             fill: #3b82f6;
-            transition: fill 0.2s;
+            stroke: #fff;
+            stroke-width: 2px;
+            transition: fill 0.2s, r 0.2s;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+        }
+        .dot:hover {
+            r: 10;
+        }
+        .dot:active {
+            cursor: grabbing;
+            r: 9;
         }
 
-        .dot:active {
+        /* Invisible larger hit area for dragging */
+        .dot-hitbox {
+            cursor: grab;
+            fill: transparent;
+        }
+        .dot-hitbox:active {
             cursor: grabbing;
         }
 
-        .distance-line {
-            stroke-width: 4;
-            transition: stroke 0.2s;
-        }
-
+        /* SVG Styling */
         .axis-line {
-            stroke: #94a3b8;
-            stroke-width: 2;
+            stroke: #475569;
+            stroke-width: 4;
+            stroke-linecap: round;
         }
-
+        .distance-line {
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke 0.3s ease;
+            filter: drop-shadow(0 0 4px rgba(255,255,255,0.2));
+        }
         .dash-line {
-            stroke: #cbd5e1;
-            stroke-width: 1.5;
-            stroke-dasharray: 4;
+            stroke: #64748b;
+            stroke-width: 2;
+            stroke-dasharray: 6 6;
         }
-
-        #distance-text {
-            font-family: monospace;
-            font-size: 1.2rem;
-            font-weight: bold;
-            transition: fill 0.2s;
+        .square-border {
+            fill: none;
+            stroke: #334155;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
         
-        #formula-container {
-            position: absolute;
-            bottom: 20px;
+        #distance-text-group {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 3rem;
+            font-weight: 800;
+            transition: fill 0.3s ease;
+        }
+
+        /* Speed Control Range Input Customization */
+        input[type=range] {
+            -webkit-appearance: none;
             width: 100%;
-            text-align: center;
-            opacity: 0;
-            transition: opacity 1s ease-in-out;
-            font-size: 1.2rem;
-            padding: 10px;
-            background: rgba(255,255,255,0.9);
-            border-radius: 8px;
+            background: transparent;
         }
-        
-        .math-tex {
-            font-style: italic;
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -6px;
         }
-
-        .trace-dot {
-            opacity: 0.6;
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #475569;
+            border-radius: 2px;
         }
     </style>
 </head>
 <body>
 
     <div id="container">
-        <h1 class="text-3xl font-bold mb-2">Line Segment & Square Diagonal Concept</h1>
-        <p class="instruction">Press <kbd class="bg-gray-200 px-2 py-1 rounded">Spacebar</kbd> to advance the demonstration.</p>
-        <p id="step-indicator" class="text-sm font-semibold text-blue-600 mb-4">Step 0 / 10</p>
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold mb-2 tracking-tight text-slate-100">Distance Concept</h1>
+            <p class="text-sm text-slate-500 mb-4">Press <kbd class="bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-slate-300 font-mono text-xs">Spacebar</kbd> to advance.</p>
+            <div class="inline-flex items-center justify-center bg-slate-900 shadow-inner rounded-full px-4 py-1 border border-slate-800">
+                <span id="step-indicator" class="text-xs font-bold text-emerald-500 uppercase tracking-widest">Step 0 / 9</span>
+            </div>
+        </div>
 
         <div id="canvas-area">
-            <svg id="main-svg">
-                <!-- Group for trace dots to ensure they stay behind interactive elements -->
+            <svg id="main-svg" viewBox="0 0 600 700">
+                <defs>
+                    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.5"/>
+                    </filter>
+                </defs>
+
                 <g id="trace-layer"></g>
 
-                <!-- Step 1: Just the line segment -->
-                <line id="main-line" class="fade-element axis-line" x1="150" y1="100" x2="450" y2="100" />
-                <text id="line-label-0" class="fade-element" x="140" y="95" font-size="12" fill="#64748b">0</text>
-                <text id="line-label-60" class="fade-element" x="440" y="95" font-size="12" fill="#64748b">60</text>
-
-                <!-- Step 3: Distance Line & Text -->
-                <line id="dist-line" class="fade-element distance-line" x1="0" y1="100" x2="0" y2="100" stroke="#ef4444" />
-                <text id="distance-text" class="fade-element" x="480" y="105">Dist: 0.0</text>
-
-                <!-- Step 4: Top side of square -->
-                <g id="square-top-group" class="fade-element">
-                    <line class="axis-line" x1="150" y1="200" x2="450" y2="200" />
-                    <!-- Dot projections on top side -->
-                    <circle id="proj-dot1-x" cx="0" cy="200" r="4" fill="#3b82f6" opacity="0.5" />
-                    <circle id="proj-dot2-x" cx="0" cy="200" r="4" fill="#3b82f6" opacity="0.5" />
-                </g>
-
-                <!-- Step 5: Rotate line to form left side -->
-                <g id="square-left-group" class="fade-element">
-                    <line id="left-line" class="axis-line" x1="150" y1="200" x2="150" y2="500" />
-                    <!-- Dot projections on left side (y-axis representation of x position) -->
-                    <circle id="proj-dot1-y" cx="150" cy="0" r="4" fill="#3b82f6" opacity="0.5" />
-                    <circle id="proj-dot2-y" cx="150" cy="0" r="4" fill="#3b82f6" opacity="0.5" />
-                </g>
-
-                <!-- Step 6: Full Square and Dashed Lines -->
+                <!-- Full Square border -->
                 <g id="full-square-group" class="fade-element">
-                    <rect x="150" y="200" width="300" height="300" fill="none" stroke="#94a3b8" stroke-width="2" />
-                    
-                    <!-- Dashed lines -->
-                    <line id="dash-v1" class="dash-line" x1="0" y1="200" x2="0" y2="500" />
-                    <line id="dash-h1" class="dash-line" x1="150" y1="0" x2="450" y2="0" />
-                    
-                    <line id="dash-v2" class="dash-line" x1="0" y1="200" x2="0" y2="500" opacity="0" /> <!-- Hidden initially, for showing two points later if needed, but per spec we track one main intersection -->
-                    <line id="dash-h2" class="dash-line" x1="150" y1="0" x2="450" y2="0" opacity="0" />
-                    
-                    <!-- Main intersection point -->
-                    <circle id="intersection-dot" cx="0" cy="0" r="6" fill="#000" />
+                    <path class="square-border" d="M 90 200 L 510 200 L 510 620 L 90 620 Z" />
                 </g>
 
-                <!-- Step 2: 2 dots on main line (placed last to be on top) -->
-                <circle id="dot1" class="fade-element dot" cx="200" cy="100" r="8" />
-                <circle id="dot2" class="fade-element dot" cx="400" cy="100" r="8" />
+                <!-- Top side of square (Moving down) -->
+                <g id="square-top-wrapper" class="fade-element" style="transition: transform 1.2s ease;">
+                    <line class="axis-line" x1="90" y1="100" x2="510" y2="100" />
+                    <circle id="p1_top" class="dot" cx="90" cy="100" r="8" style="pointer-events: none;" />
+                    <circle id="p2_top" class="dot" cx="90" cy="100" r="8" style="pointer-events: none;" />
+                </g>
+
+                <!-- Left side of square (Rotating) -->
+                <g id="square-left-wrapper" class="fade-element" style="transition: transform 1.2s ease; transform-origin: 90px 200px;">
+                    <line class="axis-line" x1="90" y1="200" x2="510" y2="200" />
+                    <circle id="p1_left" class="dot" cx="90" cy="200" r="8" style="pointer-events: none;" />
+                </g>
+
+                <!-- Crosshairs -->
+                <g id="crosshairs-group" class="fade-element">
+                    <line id="dash-v" class="dash-line" x1="0" y1="0" x2="0" y2="0" />
+                    <line id="dash-h" class="dash-line" x1="0" y1="0" x2="0" y2="0" />
+                    <circle id="intersection-dot" cx="0" cy="0" r="8" filter="url(#shadow)" />
+                </g>
+
+                <!-- Main line segment -->
+                <g id="main-line-group" class="fade-element">
+                    <line class="axis-line" x1="90" y1="100" x2="510" y2="100" />
+                </g>
+
+                <!-- Distance Line -->
+                <g id="distance-line-group" class="fade-element">
+                    <line id="dist-line" class="distance-line" x1="0" y1="100" x2="0" y2="100" />
+                </g>
+                <text id="distance-text-group" class="fade-element" text-anchor="middle" x="300" y="70">0</text>
+
+                <!-- Interactive dots -->
+                <g id="dots-group" class="fade-element">
+                    <circle id="dot1" class="dot" cx="200" cy="100" r="8" />
+                    <circle id="dot1-hit" class="dot-hitbox" cx="200" cy="100" r="25" data-target="dot1" />
+                    
+                    <circle id="dot2" class="dot" cx="400" cy="100" r="8" />
+                    <circle id="dot2-hit" class="dot-hitbox" cx="400" cy="100" r="25" data-target="dot2" />
+                </g>
             </svg>
-            
-            <!-- Step 10: Formula -->
-            <div id="formula-container" class="fade-element">
-                <p class="font-semibold mb-1">Probability related to this concept:</p>
-                <p>If two points <span class="math-tex">X</span> and <span class="math-tex">Y</span> are chosen at random on a line segment of length <span class="math-tex">L</span>,</p>
-                <p>the probability that the distance between them is less than <span class="math-tex">d</span> is:</p>
-                <p class="text-xl mt-2 font-bold"><span class="math-tex">P(|X - Y| < d) = 1 - (1 - d/L)²</span></p>
-                <p class="text-sm mt-2 text-gray-500">The red/green area in the square represents this probability space.</p>
+
+            <div id="speed-control-container" class="fade-element absolute bottom-6 right-6 bg-slate-900/90 backdrop-blur px-4 py-3 rounded-xl border border-slate-800 flex flex-col items-center gap-2">
+                <label for="speed-slider" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Speed</label>
+                <input type="range" id="speed-slider" min="1" max="10" step="0.5" value="3" class="w-24">
             </div>
+            
         </div>
     </div>
 
     <script>
         const svg = document.getElementById('main-svg');
-        const dot1 = document.getElementById('dot1');
-        const dot2 = document.getElementById('dot2');
-        const distLine = document.getElementById('dist-line');
-        const distText = document.getElementById('distance-text');
-        const intersectionDot = document.getElementById('intersection-dot');
-        const dashV1 = document.getElementById('dash-v1');
-        const dashH1 = document.getElementById('dash-h1');
         const traceLayer = document.getElementById('trace-layer');
         const stepIndicator = document.getElementById('step-indicator');
 
-        // Layout constants
-        const LINE_START = 150;
-        const LINE_END = 450;
-        const LINE_LENGTH = 300;
-        const SCALED_LENGTH = 60; // Logical length as per requirement
-        const SCALE_FACTOR = LINE_LENGTH / SCALED_LENGTH; // 300 / 60 = 5px per unit
-        
-        const SQUARE_TOP_Y = 200;
-        const SQUARE_SIZE = LINE_LENGTH;
+        const LINE_START = 90;
+        const LINE_END = 510;
+        const LINE_LENGTH = 420;
+        const SCALED_LENGTH = 60; 
+        const SCALE_FACTOR = LINE_LENGTH / SCALED_LENGTH;
+        const SQUARE_Y = 200;
 
         let currentStep = 0;
-        let isDragging = false;
-        let activeDot = null;
-        let paintMode = false;
+        let d1x = 200; 
+        let d2x = 400; 
         
-        let d1x = 200; // Physical pixel position
-        let d2x = 400;
+        let isDragging = false;
+        let activeDotId = null;
+        let paintMode = false;
 
-        // Colors
-        const COL_RED = '#ef4444';
-        const COL_GREEN = '#22c55e';
-        const COL_BLACK = '#000000';
+        let animationFrameId = null;
+        let isDrawingDiagonal = false;
+        let isRasterScanning = false;
+        let scanD1 = LINE_START;
+        let scanD2 = LINE_START;
 
-        // Helper to update text and colors based on distance
+        const COL_ZERO = '#ffffff'; 
+        const COL_GREEN = '#34d399'; 
+        const COL_RED = '#f43f5e';  
+
+        const els = {
+            dot1: document.getElementById('dot1'),
+            dot2: document.getElementById('dot2'),
+            dot1Hit: document.getElementById('dot1-hit'),
+            dot2Hit: document.getElementById('dot2-hit'),
+            distLine: document.getElementById('dist-line'),
+            distText: document.getElementById('distance-text-group'),
+            p1Top: document.getElementById('p1_top'),
+            p2Top: document.getElementById('p2_top'),
+            p1Left: document.getElementById('p1_left'),
+            dashV: document.getElementById('dash-v'),
+            dashH: document.getElementById('dash-h'),
+            intersectDot: document.getElementById('intersection-dot')
+        };
+
         function updateLogic() {
-            // Ensure d1x is the smaller one for logical consistency in some visual parts, 
-            // but physical dots can cross. Let's just calculate absolute distance.
             let logicalX1 = (d1x - LINE_START) / SCALE_FACTOR;
             let logicalX2 = (d2x - LINE_START) / SCALE_FACTOR;
             let distance = Math.abs(logicalX1 - logicalX2);
+            let roundedDistance = Math.round(distance);
             
-            // Update physical distance line
-            distLine.setAttribute('x1', Math.min(d1x, d2x));
-            distLine.setAttribute('x2', Math.max(d1x, d2x));
-
-            // Determine color
             let currentColor = COL_RED;
-            if (distance === 0) {
-                currentColor = COL_BLACK;
-            } else if (distance <= 10) {
-                currentColor = COL_GREEN;
-            }
+            if (roundedDistance === 0) currentColor = COL_ZERO; 
+            else if (roundedDistance <= 10) currentColor = COL_GREEN;
 
-            // Update UI
-            if (currentStep >= 3 && currentStep < 5) {
-                distLine.style.stroke = currentColor;
-                distLine.style.opacity = distance === 0 ? 0 : 1; // hide line if 0
-            } else {
-                distLine.style.opacity = 0; // Hide after step 5
-            }
+            els.dot1.setAttribute('cx', d1x);
+            els.dot1Hit.setAttribute('cx', d1x);
+            els.dot2.setAttribute('cx', d2x);
+            els.dot2Hit.setAttribute('cx', d2x);
 
             if (currentStep >= 3) {
-                distText.textContent = `Dist: ${distance.toFixed(1)}`;
-                distText.style.fill = currentColor;
-            }
-
-            // Update projections (Step 4+)
-            if (currentStep >= 4) {
-                document.getElementById('proj-dot1-x').setAttribute('cx', d1x);
-                document.getElementById('proj-dot2-x').setAttribute('cx', d2x);
-            }
-
-            // Update y-projections (Step 5+)
-            // Map x position on horizontal line to y position on vertical line
-            let mappedY1 = SQUARE_TOP_Y + (d1x - LINE_START);
-            let mappedY2 = SQUARE_TOP_Y + (d2x - LINE_START);
-            
-            if (currentStep >= 5) {
-                document.getElementById('proj-dot1-y').setAttribute('cy', mappedY1);
-                document.getElementById('proj-dot2-y').setAttribute('cy', mappedY2);
-            }
-
-            // Update square intersection (Step 6+)
-            // Let x-axis of square be dot1, y-axis be dot2 (or vice versa, to show the space)
-            // Convention: Top dot (let's say dot2) dictates x, Left dot (dot1) dictates y
-            if (currentStep >= 6) {
-                // Determine which dot is "top" and which is "left" for the coordinate system
-                // Let's use d1x for x-coordinate in square, d2x for y-coordinate (mapped)
-                let sqX = d1x; 
-                let sqY = SQUARE_TOP_Y + (d2x - LINE_START);
-
-                dashV1.setAttribute('x1', sqX);
-                dashV1.setAttribute('x2', sqX);
+                els.distLine.setAttribute('x1', Math.min(d1x, d2x));
+                els.distLine.setAttribute('x2', Math.max(d1x, d2x));
+                els.distLine.style.stroke = currentColor;
                 
-                dashH1.setAttribute('y1', sqY);
-                dashH1.setAttribute('y2', sqY);
+                els.distText.setAttribute('x', (d1x + d2x) / 2);
+                els.distText.setAttribute('y', 80); 
+                els.distText.textContent = roundedDistance.toString();
+                els.distText.style.fill = currentColor;
+            }
 
-                intersectionDot.setAttribute('cx', sqX);
-                intersectionDot.setAttribute('cy', sqY);
-                intersectionDot.style.fill = currentColor;
+            if (currentStep >= 4) {
+                els.p1Top.setAttribute('cx', d1x);
+                els.p2Top.setAttribute('cx', d2x);
+            }
+            if (currentStep >= 5) {
+                els.p1Left.setAttribute('cx', d1x); 
+            }
 
-                // Trace (Step 7+)
-                if (paintMode && currentStep >= 7) {
-                    leaveTrace(sqX, sqY, currentColor);
+            if (currentStep >= 6) {
+                let intersectX = d2x;
+                let intersectY = SQUARE_Y + (d1x - LINE_START);
+
+                els.dashV.setAttribute('x1', intersectX);
+                els.dashV.setAttribute('y1', SQUARE_Y);
+                els.dashV.setAttribute('x2', intersectX);
+                els.dashV.setAttribute('y2', intersectY);
+
+                els.dashH.setAttribute('x1', LINE_START);
+                els.dashH.setAttribute('y1', intersectY);
+                els.dashH.setAttribute('x2', intersectX);
+                els.dashH.setAttribute('y2', intersectY);
+
+                els.intersectDot.setAttribute('cx', intersectX);
+                els.intersectDot.setAttribute('cy', intersectY);
+                els.intersectDot.style.fill = currentColor;
+
+                if (paintMode && !isDrawingDiagonal && !isRasterScanning && isDragging) {
+                    leaveTrace(intersectX, intersectY, currentColor, true);
                 }
             }
         }
 
         function getMousePos(evt) {
             const CTM = svg.getScreenCTM();
-            return {
-                x: (evt.clientX - CTM.e) / CTM.a,
-                y: (evt.clientY - CTM.f) / CTM.d
-            };
+            let clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+            let clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+            return { x: (clientX - CTM.e) / CTM.a, y: (clientY - CTM.f) / CTM.d };
         }
 
         function startDrag(evt) {
-            if (evt.target.classList.contains('dot')) {
+            if (isDrawingDiagonal || isRasterScanning) return; 
+            if (evt.target.classList.contains('dot-hitbox')) {
                 isDragging = true;
-                activeDot = evt.target;
+                activeDotId = evt.target.getAttribute('data-target');
             }
         }
 
         function drag(evt) {
-            if (isDragging && activeDot) {
+            if (isDragging && activeDotId) {
                 evt.preventDefault();
                 let coord = getMousePos(evt);
-                let newX = Math.max(LINE_START, Math.min(LINE_END, coord.x)); // Constrain to line
-                
-                activeDot.setAttribute('cx', newX);
-                if (activeDot.id === 'dot1') {
-                    d1x = newX;
-                } else {
-                    d2x = newX;
-                }
+                let newX = Math.max(LINE_START, Math.min(LINE_END, coord.x));
+                if (activeDotId === 'dot1') d1x = newX;
+                else d2x = newX;
                 updateLogic();
             }
         }
 
-        function endDrag(evt) {
+        function endDrag() {
             isDragging = false;
-            activeDot = null;
+            activeDotId = null;
         }
 
         svg.addEventListener('mousedown', startDrag);
         svg.addEventListener('mousemove', drag);
-        svg.addEventListener('mouseup', endDrag);
-        svg.addEventListener('mouseleave', endDrag);
+        window.addEventListener('mouseup', endDrag);
+        svg.addEventListener('touchstart', startDrag, {passive: false});
+        svg.addEventListener('touchmove', drag, {passive: false});
+        window.addEventListener('touchend', endDrag);
 
-        // Touch support
-        svg.addEventListener('touchstart', (e) => startDrag(e.touches[0]));
-        svg.addEventListener('touchmove', (e) => {
-            if(isDragging) e.preventDefault(); // prevent scrolling while dragging
-            drag(e.touches[0]);
-        }, {passive: false});
-        svg.addEventListener('touchend', endDrag);
+        function show(id) { const el = document.getElementById(id); if(el) { el.classList.add('visible'); el.style.display = ''; } }
 
-        function showElement(id) {
-            const el = document.getElementById(id);
-            if(el) el.classList.add('visible');
-        }
-        function hideElement(id) {
-            const el = document.getElementById(id);
-            if(el) el.classList.remove('visible');
-        }
-
-        function leaveTrace(x, y, color) {
-            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            circle.setAttribute("cx", x);
-            circle.setAttribute("cy", y);
-            circle.setAttribute("r", "3");
-            circle.setAttribute("fill", color);
-            circle.setAttribute("class", "trace-dot");
-            traceLayer.appendChild(circle);
+        function leaveTrace(x, y, color, isDense = false) {
+            let numDots = isDense ? 4 : 1;
+            for(let i=0; i<numDots; i++) {
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                let scatterX = (Math.random()-0.5)*15;
+                let scatterY = (Math.random()-0.5)*15;
+                circle.setAttribute("cx", x + scatterX);
+                circle.setAttribute("cy", y + scatterY);
+                circle.setAttribute("r", (Math.random() * 2 + 1).toString());
+                circle.setAttribute("fill", color);
+                circle.setAttribute("opacity", "0.6");
+                circle.setAttribute("class", "trace-dot");
+                traceLayer.appendChild(circle);
+            }
         }
 
-        function clearTrace() {
-            traceLayer.innerHTML = '';
-        }
+        function getSpeed() { return parseFloat(document.getElementById('speed-slider').value); }
 
-        // Random smooth movement (Step 2)
-        let animationFrameId;
-        let randomMoveActive = false;
-        let targetD1 = d1x, targetD2 = d2x;
-
-        function smoothRandomMove() {
-            if (!randomMoveActive) return;
-
-            // Simple easing towards random targets
-            d1x += (targetD1 - d1x) * 0.05;
-            d2x += (targetD2 - d2x) * 0.05;
-
-            // Pick new targets occasionally
-            if (Math.abs(targetD1 - d1x) < 2) targetD1 = LINE_START + Math.random() * LINE_LENGTH;
-            if (Math.abs(targetD2 - d2x) < 2) targetD2 = LINE_START + Math.random() * LINE_LENGTH;
-
-            dot1.setAttribute('cx', d1x);
-            dot2.setAttribute('cx', d2x);
+        function animateDiagonal() {
+            if (!isDrawingDiagonal) return;
+            d1x += 1.5; 
+            d2x += 1.5;
+            if (d1x >= LINE_END) {
+                d1x = LINE_END;
+                d2x = LINE_END;
+                isDrawingDiagonal = false;
+            } else {
+                animationFrameId = requestAnimationFrame(animateDiagonal);
+            }
             updateLogic();
+            let intersectX = d2x;
+            let intersectY = SQUARE_Y + (d1x - LINE_START);
+            leaveTrace(intersectX, intersectY, COL_ZERO, true);
+        }
 
-            animationFrameId = requestAnimationFrame(smoothRandomMove);
+        function animateRasterScan() {
+            if (!isRasterScanning) return;
+            let speed = getSpeed() * 2;
+            for(let i=0; i<speed; i++) {
+                scanD2 += 1.5;
+                if (scanD2 > LINE_END) {
+                    scanD2 = LINE_START;
+                    scanD1 += 2; 
+                }
+                if (scanD1 > LINE_END) { isRasterScanning = false; break; }
+                
+                let dist = Math.abs((scanD1 - LINE_START) - (scanD2 - LINE_START)) / SCALE_FACTOR;
+                let roundedDist = Math.round(dist);
+                let col = roundedDist === 0 ? COL_ZERO : (roundedDist <= 10 ? COL_GREEN : COL_RED);
+                
+                let cx = scanD2;
+                let cy = SQUARE_Y + (scanD1 - LINE_START);
+                leaveTrace(cx, cy, col, false); 
+            }
+            d1x = scanD1; d2x = scanD2;
+            updateLogic();
+            if (isRasterScanning) animationFrameId = requestAnimationFrame(animateRasterScan);
         }
 
         async function advanceStep() {
-            if (currentStep >= 10) return;
+            if (currentStep >= 9) return;
             currentStep++;
-            stepIndicator.textContent = `Step ${currentStep} / 10`;
+            stepIndicator.textContent = `Step ${currentStep} / 9`;
 
             switch (currentStep) {
-                case 1:
-                    // Just the line segment (of distance 60)
-                    showElement('main-line');
-                    showElement('line-label-0');
-                    showElement('line-label-60');
-                    break;
-                case 2:
-                    // 2 dots, with random smooth movement for 3 seconds
-                    showElement('dot1');
-                    showElement('dot2');
-                    randomMoveActive = true;
-                    targetD1 = LINE_START + Math.random() * LINE_LENGTH;
-                    targetD2 = LINE_START + Math.random() * LINE_LENGTH;
-                    smoothRandomMove();
-                    
-                    // Stop after 3 seconds
+                case 1: show('main-line-group'); break;
+                case 2: show('dots-group'); break;
+                case 3: show('distance-line-group'); show('distance-text-group'); break;
+                case 4: 
+                    show('square-top-wrapper');
                     setTimeout(() => {
-                        randomMoveActive = false;
-                        cancelAnimationFrame(animationFrameId);
-                    }, 3000);
-                    break;
-                case 3:
-                    // distance between the 2 dots connected with bold red/green line
-                    randomMoveActive = false; // Ensure it stopped
-                    cancelAnimationFrame(animationFrameId);
-                    showElement('dist-line');
-                    showElement('distance-text');
-                    updateLogic();
-                    break;
-                case 4:
-                    // Copy the line segment and place it under it
-                    showElement('square-top-group');
-                    updateLogic();
+                        document.getElementById('square-top-wrapper').style.transform = 'translateY(100px)';
+                    }, 50);
                     break;
                 case 5:
-                    // Rotate the line segment with 1 of the dot 90 degree clockwise
-                    // Red line distance should disappear
-                    distLine.style.opacity = 0;
-                    showElement('square-left-group');
-                    updateLogic();
-                    
-                    // Simple animation for rotation effect on left line
-                    const leftLine = document.getElementById('left-line');
-                    leftLine.style.transformOrigin = "150px 200px";
-                    leftLine.animate([
-                        { transform: 'rotate(-90deg)', opacity: 0 },
-                        { transform: 'rotate(0deg)', opacity: 1 }
-                    ], { duration: 800, fill: 'forwards', easing: 'ease-out' });
-                    
-                    const projYGroup = document.getElementById('square-left-group');
-                    projYGroup.animate([
-                         { opacity: 0 },
-                         { opacity: 1 }
-                    ], {duration: 800, delay: 400, fill: 'forwards'});
-
+                    show('square-left-wrapper');
+                    els.p1Top.style.display = 'none';
+                    setTimeout(() => {
+                        document.getElementById('square-left-wrapper').style.transform = 'rotate(90deg)';
+                    }, 50);
                     break;
                 case 6:
-                    // The square appears. Dashed lines and intersection appear.
-                    showElement('full-square-group');
+                    show('full-square-group');
+                    show('crosshairs-group');
                     updateLogic();
                     break;
-                case 7:
-                    // Intersection leaves a trace (paint mode on)
-                    paintMode = true;
+                case 7: 
+                    paintMode = true; 
                     break;
                 case 8:
-                    // two dots move together from left to right with distance 0 -> black diagonal
-                    randomMoveActive = false;
-                    paintMode = true; // Ensure paint is on
-                    clearTrace();
+                    paintMode = true;
+                    isDrawingDiagonal = true;
                     d1x = LINE_START;
                     d2x = LINE_START;
-                    targetD1 = LINE_END;
-                    targetD2 = LINE_END;
-                    
-                    function animateDiagonal() {
-                        if (d1x < LINE_END) {
-                            d1x += 3;
-                            d2x = d1x; // Keep distance 0
-                            dot1.setAttribute('cx', d1x);
-                            dot2.setAttribute('cx', d2x);
-                            updateLogic();
-                            requestAnimationFrame(animateDiagonal);
-                        }
-                    }
+                    updateLogic();
                     animateDiagonal();
                     break;
                 case 9:
-                    // dots randomly move leaving lots of colours
-                    clearTrace();
-                    randomMoveActive = true;
+                    show('speed-control-container');
                     paintMode = true;
-                    
-                    function chaoticMove() {
-                         if (!randomMoveActive) return;
-                         // Faster, more chaotic movement
-                         d1x += (Math.random() - 0.5) * 40;
-                         d2x += (Math.random() - 0.5) * 40;
-                         
-                         // Keep in bounds
-                         d1x = Math.max(LINE_START, Math.min(LINE_END, d1x));
-                         d2x = Math.max(LINE_START, Math.min(LINE_END, d2x));
-                         
-                         dot1.setAttribute('cx', d1x);
-                         dot2.setAttribute('cx', d2x);
-                         updateLogic();
-                         
-                         animationFrameId = requestAnimationFrame(chaoticMove);
-                    }
-                    chaoticMove();
-                    
-                    // Auto stop after a few seconds so user can still manually drag if they want
-                    setTimeout(() => {
-                        randomMoveActive = false;
-                    }, 4000);
-                    break;
-                case 10:
-                    // Display formula
-                    randomMoveActive = false; // Stop auto move
-                    showElement('formula-container');
+                    isDrawingDiagonal = false;
+                    isRasterScanning = true;
+                    scanD1 = LINE_START;
+                    scanD2 = LINE_START;
+                    d1x = scanD1;
+                    d2x = scanD2;
+                    animateRasterScan();
                     break;
             }
+            updateLogic();
         }
 
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                e.preventDefault(); // Prevent page scroll
-                advanceStep();
-            }
-        });
-
-        // Initialize logic values (invisible)
+        document.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); advanceStep(); } });
         updateLogic();
 
     </script>
