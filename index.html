@@ -78,21 +78,41 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            align-items: flex-start;
             height: 100%;
-            padding: 1.5rem;
+            padding: 1.25rem 1.5rem;
             text-decoration: none;
             color: var(--text-color);
             font-size: 1.1em;
             font-weight: 500;
-            box-sizing: border-box; /* Ensures padding is included in height */
+            box-sizing: border-box;
+            gap: 0.75rem;
         }
 
         .app-link .title {
             display: block;
-            margin-bottom: 0.5rem;
             color: var(--primary-color);
             font-size: 1.25em;
             font-weight: 600;
+        }
+
+        .app-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.6rem 1rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, var(--primary-color), #1c8dcb);
+            color: #ffffff;
+            font-size: 0.95em;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(0, 91, 148, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .app-link:hover .app-button {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 91, 148, 0.25);
         }
     </style>
 </head>
@@ -106,101 +126,121 @@
             <li class="app-item">
                 <a href="./algebra-app/" class="app-link">
                     <span class="title">Algebra App</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./Calculus Cricket/" class="app-link">
                     <span class="title">Calculus Cricket</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./Collecting like terms/" class="app-link">
                     <span class="title">Collecting like terms</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./Congruency Crunch/" class="app-link">
                     <span class="title">Congruency Crunch</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./Distance vs Time graph/" class="app-link">
                     <span class="title">Distance vs Time graph</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./divisibility-dash/" class="app-link">
                     <span class="title">Divisibility Dash</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./equivalent-fraction-quest/" class="app-link">
                     <span class="title">Equivalent Fraction Quest</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./fraction-pizza-party/" class="app-link">
                     <span class="title">Fraction Pizza Party</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./Integration Practice/" class="app-link">
                     <span class="title">Integration Practice</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./Mixed Graphing 2/" class="app-link">
                     <span class="title">Mixed Graphing 2</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./mixed-numeral-conversion/" class="app-link">
                     <span class="title">Mixed Numeral Conversion</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./parabola-sketcher/" class="app-link">
                     <span class="title">Parabola Sketcher</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./Set notation in Venn Diagram/" class="app-link">
                     <span class="title">Set notation in Venn Diagram</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./Simplify Fractions/" class="app-link">
                     <span class="title">Simplify Fractions</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./simplify-proper-fractions/" class="app-link">
                     <span class="title">Simplify Proper Fractions</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./soh-cah-toa-challenge/" class="app-link">
                     <span class="title">Soh Cah Toa Challenge</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./thermal-directed-number-lab/" class="app-link">
                     <span class="title">Thermal Directed Number Lab</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./transformation-explorer/" class="app-link">
                     <span class="title">Transformation Explorer</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./trig-equation-builder/" class="app-link">
                     <span class="title">Trig Equation Builder</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./trig-side-master/" class="app-link">
                     <span class="title">Trig Side Master</span>
+                    <span class="app-button">Open app</span>
                 </a>
             </li>
             <!-- APP_LIST_END -->
