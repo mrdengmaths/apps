@@ -123,6 +123,15 @@
                     <option value="pentagonal-irregular">Irreg. Pentagonal Prism</option>
                 </select>
             </div>
+            <div>
+                <label for="theme-select" class="text-sm mr-2 text-gray-300">Theme:</label>
+                <select id="theme-select">
+                    <option value="default">Default</option>
+                    <option value="sunset">Sunset</option>
+                    <option value="ocean">Ocean</option>
+                    <option value="neon">Neon</option>
+                </select>
+            </div>
             <button id="toggle-perimeter" class="text-sm">Highlight Base Perimeter</button>
         </div>
         
@@ -145,10 +154,17 @@
         let rotationY = 0.5;
         
         // Colors
-        const baseColor = 0x3b82f6; // Blue for bases
-        const lateralColor = 0x10b981; // Green for lateral faces (rectangles)
+        let baseColor = 0x3b82f6; // Blue for bases
+        let lateralColor = 0x10b981; // Green for lateral faces (rectangles)
         const edgeColor = 0xffffff;
         const highlightEdgeColor = 0xf59e0b; // Amber for perimeter
+
+        const themes = {
+            'default': { base: 0x3b82f6, lat: 0x10b981 },
+            'sunset': { base: 0xf43f5e, lat: 0xfb923c },
+            'ocean': { base: 0x0ea5e9, lat: 0x0284c7 },
+            'neon': { base: 0xd946ef, lat: 0x8b5cf6 }
+        };
 
         let highlightPerimeter = false;
         let currentUnfoldProgress = 0;
@@ -214,9 +230,9 @@
                     }
                     break;
                 case 'triangular-irregular':
-                    points.push(new THREE.Vector2(-2, -1));
-                    points.push(new THREE.Vector2(3, -1));
-                    points.push(new THREE.Vector2(0, 2));
+                    points.push(new THREE.Vector2(-2, 0));
+                    points.push(new THREE.Vector2(4, 0));
+                    points.push(new THREE.Vector2(-1, 2));
                     break;
                 case 'hexagonal':
                     const rHex = 2;
@@ -369,8 +385,9 @@
                     currentPivot = nextPivot;
                 }
 
-                // Attach bases to the FIRST lateral face (index 0) for simplicity
-                if (i === 0) {
+                // Attach bases to the MIDDLE lateral face
+                const middleIndex = Math.floor(numSides / 2);
+                if (i === middleIndex) {
                     // Align base geometry (clean, non-mirrored)
                     // 1. Move p1 to origin
                     const cleanBaseGeom = new THREE.ShapeGeometry(baseShape);
@@ -537,6 +554,13 @@
             const shapeSelect = document.getElementById('shape-select');
             shapeSelect.addEventListener('change', (e) => {
                 generatePrism(e.target.value);
+            });
+
+            const themeSelect = document.getElementById('theme-select');
+            themeSelect.addEventListener('change', (e) => {
+                baseColor = themes[e.target.value].base;
+                lateralColor = themes[e.target.value].lat;
+                generatePrism(shapeSelect.value); // Re-generate to apply colors
             });
 
             const btnPerimeter = document.getElementById('toggle-perimeter');
