@@ -79,7 +79,11 @@ const appDirs = fs
     }
 
     const fullPath = path.join(root, name);
-    return fs.existsSync(path.join(fullPath, 'index.html'));
+    const hasIndex = fs.existsSync(path.join(fullPath, 'index.html'));
+    const hasHtml = fs.existsSync(path.join(fullPath, `${name}.html`));
+    const hasJs = fs.existsSync(path.join(fullPath, `${name}.js`));
+
+    return hasIndex || hasHtml || hasJs || fs.existsSync(path.join(fullPath, 'script.js')) || fs.existsSync(path.join(fullPath, 'style.css'));
   })
   .sort();
 
