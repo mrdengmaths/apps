@@ -789,17 +789,71 @@
         const appList = document.getElementById('appList');
         const appItems = Array.from(document.querySelectorAll('.app-item'));
 
+        const hiddenKeywords = {
+            'Algebra App': 'algebra equations expressions variables simplify linear quadratic solving',
+            'Astc With A Given Trig Equation': 'astc trig trigonometry quadrants sine cosine tangent unit circle equation identities',
+            'Bearings': 'bearings direction compass angle navigation north east south west',
+            'Big Red Button': 'probability chance random experiment outcome simulation',
+            'Calculus Cricket': 'calculus derivative integration limits area motion graph',
+            'Cancel The Denominator': 'cancel denominator rational expressions algebra simplify fractions',
+            'Coefficient Quest 1': 'coefficients algebra terms variables linear expressions',
+            'Coefficient Quest 3': 'coefficients algebra polynomials terms expressions',
+            'Collecting Like Terms': 'like terms simplify algebra expressions collect combine',
+            'Congruency Crunch': 'congruence triangles congruent sides angles sss sas asa aas rhs',
+            'Congruent Shapes': 'congruent shapes similar geometry orientation size transform',
+            'Congruent Triangle Tests': 'triangle congruence tests sss sas asa aas rhs geometry',
+            'Distance vs Time graph': 'distance time graph speed velocity gradient rate motion',
+            'Divisibility Dash': 'divisibility factors multiples prime composite remainder',
+            'Equivalent Fraction Quest': 'equivalent fractions simplify numerator denominator ratio',
+            'Expanding Brackets': 'expand brackets distributive algebra multiply expressions',
+            'Factorise Fun': 'factorise factoring algebra expressions quadratics',
+            'Feature Of Parabola From Graph': 'parabola graph vertex axis symmetry quadratic equation',
+            'Find Gradient': 'gradient slope line rise run linear rate',
+            'Fraction Pizza Party': 'fractions pizza equivalent partition parts sharing',
+            'General Angle Sniper': 'angles geometry acute obtuse reflex angle rules',
+            'Horizontal and Vertical Lines': 'horizontal vertical lines slope x-axis y-axis',
+            'Integration Practice': 'integration calculus antiderivative definite integral area',
+            'Like Term Balloon': 'like terms simplify algebra expressions collect combine',
+            'Mixed Graphing 2': 'graphing functions coordinates plot lines curves',
+            'Mixed Numeral Conversion': 'mixed numbers improper fraction convert decimal fraction',
+            'Odd Even Checker': 'odd even parity integers divisibility number',
+            'Parabola Challenge': 'parabola quadratic graph vertex axis symmetry',
+            'Parabola Sketcher': 'parabola sketch graph quadratic vertex axis',
+            'Pirate Game': 'pirate coordinates grid map navigation points treasure',
+            'Set notation in Venn Diagram': 'set notation venn diagram union intersection complement elements',
+            'Similar Master': 'similarity similar shapes proportion scale ratio',
+            'Similar Triangle Factory': 'similar triangles proportion scale ratio geometry',
+            'Simplify Fractions': 'simplify reduce fractions numerator denominator gcd',
+            'simplify-proper-fractions': 'proper fractions simplify reduce numerator denominator',
+            'Soh Cah Toa Challenge': 'soh cah toa sine cosine tangent right triangle trig',
+            'Table to Y=mx+b': 'slope intercept line equation y=mx+b table graph',
+            'Tangent and Normal': 'tangent normal circle slope perpendicular derivative',
+            'Thermal Directed Number Lab': 'directed numbers positive negative integers temperature thermal',
+            'Transformation Explorer': 'transformation functions translation rotation spin reflect scale curve graph',
+            'Transformation With Dilation': 'transformation dilation scale enlarge reduce similar stretch',
+            'Translation Vector Game': 'translation vector movement direction shift coordinate',
+            'Trig Equation Builder': 'trig equations sine cosine tangent identities solve',
+            'Trig Side Master': 'trig sides sine rule cosine rule triangle lengths',
+            'Unfolding Right Prism': 'prism nets 3d surface area volume solid geometry',
+            'Venn Diagram Challenge': 'venn diagram sets union intersection complement logic',
+            'Venn To Two Way Table': 'venn two-way table frequency categories probability',
+            'Virtual Classroom': 'virtual classroom learning map game school',
+        };
+
         const itemData = appItems.map(item => {
             const titleElem = item.querySelector('.title');
             const descElem = item.querySelector('.app-description');
             const title = titleElem ? titleElem.textContent.trim() : '';
             const description = descElem ? descElem.textContent.trim() : '';
+            const keywords = hiddenKeywords[title] || '';
             return {
                 item,
                 title,
                 description,
+                keywords,
                 titleLower: title.toLowerCase(),
                 descriptionLower: description.toLowerCase(),
+                keywordsLower: keywords.toLowerCase(),
             };
         });
 
@@ -821,9 +875,11 @@
                     if (data.titleLower.startsWith(query)) score += 100;
                     if (data.titleLower.includes(query)) score += 70;
                     if (data.descriptionLower.includes(query)) score += 40;
+                    if (data.keywordsLower.includes(query)) score += 50;
                     for (const word of words) {
                         if (data.titleLower.includes(word)) score += 10;
                         if (data.descriptionLower.includes(word)) score += 5;
+                        if (data.keywordsLower.includes(word)) score += 20;
                     }
                     return { ...data, score };
                 })
