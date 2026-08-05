@@ -5,9 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Right Prism Unfolding</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #1e293b; color: white; font-family: 'Inter', sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #1e293b; color: white; font-family: 'Inter', sans-serif; transition: background-color 0.5s ease; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
         
         #ui-layer {
@@ -35,6 +41,58 @@
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
+        }
+
+        .side-panel {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+            padding: 20px 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .vertical-slider-container {
+            height: 150px;
+            width: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        input[type=range].vertical-slider {
+            -webkit-appearance: slider-vertical;
+            appearance: slider-vertical;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        input[type=range].vertical-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            margin-top: 0;
+            margin-left: -6px;
+        }
+
+        input[type=range].vertical-slider::-webkit-slider-runnable-track {
+            width: 4px;
+            background: #475569;
+            border-radius: 2px;
         }
 
         select, button {
@@ -100,15 +158,34 @@
             max-width: 300px;
             pointer-events: none;
         }
+
+        #matrix-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <canvas id="matrix-canvas"></canvas>
     <div id="canvas-container"></div>
     
     <div class="info-panel">
         <h2 class="text-lg font-bold mb-2">Right Prisms</h2>
         <p class="text-sm text-gray-300">Notice how every right prism unfolds into a central chain of rectangles (the lateral faces) bordered by two identical polygons (the bases).</p>
         <p class="text-xs text-blue-400 mt-2">Drag to rotate • Scroll to zoom</p>
+    </div>
+
+    <div class="side-panel">
+        <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Height</label>
+        <div class="vertical-slider-container">
+            <input type="range" id="height-slider" class="vertical-slider" min="0" max="8" step="0.1" value="4" orient="vertical">
+        </div>
+        <button id="btn-anim-height" class="text-xs py-2 px-3 text-center leading-tight">Animate<br>Height</button>
     </div>
 
     <div id="ui-layer">
@@ -120,7 +197,9 @@
                     <option value="triangular-regular">Reg. Triangular Prism</option>
                     <option value="triangular-irregular">Irreg. Triangular Prism</option>
                     <option value="hexagonal">Hexagonal Prism</option>
-                    <option value="pentagonal-irregular">Irreg. Pentagonal Prism</option>
+                    <option value="cylinder">Cylinder</option>
+                    <option value="l-shape">L-Shape Prism</option>
+                    <option value="u-shape">U-Shape Prism</option>
                 </select>
             </div>
             <div>
@@ -130,20 +209,24 @@
                     <option value="sunset">Sunset</option>
                     <option value="ocean">Ocean</option>
                     <option value="neon">Neon</option>
+                    <option value="cyberpunk">Cyberpunk</option>
+                    <option value="matrix">Matrix</option>
                 </select>
             </div>
-            <button id="toggle-perimeter" class="text-sm">Highlight Base Perimeter</button>
+            <button id="toggle-perimeter" class="text-sm">Highlight Bases & Edges</button>
+            <button id="btn-reset-view" class="text-sm">Reset View</button>
         </div>
         
         <div class="slider-container">
-            <span class="text-sm text-gray-400 w-12">Folded</span>
+            <button id="btn-fold" class="text-xs font-bold px-3 py-1 bg-slate-600">Fold</button>
             <input type="range" id="unfold-slider" min="0" max="1" step="0.01" value="0">
-            <span class="text-sm text-gray-400 w-16">Unfolded</span>
+            <button id="btn-unfold" class="text-xs font-bold px-3 py-1 bg-slate-600">Unfold</button>
         </div>
     </div>
 
     <script>
         let scene, camera, renderer;
+        let composer, bloomPass;
         let prismGroup;
         let faces = [];
         let edges = [];
@@ -153,17 +236,30 @@
         let rotationX = 0.5;
         let rotationY = 0.5;
         
-        // Colors
-        let baseColor = 0x3b82f6; // Blue for bases
-        let lateralColor = 0x10b981; // Green for lateral faces (rectangles)
-        const edgeColor = 0xffffff;
-        const highlightEdgeColor = 0xf59e0b; // Amber for perimeter
+        let currentHeight = 4;
+        let thickEdgesGroups = [];
+        let foldAnimDir = 0; 
+        let heightAnimActive = false;
+        let heightAnimDir = 1;
+        let isResettingView = false;
+
+        // Matrix background variables
+        const mCanvas = document.getElementById('matrix-canvas');
+        const mCtx = mCanvas.getContext('2d');
+        let matrixChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()';
+        matrixChars = matrixChars.split('');
+        let matrixFontSize = 14;
+        let matrixDrops = [];
+
+        let currentTheme = 'default';
 
         const themes = {
-            'default': { base: 0x3b82f6, lat: 0x10b981 },
-            'sunset': { base: 0xf43f5e, lat: 0xfb923c },
-            'ocean': { base: 0x0ea5e9, lat: 0x0284c7 },
-            'neon': { base: 0xd946ef, lat: 0x8b5cf6 }
+            'default': { base: 0x3b82f6, lat: 0x10b981, bg: '#1e293b', edge: 0xffffff, highlight: 0xf59e0b, glow: false },
+            'sunset': { base: 0xf43f5e, lat: 0xfb923c, bg: '#2d1b2e', edge: 0xffe4e6, highlight: 0xfde047, glow: false },
+            'ocean': { base: 0x023e8a, lat: 0x00b4d8, bg: '#082f49', edge: 0xe0f2fe, highlight: 0x48cae4, glow: false },
+            'neon': { base: 0xd946ef, lat: 0x8b5cf6, bg: '#050510', edge: 0xf0abfc, highlight: 0x22d3ee, glow: true },
+            'cyberpunk': { base: 0xff0055, lat: 0x00d4ff, bg: '#0a0014', edge: 0x00ffff, highlight: 0xffff00, glow: true },
+            'matrix': { base: 0x002200, lat: 0x003300, bg: '#000000', edge: 0x00ff41, highlight: 0xffffff, glow: true }
         };
 
         let highlightPerimeter = false;
@@ -175,6 +271,7 @@
         function init() {
             // Scene setup
             scene = new THREE.Scene();
+            scene.background = new THREE.Color(themes['default'].bg);
             
             // Camera setup
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -183,8 +280,19 @@
             // Renderer setup
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearColor(0x000000, 0); // Transparent background
+            renderer.setClearColor(0x000000, 0); // Transparent background fallback
             document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Post-Processing for Glowing Light Effects
+            const renderScene = new THREE.RenderPass(scene, camera);
+            bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            bloomPass.threshold = 0;
+            bloomPass.strength = 0; // Default to 0 (no glow)
+            bloomPass.radius = 0.5;
+
+            composer = new THREE.EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
 
             // Lighting
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -204,6 +312,7 @@
 
             // Generate initial shape
             generatePrism('rectangular');
+            setupMatrix();
 
             // Interaction Setup
             setupInteraction();
@@ -211,6 +320,36 @@
 
             // Window resize handler
             window.addEventListener('resize', onWindowResize, false);
+        }
+
+        function setupMatrix() {
+            mCanvas.width = window.innerWidth;
+            mCanvas.height = window.innerHeight;
+            let cols = mCanvas.width / matrixFontSize;
+            matrixDrops = [];
+            for (let x = 0; x < cols; x++) {
+                matrixDrops[x] = 1;
+            }
+        }
+
+        function drawMatrix() {
+            if (currentTheme !== 'matrix') return;
+            
+            mCtx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
+            
+            mCtx.fillStyle = '#0F0';
+            mCtx.font = matrixFontSize + 'px monospace';
+            
+            for (let i = 0; i < matrixDrops.length; i++) {
+                let text = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                mCtx.fillText(text, i * matrixFontSize, matrixDrops[i] * matrixFontSize);
+                
+                if (matrixDrops[i] * matrixFontSize > mCanvas.height && Math.random() > 0.975) {
+                    matrixDrops[i] = 0;
+                }
+                matrixDrops[i]++;
+            }
         }
 
         function getPolygonPoints(type) {
@@ -241,50 +380,127 @@
                         points.push(new THREE.Vector2(Math.cos(angle) * rHex, Math.sin(angle) * rHex));
                     }
                     break;
-                case 'pentagonal-irregular':
-                    points.push(new THREE.Vector2(-1.5, -2));
-                    points.push(new THREE.Vector2(2, -1));
-                    points.push(new THREE.Vector2(2.5, 1.5));
-                    points.push(new THREE.Vector2(0, 2.5));
-                    points.push(new THREE.Vector2(-2, 1));
+                case 'cylinder':
+                    const rCyl = 2;
+                    for (let i = 0; i < 32; i++) {
+                        const angle = (i * 2 * Math.PI / 32);
+                        points.push(new THREE.Vector2(Math.cos(angle) * rCyl, Math.sin(angle) * rCyl));
+                    }
+                    break;
+                case 'l-shape':
+                    points.push(new THREE.Vector2(-1.5, -1.5));
+                    points.push(new THREE.Vector2(1.5, -1.5));
+                    points.push(new THREE.Vector2(1.5, -0.5));
+                    points.push(new THREE.Vector2(-0.5, -0.5));
+                    points.push(new THREE.Vector2(-0.5, 1.5));
+                    points.push(new THREE.Vector2(-1.5, 1.5));
+                    break;
+                case 'u-shape':
+                    points.push(new THREE.Vector2(-1.5, -1.5));
+                    points.push(new THREE.Vector2(1.5, -1.5));
+                    points.push(new THREE.Vector2(1.5, 1.5));
+                    points.push(new THREE.Vector2(0.5, 1.5));
+                    points.push(new THREE.Vector2(0.5, -0.5));
+                    points.push(new THREE.Vector2(-0.5, -0.5));
+                    points.push(new THREE.Vector2(-0.5, 1.5));
+                    points.push(new THREE.Vector2(-1.5, 1.5));
                     break;
             }
             return points;
         }
 
-        function generatePrism(type) {
-            // Clear existing
-            while (prismGroup.children.length > 0) {
-                const child = prismGroup.children[0];
-                prismGroup.remove(child);
+        function disposeGroup(group) {
+            while (group.children.length > 0) {
+                const child = group.children[0];
+                if (child.isGroup) disposeGroup(child);
                 if (child.geometry) child.geometry.dispose();
                 if (child.material) {
                     if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
                     else child.material.dispose();
                 }
+                group.remove(child);
             }
+        }
+
+        function createThickEdgesFromGeom(edgesGeom, color, thickness) {
+            const group = new THREE.Group();
+            const pos = edgesGeom.attributes.position;
+            const mat = new THREE.MeshBasicMaterial({ color: color });
+            
+            for (let i = 0; i < pos.count; i += 2) {
+                const p1 = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
+                const p2 = new THREE.Vector3(pos.getX(i+1), pos.getY(i+1), pos.getZ(i+1));
+                const distance = p1.distanceTo(p2);
+                
+                // Skip zero-length edges
+                if (distance < 0.001) continue; 
+                
+                const cyl = new THREE.CylinderGeometry(thickness, thickness, distance, 8);
+                const mesh = new THREE.Mesh(cyl, mat);
+                
+                // Position at midpoint
+                mesh.position.copy(p1).add(p2).multiplyScalar(0.5);
+                
+                // Orient cylinder from p1 to p2
+                const axis = new THREE.Vector3(0, 1, 0);
+                const dir = p2.clone().sub(p1).normalize();
+                mesh.quaternion.setFromUnitVectors(axis, dir);
+                
+                group.add(mesh);
+            }
+            return group;
+        }
+
+        function generatePrism(type) {
+            // Clear existing
+            disposeGroup(prismGroup);
+            
             faces = [];
             baseEdges = [];
+            thickEdgesGroups = [];
             
-            const height = 4;
             const points = getPolygonPoints(type);
             const numSides = points.length;
 
-            // Material setup
-            const baseMat = new THREE.MeshLambertMaterial({ 
-                color: baseColor, 
+            const t = themes[currentTheme];
+
+            // Material setup based on theme
+            const baseMatOpts = {
+                color: t.base,
                 side: THREE.DoubleSide,
                 transparent: true,
-                opacity: 0.9
-            });
-            const latMat = new THREE.MeshLambertMaterial({ 
-                color: lateralColor, 
+                opacity: t.glow ? 0.7 : (currentTheme === 'cyberpunk' ? 0.9 : 0.95)
+            };
+            const latMatOpts = {
+                color: t.lat,
                 side: THREE.DoubleSide,
                 transparent: true,
-                opacity: 0.8
+                opacity: t.glow ? 0.6 : (currentTheme === 'cyberpunk' ? 0.9 : 0.85)
+            };
+            
+            let baseMat, latMat;
+            if (currentTheme === 'cyberpunk') {
+                // Glossy materials for Cyberpunk
+                baseMat = new THREE.MeshStandardMaterial({ ...baseMatOpts, metalness: 0.8, roughness: 0.1 });
+                latMat = new THREE.MeshStandardMaterial({ ...latMatOpts, metalness: 0.8, roughness: 0.1 });
+            } else {
+                // Neon glow or standard matte - Moderate emissive so details remain visible
+                baseMatOpts.emissive = t.glow ? t.base : 0x000000;
+                baseMatOpts.emissiveIntensity = currentTheme === 'neon' ? 0.35 : (t.glow ? 0.4 : 0);
+                latMatOpts.emissive = t.glow ? t.lat : 0x000000;
+                latMatOpts.emissiveIntensity = currentTheme === 'neon' ? 0.35 : (t.glow ? 0.4 : 0);
+                baseMat = new THREE.MeshLambertMaterial(baseMatOpts);
+                latMat = new THREE.MeshLambertMaterial(latMatOpts);
+            }
+
+            const edgeMat = new THREE.LineBasicMaterial({ 
+                color: t.edge, 
+                linewidth: t.glow ? 3 : 2,
+                transparent: t.glow,
+                opacity: t.glow ? 0.8 : 1.0
             });
-            const edgeMat = new THREE.LineBasicMaterial({ color: edgeColor, linewidth: 2 });
-            const highlightMat = new THREE.LineBasicMaterial({ color: highlightEdgeColor, linewidth: 4 });
+            const highlightThickMat = new THREE.MeshBasicMaterial({ color: t.highlight });
+            const thickLineRadius = 0.08;
 
             // Create geometry for base
             const baseShape = new THREE.Shape(points);
@@ -318,6 +534,39 @@
                 totalWidth += length;
             }
 
+            // Find the optimal side to attach the bases so they don't overlap the lateral faces when unfolded.
+            // We need an edge on the convex hull (all other points must be on its "left" side).
+            let validHinges = [];
+            for (let i = 0; i < numSides; i++) {
+                const p1 = sides[i].p1;
+                const p2 = sides[i].p2;
+                let isConvexEdge = true;
+                for (let j = 0; j < numSides; j++) {
+                    if (i === j) continue;
+                    const p3 = sides[j].p1;
+                    // Cross product to check side (p2-p1) x (p3-p1)
+                    const cross = (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
+                    if (cross < -0.001) { // p3 is on the right, so it's not a convex hull edge
+                        isConvexEdge = false;
+                        break;
+                    }
+                }
+                if (isConvexEdge) validHinges.push(i);
+            }
+
+            const idealMid = Math.floor(numSides / 2);
+            let bestHingeIndex = idealMid; // Fallback
+            if (validHinges.length > 0) {
+                let minDiff = 999;
+                validHinges.forEach(idx => {
+                    const diff = Math.abs(idx - idealMid);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        bestHingeIndex = idx;
+                    }
+                });
+            }
+
             // Central pivot group (represents the first lateral face in the chain)
             const mainPivot = new THREE.Group();
             prismGroup.add(mainPivot);
@@ -331,8 +580,9 @@
             for (let i = 0; i < numSides; i++) {
                 const side = sides[i];
                 
-                // Create the rectangular face
-                const rectGeom = new THREE.PlaneGeometry(side.length, height);
+                // Create the rectangular face. Min height 0.001 to prevent rendering errors when height is 0.
+                const safeHeight = Math.max(0.001, currentHeight);
+                const rectGeom = new THREE.PlaneGeometry(side.length, safeHeight);
                 // Shift geometry so left edge is at x=0
                 rectGeom.translate(side.length / 2, 0, 0); 
                 
@@ -342,6 +592,52 @@
                 const edgesGeom = new THREE.EdgesGeometry(rectGeom);
                 const rectEdges = new THREE.LineSegments(edgesGeom, edgeMat);
                 rectMesh.add(rectEdges);
+
+                const latThickEdges = new THREE.Group();
+                if (currentHeight > 0.001) {
+                    // Top horizontal edge
+                    const topEdgeCyl = new THREE.CylinderGeometry(thickLineRadius, thickLineRadius, side.length, 8);
+                    const topEdgeMesh = new THREE.Mesh(topEdgeCyl, highlightThickMat);
+                    topEdgeMesh.position.set(side.length/2, currentHeight/2, 0);
+                    topEdgeMesh.rotation.z = Math.PI / 2; // Orient along X
+                    
+                    // Bottom horizontal edge
+                    const botEdgeCyl = new THREE.CylinderGeometry(thickLineRadius, thickLineRadius, side.length, 8);
+                    const botEdgeMesh = new THREE.Mesh(botEdgeCyl, highlightThickMat);
+                    botEdgeMesh.position.set(side.length/2, -currentHeight/2, 0);
+                    botEdgeMesh.rotation.z = Math.PI / 2; // Orient along X
+                    
+                    // Add glowing aura for neon themes
+                    if (t.glow) {
+                        // Core bright white center for the neon line
+                        const coreCyl = new THREE.CylinderGeometry(thickLineRadius * 1.5, thickLineRadius * 1.5, side.length, 8);
+                        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                        const coreMesh1 = new THREE.Mesh(coreCyl, coreMat);
+                        const coreMesh2 = new THREE.Mesh(coreCyl, coreMat);
+                        topEdgeMesh.add(coreMesh1);
+                        botEdgeMesh.add(coreMesh2);
+
+                        // Soft colored bloom around the core
+                        const auraCyl = new THREE.CylinderGeometry(thickLineRadius * 5, thickLineRadius * 5, side.length, 8);
+                        const auraMat = new THREE.MeshBasicMaterial({
+                            color: t.highlight,
+                            transparent: true,
+                            opacity: 0.35,
+                            blending: THREE.AdditiveBlending,
+                            depthWrite: false
+                        });
+                        const auraMesh1 = new THREE.Mesh(auraCyl, auraMat);
+                        const auraMesh2 = new THREE.Mesh(auraCyl, auraMat);
+                        topEdgeMesh.add(auraMesh1);
+                        botEdgeMesh.add(auraMesh2);
+                    }
+
+                    latThickEdges.add(topEdgeMesh);
+                    latThickEdges.add(botEdgeMesh);
+                }
+                latThickEdges.visible = highlightPerimeter;
+                thickEdgesGroups.push(latThickEdges);
+                rectMesh.add(latThickEdges);
 
                 // Create a container for this face
                 const faceContainer = new THREE.Group();
@@ -385,9 +681,8 @@
                     currentPivot = nextPivot;
                 }
 
-                // Attach bases to the MIDDLE lateral face
-                const middleIndex = Math.floor(numSides / 2);
-                if (i === middleIndex) {
+                // Attach bases to the optimal lateral face
+                if (i === bestHingeIndex) {
                     // Align base geometry (clean, non-mirrored)
                     // 1. Move p1 to origin
                     const cleanBaseGeom = new THREE.ShapeGeometry(baseShape);
@@ -404,15 +699,13 @@
 
                     const bottomBase = new THREE.Mesh(bottomBaseGeom, baseMat);
                     
-                    // Create base edges separately for highlighting
                     const bottomEdgesGeom = new THREE.EdgesGeometry(bottomBaseGeom);
-                    const bEdgeMesh = new THREE.LineSegments(bottomEdgesGeom, highlightPerimeter ? highlightMat : edgeMat);
+                    const bEdgeMesh = new THREE.LineSegments(bottomEdgesGeom, edgeMat);
                     bottomBase.add(bEdgeMesh);
-                    baseEdges.push(bEdgeMesh);
 
                     const bottomHinge = new THREE.Group();
                     // Position hinge at bottom edge of rectangle
-                    bottomHinge.position.set(0, -height/2, 0);
+                    bottomHinge.position.set(0, -currentHeight/2, 0);
                     
                     bottomHinge.add(bottomBase);
                     faceContainer.add(bottomHinge);
@@ -433,13 +726,12 @@
                     const topBase = new THREE.Mesh(topBaseGeom, baseMat);
                     
                     const topEdgesGeom = new THREE.EdgesGeometry(topBaseGeom);
-                    const tEdgeMesh = new THREE.LineSegments(topEdgesGeom, highlightPerimeter ? highlightMat : edgeMat);
+                    const tEdgeMesh = new THREE.LineSegments(topEdgesGeom, edgeMat);
                     topBase.add(tEdgeMesh);
-                    baseEdges.push(tEdgeMesh);
 
                     const topHinge = new THREE.Group();
                     // Position hinge at top edge of rectangle
-                    topHinge.position.set(0, height/2, 0);
+                    topHinge.position.set(0, currentHeight/2, 0);
                     
                     topHinge.add(topBase);
                     faceContainer.add(topHinge);
@@ -481,13 +773,8 @@
         }
 
         function updatePerimeterHighlight() {
-            const mat = highlightPerimeter ? 
-                new THREE.LineBasicMaterial({ color: highlightEdgeColor, linewidth: 3 }) : 
-                new THREE.LineBasicMaterial({ color: edgeColor, linewidth: 1 });
-            
-            baseEdges.forEach(edge => {
-                edge.material.dispose();
-                edge.material = mat;
+            thickEdgesGroups.forEach(group => {
+                group.visible = highlightPerimeter;
             });
         }
 
@@ -495,6 +782,9 @@
             const container = document.getElementById('canvas-container');
 
             function startDrag(e) {
+                // Ignore drags starting on sliders/buttons
+                if(e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+                
                 isDragging = true;
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -547,8 +837,31 @@
         function setupUI() {
             const slider = document.getElementById('unfold-slider');
             slider.addEventListener('input', (e) => {
+                foldAnimDir = 0; // stop auto anim if manually dragged
                 currentUnfoldProgress = parseFloat(e.target.value);
                 updateFoldState(currentUnfoldProgress);
+            });
+
+            document.getElementById('btn-unfold').addEventListener('click', () => { foldAnimDir = 1; });
+            document.getElementById('btn-fold').addEventListener('click', () => { foldAnimDir = -1; });
+
+            const heightSlider = document.getElementById('height-slider');
+            heightSlider.addEventListener('input', (e) => {
+                heightAnimActive = false; // Stop animation if dragging
+                document.getElementById('btn-anim-height').classList.remove('active');
+                currentHeight = parseFloat(e.target.value);
+                generatePrism(document.getElementById('shape-select').value);
+            });
+
+            const btnAnimHeight = document.getElementById('btn-anim-height');
+            btnAnimHeight.addEventListener('click', () => {
+                heightAnimActive = !heightAnimActive;
+                if(heightAnimActive) btnAnimHeight.classList.add('active');
+                else btnAnimHeight.classList.remove('active');
+            });
+
+            document.getElementById('btn-reset-view').addEventListener('click', () => {
+                isResettingView = true;
             });
 
             const shapeSelect = document.getElementById('shape-select');
@@ -558,8 +871,33 @@
 
             const themeSelect = document.getElementById('theme-select');
             themeSelect.addEventListener('change', (e) => {
-                baseColor = themes[e.target.value].base;
-                lateralColor = themes[e.target.value].lat;
+                currentTheme = e.target.value;
+                document.body.style.backgroundColor = themes[currentTheme].bg;
+                
+                // Set scene background specifically for better bloom blending
+                if (currentTheme === 'matrix') {
+                    scene.background = null; // Let the 2D canvas show through
+                    mCanvas.style.display = 'block';
+                    setupMatrix();
+                } else {
+                    scene.background = new THREE.Color(themes[currentTheme].bg);
+                    mCanvas.style.display = 'none';
+                }
+
+                // Adjust the Bloom effect strength based on the theme - scaled down for readability
+                if (currentTheme === 'neon') {
+                    bloomPass.strength = 0.35;
+                    bloomPass.radius = 0.5;
+                } else if (currentTheme === 'cyberpunk') {
+                    bloomPass.strength = 0.3;
+                    bloomPass.radius = 0.2;
+                } else if (currentTheme === 'matrix') {
+                    bloomPass.strength = 0.4;
+                    bloomPass.radius = 0.4;
+                } else {
+                    bloomPass.strength = 0;
+                }
+
                 generatePrism(shapeSelect.value); // Re-generate to apply colors
             });
 
@@ -579,11 +917,73 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+            setupMatrix();
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            renderer.render(scene, camera);
+            drawMatrix();
+            
+            // Neon light pulse effect
+            if (currentTheme === 'neon') {
+                const time = performance.now() * 0.002;
+                bloomPass.strength = 0.35 + Math.sin(time) * 0.15; // Varies smoothly between 0.2 and 0.5
+            }
+
+            // 1. Fold/Unfold Animation
+            if (foldAnimDir !== 0) {
+                currentUnfoldProgress += foldAnimDir * 0.015;
+                if (currentUnfoldProgress >= 1) { 
+                    currentUnfoldProgress = 1; 
+                    foldAnimDir = 0; 
+                }
+                if (currentUnfoldProgress <= 0) { 
+                    currentUnfoldProgress = 0; 
+                    foldAnimDir = 0; 
+                }
+                document.getElementById('unfold-slider').value = currentUnfoldProgress;
+                updateFoldState(currentUnfoldProgress);
+            }
+
+            // 2. Height Animation
+            if (heightAnimActive) {
+                currentHeight += heightAnimDir * 0.05;
+                if (currentHeight >= 8) {
+                    currentHeight = 8;
+                    heightAnimDir = -1;
+                } else if (currentHeight <= 0) {
+                    currentHeight = 0;
+                    heightAnimDir = 1;
+                }
+                document.getElementById('height-slider').value = currentHeight;
+                generatePrism(document.getElementById('shape-select').value);
+            }
+
+            // 3. Reset View Animation
+            if (isResettingView) {
+                rotationX += (0.5 - rotationX) * 0.05;
+                rotationY += (0.5 - rotationY) * 0.05;
+                camera.position.z += (15 - camera.position.z) * 0.05;
+                
+                prismGroup.rotation.x = rotationX;
+                prismGroup.rotation.y = rotationY;
+                
+                // Snap when close enough
+                if (Math.abs(rotationX - 0.5) < 0.01 && 
+                    Math.abs(rotationY - 0.5) < 0.01 && 
+                    Math.abs(camera.position.z - 15) < 0.01) {
+                    isResettingView = false;
+                    rotationX = 0.5;
+                    rotationY = 0.5;
+                    camera.position.z = 15;
+                    prismGroup.rotation.x = rotationX;
+                    prismGroup.rotation.y = rotationY;
+                }
+            }
+
+            // Render using the composer for glow effects instead of the raw renderer
+            composer.render();
         }
     </script>
 </body>

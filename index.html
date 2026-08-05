@@ -89,11 +89,42 @@
             gap: 0.75rem;
         }
 
+        .app-card-top {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+            width: 100%;
+        }
+
+        .app-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.4rem;
+            height: 2.4rem;
+            border-radius: 50%;
+            background: rgba(0, 91, 148, 0.1);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .app-text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
         .app-link .title {
             display: block;
             color: var(--primary-color);
             font-size: 1.25em;
             font-weight: 600;
+        }
+
+        .app-description {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.4;
         }
 
         .app-button {
@@ -125,121 +156,241 @@
             <!-- APP_LIST_START -->
             <li class="app-item">
                 <a href="./algebra-app/" class="app-link">
-                    <span class="title">Algebra App</span>
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🧮</span>
+                        <div class="app-text">
+                            <span class="title">Algebra App</span>
+                            <span class="app-description">Practice algebra with interactive questions.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
-                <a href="./Calculus Cricket/" class="app-link">
-                    <span class="title">Calculus Cricket</span>
+                <a href="./Calculus%20Cricket/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🏏</span>
+                        <div class="app-text">
+                            <span class="title">Calculus Cricket</span>
+                            <span class="app-description">Explore calculus through a game.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
-                <a href="./Collecting like terms/" class="app-link">
-                    <span class="title">Collecting like terms</span>
+                <a href="./Collecting%20like%20terms/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">➕</span>
+                        <div class="app-text">
+                            <span class="title">Collecting Like Terms</span>
+                            <span class="app-description">Simplify expressions by collecting like terms.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
-                <a href="./Congruency Crunch/" class="app-link">
-                    <span class="title">Congruency Crunch</span>
+                <a href="./Congruency%20Crunch/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🔺</span>
+                        <div class="app-text">
+                            <span class="title">Congruency Crunch</span>
+                            <span class="app-description">Test triangle congruence with quick problems.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
-                <a href="./Distance vs Time graph/" class="app-link">
-                    <span class="title">Distance vs Time graph</span>
+                <a href="./Distance%20vs%20Time%20graph/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📈</span>
+                        <div class="app-text">
+                            <span class="title">Distance vs Time Graph</span>
+                            <span class="app-description">Interpret motion graphs and speed.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./divisibility-dash/" class="app-link">
-                    <span class="title">Divisibility Dash</span>
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🔢</span>
+                        <div class="app-text">
+                            <span class="title">Divisibility Dash</span>
+                            <span class="app-description">Race through divisibility rules.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./equivalent-fraction-quest/" class="app-link">
-                    <span class="title">Equivalent Fraction Quest</span>
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🍕</span>
+                        <div class="app-text">
+                            <span class="title">Equivalent Fraction Quest</span>
+                            <span class="app-description">Explore equivalent fractions with visual models.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./fraction-pizza-party/" class="app-link">
-                    <span class="title">Fraction Pizza Party</span>
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🍕</span>
+                        <div class="app-text">
+                            <span class="title">Fraction Pizza Party</span>
+                            <span class="app-description">Compare fraction slices in a fun party setting.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
-                <a href="./Integration Practice/" class="app-link">
-                    <span class="title">Integration Practice</span>
+                <a href="./Integration%20Practice/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">∫</span>
+                        <div class="app-text">
+                            <span class="title">Integration Practice</span>
+                            <span class="app-description">Practise integration with guided questions.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
-                <a href="./Mixed Graphing 2/" class="app-link">
-                    <span class="title">Mixed Graphing 2</span>
+                <a href="./Mixed%20Graphing%202/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📊</span>
+                        <div class="app-text">
+                            <span class="title">Mixed Graphing 2</span>
+                            <span class="app-description">Plot and interpret mixed graphs.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./mixed-numeral-conversion/" class="app-link">
-                    <span class="title">Mixed Numeral Conversion</span>
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🔄</span>
+                        <div class="app-text">
+                            <span class="title">Mixed Numeral Conversion</span>
+                            <span class="app-description">Convert between mixed numerals and improper fractions.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./parabola-sketcher/" class="app-link">
-                    <span class="title">Parabola Sketcher</span>
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📐</span>
+                        <div class="app-text">
+                            <span class="title">Parabola Sketcher</span>
+                            <span class="app-description">Sketch parabolas and explore transformations.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
-                <a href="./Set notation in Venn Diagram/" class="app-link">
-                    <span class="title">Set notation in Venn Diagram</span>
+                <a href="./Set%20notation%20in%20Venn%20Diagram/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📚</span>
+                        <div class="app-text">
+                            <span class="title">Set Notation in Venn Diagram</span>
+                            <span class="app-description">Learn set notation visually with Venn diagrams.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
-                <a href="./Simplify Fractions/" class="app-link">
-                    <span class="title">Simplify Fractions</span>
+                <a href="./Simplify%20Fractions/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">✂️</span>
+                        <div class="app-text">
+                            <span class="title">Simplify Fractions</span>
+                            <span class="app-description">Simplify fractions quickly and confidently.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./simplify-proper-fractions/" class="app-link">
-                    <span class="title">Simplify Proper Fractions</span>
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">✂️</span>
+                        <div class="app-text">
+                            <span class="title">Simplify Proper Fractions</span>
+                            <span class="app-description">Simplify proper fractions with confidence.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./soh-cah-toa-challenge/" class="app-link">
-                    <span class="title">Soh Cah Toa Challenge</span>
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📐</span>
+                        <div class="app-text">
+                            <span class="title">Soh Cah Toa Challenge</span>
+                            <span class="app-description">Solve right-triangle problems using trigonometry.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./thermal-directed-number-lab/" class="app-link">
-                    <span class="title">Thermal Directed Number Lab</span>
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🌡️</span>
+                        <div class="app-text">
+                            <span class="title">Thermal Directed Number Lab</span>
+                            <span class="app-description">Explore directed numbers with a temperature lab.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./transformation-explorer/" class="app-link">
-                    <span class="title">Transformation Explorer</span>
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🔄</span>
+                        <div class="app-text">
+                            <span class="title">Transformation Explorer</span>
+                            <span class="app-description">Explore transformations in geometry.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./trig-equation-builder/" class="app-link">
-                    <span class="title">Trig Equation Builder</span>
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📐</span>
+                        <div class="app-text">
+                            <span class="title">Trig Equation Builder</span>
+                            <span class="app-description">Build and solve trigonometric equations.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
             <li class="app-item">
                 <a href="./trig-side-master/" class="app-link">
-                    <span class="title">Trig Side Master</span>
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📐</span>
+                        <div class="app-text">
+                            <span class="title">Trig Side Master</span>
+                            <span class="app-description">Master trigonometric side-length problems.</span>
+                        </div>
+                    </div>
                     <span class="app-button">Open app</span>
                 </a>
             </li>
