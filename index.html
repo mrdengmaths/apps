@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maths Learning Hub</title>
+    <title>Mr Deng Maths</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Slab:wght@700&display=swap" rel="stylesheet">
@@ -24,6 +24,7 @@
             color: var(--text-color);
             margin: 0;
             padding: 2rem;
+            padding-top: 140px;
             text-align: center;
             line-height: 1.6;
         }
@@ -145,14 +146,75 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 14px rgba(0, 91, 148, 0.25);
         }
+
+        .topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            z-index: 1000;
+            padding: 0.9rem 1rem;
+        }
+
+        .topbar-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .topbar-title {
+            font-family: 'Roboto Slab', serif;
+            font-size: 1.25rem;
+            color: var(--header-color);
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .search-input {
+            width: 100%;
+            max-width: 520px;
+            border: 1px solid #d1d5db;
+            border-radius: 999px;
+            padding: 0.9rem 1.2rem;
+            font-size: 1rem;
+            color: #1f2937;
+            background: #f8fafc;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            background-color: #ffffff;
+        }
+
+        .search-feedback {
+            margin: 1rem auto 2rem auto;
+            max-width: 960px;
+            color: #334155;
+            font-size: 0.98rem;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <h1 class="topbar-title">Mr Deng Maths</h1>
+            <input id="appSearch" class="search-input" type="search" placeholder="Search apps, games, or topics..." aria-label="Search apps">
+        </div>
+    </header>
     <div class="container">
-        <h1>Maths Learning Hub 🚀</h1>
+        <h1>Mr Deng Maths 🚀</h1>
         <p>A collaborative collection of interactive apps from the Barker College Maths Department to help you master key concepts.</p>
-        
-        <ul class="app-list">
+        <div id="searchFeedback" class="search-feedback">Search instantly as you type to find the right app.</div>
+        <ul id="appList" class="app-list">
             <!-- APP_LIST_START -->
             <li class="app-item">
                 <a href="./algebra-app/" class="app-link">
@@ -721,5 +783,68 @@
             <!-- APP_LIST_END -->
         </ul>
     </div>
+    <script>
+        const searchInput = document.getElementById('appSearch');
+        const searchFeedback = document.getElementById('searchFeedback');
+        const appList = document.getElementById('appList');
+        const appItems = Array.from(document.querySelectorAll('.app-item'));
+
+        const itemData = appItems.map(item => {
+            const titleElem = item.querySelector('.title');
+            const descElem = item.querySelector('.app-description');
+            const title = titleElem ? titleElem.textContent.trim() : '';
+            const description = descElem ? descElem.textContent.trim() : '';
+            return {
+                item,
+                title,
+                description,
+                titleLower: title.toLowerCase(),
+                descriptionLower: description.toLowerCase(),
+            };
+        });
+
+        function updateSearch() {
+            const query = searchInput.value.trim().toLowerCase();
+            if (!query) {
+                searchFeedback.textContent = 'Search instantly as you type to find the right app.';
+                itemData.forEach(({ item }) => {
+                    item.style.display = '';
+                    appList.appendChild(item);
+                });
+                return;
+            }
+
+            const words = query.split(/\s+/).filter(Boolean);
+            const matches = itemData
+                .map(data => {
+                    let score = 0;
+                    if (data.titleLower.startsWith(query)) score += 100;
+                    if (data.titleLower.includes(query)) score += 70;
+                    if (data.descriptionLower.includes(query)) score += 40;
+                    for (const word of words) {
+                        if (data.titleLower.includes(word)) score += 10;
+                        if (data.descriptionLower.includes(word)) score += 5;
+                    }
+                    return { ...data, score };
+                })
+                .filter(data => data.score > 0)
+                .sort((a, b) => b.score - a.score);
+
+            if (!matches.length) {
+                searchFeedback.textContent = `No apps found for “${searchInput.value.trim()}”. Try another keyword.`;
+                itemData.forEach(({ item }) => item.style.display = 'none');
+                return;
+            }
+
+            searchFeedback.textContent = `Found ${matches.length} related app${matches.length === 1 ? '' : 's'} for “${searchInput.value.trim()}”.`;
+            itemData.forEach(({ item }) => item.style.display = 'none');
+            matches.forEach(({ item }) => {
+                item.style.display = '';
+                appList.appendChild(item);
+            });
+        }
+
+        searchInput.addEventListener('input', updateSearch);
+    </script>
 </body>
 </html>
