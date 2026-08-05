@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformation Spinner: 3D Math Sandbox</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles to prevent canvas highlighting and keep layout tight */
+        body { margin: 0; overflow: hidden; background-color: #0f172a; } /* slate-900 */
+        canvas { 
+            outline: none; 
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none; /* Prevents mobile scrolling when dragging */
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            max-width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            cursor: crosshair;
+        }
+        .modal-enter { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        select option { background-color: #1e293b; color: white; }
+    </style>
+</head>
+<body class="text-slate-100 font-sans flex flex-col h-screen select-none overflow-hidden">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-slate-800 border-b border-slate-700 p-4 flex justify-between items-center z-10 shadow-md shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center font-black text-slate-900 text-lg shadow-lg shadow-cyan-500/20">T</div>
+            <div>
+                <h1 class="text-xl font-bold tracking-wide text-cyan-400">Transformation Spinner</h1>
+                <p class="text-xs text-slate-400 hidden sm:block">Interactive 3D Geometric Transformations Sandbox</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-2">
+            <button id="btn-reset" class="bg-rose-600 hover:bg-rose-500 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all active:scale-95 text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                </svg>
+                <span class="hidden sm:inline">Reset Graph</span>
+                <span class="sm:hidden">Reset</span>
+            </button>
+            <button id="btn-help" class="w-10 h-10 rounded-lg bg-slate-700 hover:bg-slate-600 text-lg font-bold flex items-center justify-center transition-colors">
+                ?
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
+        
+        <!-- Sidebar Controls -->
+        <aside class="w-full md:w-[350px] shrink-0 bg-slate-800/50 border-r border-slate-700 p-5 flex flex-col gap-4 overflow-y-visible md:overflow-y-auto order-2 md:order-1 pb-10 md:pb-5">
+            
+            <!-- Context Header -->
+            <div class="text-sm text-slate-300 bg-slate-900/40 p-3 rounded-lg border border-slate-700/50">
+                <p><strong>Drag</strong> the curve to translate it. <strong>Click</strong> on the curve to track a point's coordinates!</p>
+            </div>
+
+            <!-- Function Selector -->
+            <div class="flex flex-col gap-1.5">
+                <label for="func-select" class="text-xs uppercase tracking-wider text-slate-400 font-bold">Base Function</label>
+                <select id="func-select" class="w-full bg-slate-900 border border-slate-600 rounded p-2.5 text-md font-mono focus:border-cyan-500 outline-none transition-colors cursor-pointer text-cyan-300">
+                    <optgroup label="Trigonometric">
+                        <option value="sin">y = sin(x)</option>
+                        <option value="cos">y = cos(x)</option>
+                        <option value="tan">y = tan(x)</option>
+                    </optgroup>
+                    <optgroup label="Exponential & Log">
+                        <option value="exp">y = eˣ</option>
+                        <option value="ln">y = ln(x)</option>
+                    </optgroup>
+                    <optgroup label="Conics & Relations">
+                        <option value="parabola">y = x²</option>
+                        <option value="hyperbola">y = 1/x</option>
+                        <option value="circle">x² + y² = 16</option>
+                    </optgroup>
+                    <optgroup label="Linear">
+                        <option value="linear">y = 2x + 1</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <!-- Current Equation Display with Toggle -->
+            <div class="flex flex-col gap-1.5">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs uppercase tracking-wider text-slate-400 font-bold">Equation State</label>
+                    <label class="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer hover:text-white transition-colors">
+                        <input type="checkbox" id="toggle-eq" checked class="rounded border-slate-600 bg-slate-900 cursor-pointer text-cyan-500 w-3.5 h-3.5">
+                        Show
+                    </label>
+                </div>
+                <div id="eq-display" class="bg-slate-900 p-3.5 rounded-lg border border-slate-700 font-mono text-center text-cyan-300 text-md shadow-inner min-h-[48px] flex items-center justify-center break-all transition-all duration-300">
+                    y = sin(x)
+                </div>
+            </div>
+
+            <!-- Point Tracking System -->
+            <div class="flex flex-col gap-2 pt-2 border-t border-slate-700/60">
+                <label class="text-xs uppercase tracking-wider text-slate-400 font-bold flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Point Tracking
+                </label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-show-intercepts" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-2 rounded-lg shadow transition-all active:scale-95 border-b-2 border-slate-900 text-xs flex flex-col items-center justify-center gap-1">
+                        <span>Show All Intercepts</span>
+                    </button>
+                    <button id="btn-add-random" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-2 rounded-lg shadow transition-all active:scale-95 border-b-2 border-slate-900 text-xs flex flex-col items-center justify-center gap-1">
+                        <span>Add Random Point</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Reflections Control Section -->
+            <div class="flex flex-col gap-2 pt-2 border-t border-slate-700/60">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs uppercase tracking-wider text-slate-400 font-bold flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> 3D Reflections
+                    </label>
+                    <label class="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer hover:text-white transition-colors">
+                        <input type="checkbox" id="toggle-yx" checked class="rounded border-slate-600 bg-slate-900 cursor-pointer text-cyan-500 w-3.5 h-3.5">
+                        Show y=x
+                    </label>
+                </div>
+                <div class="grid grid-cols-1 gap-2">
+                    <button class="reflect-btn bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg shadow transition-all active:scale-95 border-b-4 border-slate-900 relative overflow-hidden group text-sm" data-axis="x">
+                        <div class="absolute inset-y-0 left-0 bg-red-500/10 w-0 group-hover:w-full transition-all duration-300"></div>
+                        <span class="relative">Reflect over X-axis</span>
+                    </button>
+                    <button class="reflect-btn bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg shadow transition-all active:scale-95 border-b-4 border-slate-900 relative overflow-hidden group text-sm" data-axis="y">
+                        <div class="absolute inset-y-0 left-0 bg-red-500/10 w-0 group-hover:w-full transition-all duration-300"></div>
+                        <span class="relative">Reflect over Y-axis</span>
+                    </button>
+                    <button class="reflect-btn bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg shadow transition-all active:scale-95 border-b-4 border-slate-900 relative overflow-hidden group text-sm" data-axis="yx">
+                        <div class="absolute inset-y-0 left-0 bg-red-500/10 w-0 group-hover:w-full transition-all duration-300"></div>
+                        <span class="relative">Reflect over line y = x</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dilations Control Section -->
+            <div class="flex flex-col gap-2.5 pt-2 border-t border-slate-700/60">
+                <label class="text-xs uppercase tracking-wider text-slate-400 font-bold flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Smooth Dilations
+                </label>
+                
+                <div class="flex flex-col gap-1">
+                    <label for="dilation-factor" class="text-xs text-slate-400">Dilation Factor (k)</label>
+                    <div class="flex gap-2">
+                        <input id="dilation-factor" type="number" step="0.1" min="-10" max="10" value="2.0" class="w-24 bg-slate-950 border border-slate-700 rounded-lg p-2 font-mono text-center text-cyan-300 focus:outline-none focus:border-cyan-500" />
+                        <div class="flex-1 grid grid-cols-3 gap-1">
+                            <button class="preset-btn bg-slate-900 hover:bg-slate-750 text-xs text-slate-300 rounded font-mono py-1" data-val="0.5">0.5x</button>
+                            <button class="preset-btn bg-slate-900 hover:bg-slate-750 text-xs text-slate-300 rounded font-mono py-1" data-val="2.0">2.0x</button>
+                            <button class="preset-btn bg-slate-900 hover:bg-slate-750 text-xs text-slate-300 rounded font-mono py-1" data-val="3.0">3.0x</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mt-1">
+                    <button id="btn-dilate-v" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-2 rounded-lg shadow transition-all active:scale-95 border-b-4 border-slate-900 text-xs flex flex-col items-center justify-center gap-1">
+                        <span class="text-[10px] text-slate-400">Y-Values (X-Axis Glow)</span>
+                        <span>Vertically</span>
+                    </button>
+                    <button id="btn-dilate-h" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-2 rounded-lg shadow transition-all active:scale-95 border-b-4 border-slate-900 text-xs flex flex-col items-center justify-center gap-1">
+                        <span class="text-[10px] text-slate-400">X-Values (Y-Axis Glow)</span>
+                        <span>Horizontally</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Error Feedback Area -->
+            <div id="error-card" class="hidden bg-rose-950/40 border border-rose-800 text-rose-300 p-3 rounded-lg text-xs font-medium text-center">
+                Please enter a valid scale factor (excluding zero)!
+            </div>
+
+        </aside>
+
+        <!-- Canvas Area -->
+        <section class="flex-1 relative flex items-center justify-center p-4 md:p-6 bg-slate-900 min-h-[50vh] md:min-h-0 min-w-0 order-1 md:order-2 shrink-0 border-b md:border-b-0 border-slate-700 md:overflow-hidden" id="canvas-container">
+            <!-- Canvas resolution is set to 800x800 for high DPI crispness -->
+            <canvas id="mathCanvas" width="800" height="800" class="w-full max-w-[550px] md:max-w-[700px] bg-slate-800 border border-slate-700"></canvas>
+        </section>
+    </main>
+
+    <!-- Modals -->
+
+    <!-- Help Modal -->
+    <div id="modal-help" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden backdrop-blur-sm">
+        <div class="bg-slate-800 border border-slate-600 rounded-xl max-w-md w-full mx-4 shadow-2xl modal-enter">
+            <div class="p-6 border-b border-slate-700 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-cyan-400">Symmetry & Transformations</h2>
+                <button class="close-modal text-slate-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4 text-slate-300 leading-relaxed max-h-[70vh] overflow-y-auto text-sm">
+                <p>Visualize how mathematics shifts shapes through reflections and dilations:</p>
+                
+                <ul class="list-disc pl-5 space-y-1 text-xs text-slate-400 mb-4">
+                    <li><strong>Drag</strong> the curve to shift (translate) it across the plane.</li>
+                    <li><strong>Click</strong> the curve to track a coordinate point through animations.</li>
+                    <li><strong>Negative Dilations</strong>: Using a negative factor will first run a 3D Reflection, then scale the graph to demonstrate full horizontal/vertical sign mapping.</li>
+                    <li><strong>Intercept Tracking</strong>: Click near an axis or use the buttons to accurately mark intercepts. They will dynamically slide along the curve to stay glued to the axis!</li>
+                </ul>
+
+                <div class="bg-slate-900 p-3 rounded-lg border border-slate-700">
+                    <h3 class="font-bold text-white mb-1">X-Axis Reflection</h3>
+                    <p class="text-xs">Flips the graph vertically (up/down). The y-values change sign.<br>
+                    <code class="text-cyan-300 font-mono">f(x) &rarr; -f(x)</code></p>
+                </div>
+                
+                <div class="bg-slate-900 p-3 rounded-lg border border-slate-700">
+                    <h3 class="font-bold text-white mb-1">Y-Axis Reflection</h3>
+                    <p class="text-xs">Flips the graph horizontally (left/right). The x-values change sign.<br>
+                    <code class="text-cyan-300 font-mono">f(x) &rarr; f(-x)</code></p>
+                </div>
+
+                <div class="bg-slate-900 p-3 rounded-lg border border-slate-700">
+                    <h3 class="font-bold text-white mb-1">Line y = x Reflection</h3>
+                    <p class="text-xs">Swaps the x and y coordinates, reflecting across the diagonal. This creates the <strong>Inverse Function</strong>.<br>
+                    <code class="text-cyan-300 font-mono">f(x) &rarr; f⁻¹(x)</code></p>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-700 flex justify-end">
+                <button class="close-modal px-6 py-2 bg-cyan-600 hover:bg-cyan-500 rounded text-white font-bold transition-colors">Got it!</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CORE APPLICATION LOGIC --- //
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // Elements
+            const canvas = document.getElementById('mathCanvas');
+            const ctx = canvas.getContext('2d');
+            const funcSelect = document.getElementById('func-select');
+            const reflectBtns = document.querySelectorAll('.reflect-btn');
+            const btnReset = document.getElementById('btn-reset');
+            const btnHelp = document.getElementById('btn-help');
+            const modalHelp = document.getElementById('modal-help');
+            const eqDisplay = document.getElementById('eq-display');
+            const toggleEq = document.getElementById('toggle-eq');
+            const toggleYx = document.getElementById('toggle-yx');
+            const btnShowIntercepts = document.getElementById('btn-show-intercepts');
+            const btnAddRandom = document.getElementById('btn-add-random');
+            const dilationInput = document.getElementById('dilation-factor');
+            const presetBtns = document.querySelectorAll('.preset-btn');
+            const btnDilateV = document.getElementById('btn-dilate-v');
+            const btnDilateH = document.getElementById('btn-dilate-h');
+            const errorCard = document.getElementById('error-card');
+            
+            // App State
+            let baseFuncId = 'sin';
+            let animating = false;
+            let animationStart = 0;
+            const animationDuration = 1200; // ms per transition step (chained transitions are fast and punchy)
+            let animationType = 'reflect'; // 'reflect' or 'dilate'
+            
+            let basePaths = [];     
+            let sourcePaths = [];   
+            let targetPaths = [];   
+            
+            let activeGlowAxis = null;
+            let currentTheta = 0;   
+            let currentProgress = 0; 
+
+            // Chained Animation State
+            let animationQueue = [];
+            let currentStepIdx = 0;
+            
+            // Interaction State
+            let isDragging = false;
+            let isDragMoved = false;
+            let dragStartX = 0, dragStartY = 0;
+            let lastMouseX = 0, lastMouseY = 0;
+            let markedPoints = []; // Array to allow multiple points to be tracked
+
+            // Algebraic state tracker for updating the equation dynamically
+            let eqState = { A: 1, B: 1, h: 0, k: 0, swapped: false };
+
+            // Math Constants (Expanded to prevent curves clipping off when rotated)
+            const SCALE = 40; // Pixels per unit
+            const X_MIN = -40, X_MAX = 40;
+            const Y_MIN = -40, Y_MAX = 40;
+            const CX = canvas.width / 2;
+            const CY = canvas.height / 2;
+
+            // --- FUNCTION LIBRARY ---
+            const functions = {
+                'sin': { name: 'y = sin(x)', eqTpl: 'sin(x)', isY: true, gen: () => genPath(x => Math.sin(x)) },
+                'cos': { name: 'y = cos(x)', eqTpl: 'cos(x)', isY: true, gen: () => genPath(x => Math.cos(x)) },
+                'tan': { name: 'y = tan(x)', eqTpl: 'tan(x)', isY: true, gen: () => genTan() },
+                'exp': { name: 'y = e^x', eqTpl: 'e^{x}', isY: true, gen: () => genPath(x => Math.exp(x)) },
+                'ln':  { name: 'y = ln(x)', eqTpl: 'ln(x)', isY: true, gen: () => genPath(x => x > 0 ? Math.log(x) : null) },
+                'parabola': { name: 'y = x²', eqTpl: 'x²', isY: true, gen: () => genPath(x => x*x) },
+                'hyperbola': { name: 'y = 1/x', eqTpl: '1/x', isY: true, gen: () => genHyperbola() },
+                'circle': { name: 'x² + y² = 16', eqTpl: 'Circle', isY: null, gen: () => genParametric(t => 4*Math.cos(t), t => 4*Math.sin(t), 0, 2*Math.PI) },
+                'linear': { name: 'y = 2x + 1', eqTpl: '2x + 1', isY: true, gen: () => genPath(x => 2*x + 1) }
+            };
+
+            // --- GENERATOR HELPERS ---
+            // Generates path points safely
+            function genPath(fn) {
+                let paths = [];
+                let currentPath = [];
+                for (let x = X_MIN; x <= X_MAX; x += 0.05) {
+                    let y = fn(x);
+                    if (y === null || isNaN(y) || Math.abs(y) > 100) {
+                        if (currentPath.length > 0) { paths.push(currentPath); currentPath = []; }
+                    } else {
+                        currentPath.push({x, y});
+                    }
+                }
+                if (currentPath.length > 0) paths.push(currentPath);
+                return paths;
+            }
+
+            function genParametric(fx, fy, tMin = X_MIN, tMax = X_MAX) {
+                let path = [];
+                for (let t = tMin; t <= tMax; t += 0.05) {
+                    let x = fx(t); let y = fy(t);
+                    if (Math.abs(x) <= 100 && Math.abs(y) <= 100) {
+                        path.push({x, y});
+                    }
+                }
+                // Explicitly evaluate at tMax to complete the loop and close the gap
+                let xEnd = fx(tMax);
+                let yEnd = fy(tMax);
+                if (Math.abs(xEnd) <= 100 && Math.abs(yEnd) <= 100) {
+                    path.push({x: xEnd, y: yEnd});
+                }
+                return [path];
+            }
+
+            // High sensitivity asymptotes bounds
+            function genTan() {
+                let paths = [];
+                let currentPath = [];
+                let lastY = 0;
+                for (let x = X_MIN; x <= X_MAX; x += 0.05) {
+                    let y = Math.tan(x);
+                    if (Math.abs(y - lastY) > 10 && currentPath.length > 0) {
+                        paths.push(currentPath);
+                        currentPath = [];
+                    }
+                    if (Math.abs(y) <= 100) currentPath.push({x, y});
+                    lastY = y;
+                }
+                if (currentPath.length > 0) paths.push(currentPath);
+                return paths;
+            }
+
+            function genHyperbola() {
+                let p1 = [], p2 = [];
+                for(let x = X_MIN; x <= -0.05; x += 0.05) { 
+                    let y = 1/x;
+                    if (Math.abs(y) <= 100) p1.push({x, y}); 
+                }
+                for(let x = 0.05; x <= X_MAX; x += 0.05) { 
+                    let y = 1/x;
+                    if (Math.abs(y) <= 100) p2.push({x, y}); 
+                }
+                return [p1, p2];
+            }
+
+            // --- MATHEMATICAL INTERCEPT DETERMINATION (LINEAR INTERPOLATION) ---
+            function findYIntercepts(path) {
+                let intercepts = [];
+                for (let i = 0; i < path.length - 1; i++) {
+                    let p1 = path[i];
+                    let p2 = path[i+1];
+                    if ((p1.x <= 0 && p2.x >= 0) || (p1.x >= 0 && p2.x <= 0)) {
+                        if (Math.abs(p1.y - p2.y) < 5.0 && p1.x !== p2.x) {
+                            let t = -p1.x / (p2.x - p1.x);
+                            let y = p1.y + t * (p2.y - p1.y);
+                            intercepts.push({ x: 0, y: y, segmentIdx: i });
+                        }
+                    }
+                }
+                return intercepts;
+            }
+
+            function findXIntercepts(path) {
+                let intercepts = [];
+                for (let i = 0; i < path.length - 1; i++) {
+                    let p1 = path[i];
+                    let p2 = path[i+1];
+                    if ((p1.y <= 0 && p2.y >= 0) || (p1.y >= 0 && p2.y <= 0)) {
+                        if (Math.abs(p1.x - p2.x) < 5.0 && p1.y !== p2.y) {
+                            let t = -p1.y / (p2.y - p1.y);
+                            let x = p1.x + t * (p2.x - p1.x);
+                            intercepts.push({ x: x, y: 0, segmentIdx: i });
+                        }
+                    }
+                }
+                return intercepts;
+            }
+
+            // Get standard math state point coordinate dynamically based on current configuration
+            function getMathPtForTransform(pathsState, mp) {
+                let path = pathsState[mp.pathIdx];
+                if (!path) return null;
+                if (mp.type === 'y-intercept') {
+                    let intercepts = findYIntercepts(path);
+                    if (intercepts.length > 0) {
+                        let best = intercepts[0];
+                        let minDiff = Infinity;
+                        intercepts.forEach(int => {
+                            let diff = Math.abs(int.segmentIdx - mp.segmentIdx);
+                            if (diff < minDiff) { minDiff = diff; best = int; }
+                        });
+                        return { x: 0, y: best.y };
+                    }
+                } else if (mp.type === 'x-intercept') {
+                    let intercepts = findXIntercepts(path);
+                    if (intercepts.length > 0) {
+                        let best = intercepts[0];
+                        let minDiff = Infinity;
+                        intercepts.forEach(int => {
+                            let diff = Math.abs(int.segmentIdx - mp.segmentIdx);
+                            if (diff < minDiff) { minDiff = diff; best = int; }
+                        });
+                        return { x: best.x, y: 0 };
+                    }
+                } else {
+                    if (path[mp.pointIdx]) {
+                        return { x: path[mp.pointIdx].x, y: path[mp.pointIdx].y };
+                    }
+                }
+                return null;
+            }
+
+            function getRenderedPt(mp) {
+                let mathPt = getMathPtForTransform(basePaths, mp);
+                if (mathPt) {
+                    return projectTo2D({ x: mathPt.x, y: mathPt.y, z: 0 });
+                }
+                return null;
+            }
+
+            // --- 3D ROTATION TRANSFORM ENGINE ---
+            function transformPoint(p, axis, theta) {
+                let x = p.x, y = p.y, z = 0;
+                let xp = x, yp = y, zp = 0;
+
+                if (axis === 'x') {
+                    yp = y * Math.cos(theta);
+                    zp = y * Math.sin(theta);
+                } else if (axis === 'y') {
+                    xp = x * Math.cos(theta);
+                    zp = -x * Math.sin(theta);
+                } else if (axis === 'yx') {
+                    let cosT = Math.cos(theta);
+                    let sinT = Math.sin(theta);
+                    xp = x * cosT + ((x+y)/2) * (1 - cosT);
+                    yp = y * cosT + ((x+y)/2) * (1 - cosT);
+                    zp = ((y-x) / Math.SQRT2) * sinT;
+                }
+                return {x: xp, y: yp, z: zp};
+            }
+
+            // Project 3D Coordinates to 2D screen coordinate spaces
+            function projectTo2D(p) {
+                const zCam = 150; 
+                const safeZ = Math.min(p.z, zCam - 10); 
+                const factor = zCam / (zCam - safeZ);
+                return {
+                    sx: CX + p.x * SCALE * factor,
+                    sy: CY - p.y * SCALE * factor,
+                    mx: p.x, // Store underlying math coordinates for text overlay
+                    my: p.y
+                };
+            }
+
+            function getTransformedPaths(paths, axis, theta) {
+                return paths.map(path => 
+                    path.map(p => {
+                        let tp = transformPoint(p, axis, theta);
+                        return projectTo2D(tp);
+                    })
+                );
+            }
+
+            function getStatic2DPaths(paths) {
+                return paths.map(path => 
+                    path.map(p => projectTo2D({x: p.x, y: p.y, z: 0}))
+                );
+            }
+
+            function getInterpolatedPaths(sPaths, tPaths, progress) {
+                let paths = [];
+                for (let i = 0; i < sPaths.length; i++) {
+                    let sPath = sPaths[i];
+                    let tPath = tPaths[i] || sPath; 
+                    let path = [];
+                    for (let j = 0; j < sPath.length; j++) {
+                        let pStart = sPath[j];
+                        let pEnd = tPath[j] || pStart;
+                        let x = pStart.x + progress * (pEnd.x - pStart.x);
+                        let y = pStart.y + progress * (pEnd.y - pStart.y);
+                        path.push(projectTo2D({x, y, z: 0}));
+                    }
+                    paths.push(path);
+                }
+                return paths;
+            }
+
+            // --- CANVAS RENDERING ---
+            function drawScene() {
+                ctx.fillStyle = '#0f172a'; // slate-900
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                drawGrid();
+                drawAxes(activeGlowAxis);
+
+                let currentRenderedPaths;
+
+                if (animating) {
+                    let orig2d = getStatic2DPaths(sourcePaths);
+                    drawPaths(orig2d, '#64748b', 2, true, 0.4); // faint trace
+
+                    if (animationType === 'reflect') {
+                        currentRenderedPaths = getTransformedPaths(sourcePaths, activeGlowAxis, currentTheta);
+                    } else {
+                        currentRenderedPaths = getInterpolatedPaths(sourcePaths, targetPaths, currentProgress);
+                    }
+                    drawPaths(currentRenderedPaths, '#06b6d4', 4, false, 1.0);
+                } else {
+                    currentRenderedPaths = getStatic2DPaths(basePaths);
+                    drawPaths(currentRenderedPaths, '#06b6d4', 4, false, 1.0);
+                }
+
+                // Draw Marked Coordinate Point Tracking
+                markedPoints.forEach(markedPoint => {
+                    let pt = null;
+                    if (animating) {
+                        if (animationType === 'reflect') {
+                            let mPt = getMathPtForTransform(sourcePaths, markedPoint);
+                            if (mPt) {
+                                let tp = transformPoint(mPt, activeGlowAxis, currentTheta);
+                                pt = projectTo2D(tp);
+                            }
+                        } else {
+                            let sPt = getMathPtForTransform(sourcePaths, markedPoint);
+                            let tPt = getMathPtForTransform(targetPaths, markedPoint);
+                            if (sPt && tPt) {
+                                let x = sPt.x + currentProgress * (tPt.x - sPt.x);
+                                let y = sPt.y + currentProgress * (tPt.y - sPt.y);
+                                pt = projectTo2D({ x, y, z: 0 });
+                            }
+                        }
+                    } else {
+                        let mPt = getMathPtForTransform(basePaths, markedPoint);
+                        if (mPt) {
+                            pt = projectTo2D({ x: mPt.x, y: mPt.y, z: 0 });
+                        }
+                    }
+
+                    if (pt) {
+                        let isIntercept = (markedPoint.type === 'x-intercept' || markedPoint.type === 'y-intercept');
+                        let markerColor = isIntercept ? '#ef4444' : '#fbbf24';
+
+                        ctx.beginPath();
+                        ctx.arc(pt.sx, pt.sy, 7, 0, 2*Math.PI);
+                        ctx.fillStyle = markerColor; 
+                        ctx.fill();
+                        ctx.lineWidth = 2.5;
+                        ctx.strokeStyle = '#fff';
+                        ctx.stroke();
+
+                        ctx.fillStyle = markerColor;
+                        ctx.font = 'bold 15px monospace';
+                        
+                        // Clean axis snaps for pure zero labels
+                        let xDisp = pt.mx;
+                        let yDisp = pt.my;
+
+                        if (markedPoint.type === 'y-intercept' && !animating) xDisp = 0;
+                        if (markedPoint.type === 'x-intercept' && !animating) yDisp = 0;
+
+                        if (Math.abs(xDisp) < 1e-5) xDisp = 0;
+                        if (Math.abs(yDisp) < 1e-5) yDisp = 0;
+
+                        let text = `(${xDisp.toFixed(1)}, ${yDisp.toFixed(1)})`;
+                        
+                        let tx = pt.sx + 14;
+                        let ty = pt.sy - 14;
+                        if (tx > canvas.width - 90) tx = pt.sx - 90;
+                        if (ty < 25) ty = pt.sy + 25;
+
+                        let textMetrics = ctx.measureText(text);
+                        ctx.fillStyle = 'rgba(15, 23, 42, 0.75)'; 
+                        ctx.fillRect(tx - 4, ty - 15, textMetrics.width + 8, 22);
+                        
+                        ctx.fillStyle = markerColor;
+                        ctx.fillText(text, tx, ty);
+                    }
+                });
+            }
+
+            function drawGrid() {
+                ctx.strokeStyle = '#1e293b'; // slate-800
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (let x = -20; x <= 20; x++) {
+                    ctx.moveTo(CX + x * SCALE, 0); ctx.lineTo(CX + x * SCALE, canvas.height);
+                }
+                for (let y = -20; y <= 20; y++) {
+                    ctx.moveTo(0, CY - y * SCALE); ctx.lineTo(canvas.width, CY - y * SCALE);
+                }
+                ctx.stroke();
+            }
+
+            function drawAxes(glow) {
+                ctx.save();
+                const drawLine = (x1, y1, x2, y2, isGlow) => {
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+                    if (isGlow) {
+                        ctx.strokeStyle = '#ef4444';
+                        ctx.lineWidth = 4;
+                        ctx.shadowColor = '#ef4444';
+                        ctx.shadowBlur = 18;
+                    } else {
+                        ctx.strokeStyle = '#475569';
+                        ctx.lineWidth = 2.5;
+                        ctx.shadowBlur = 0;
+                    }
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                };
+
+                drawLine(0, CY, canvas.width, CY, glow === 'x');
+                drawLine(CX, 0, CX, canvas.height, glow === 'y');
+                
+                // Show diagonal line only if y=x visibility toggle is checked
+                if (toggleYx.checked) {
+                    let lx1 = CX - 20 * SCALE, ly1 = CY + 20 * SCALE;
+                    let lx2 = CX + 20 * SCALE, ly2 = CY - 20 * SCALE;
+                    drawLine(lx1, ly1, lx2, ly2, glow === 'yx');
+                    
+                    ctx.fillStyle = (glow === 'yx') ? '#ef4444' : '#64748b';
+                    ctx.font = 'bold 15px monospace';
+                    ctx.fillText('y = x', CX + 10 * SCALE - 50, CY - 10 * SCALE + 25);
+                }
+                
+                ctx.restore();
+            }
+
+            function drawPaths(paths2D, color, width, dashed, alpha) {
+                ctx.save();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width;
+                ctx.globalAlpha = alpha;
+                if (dashed) ctx.setLineDash([8, 8]);
+                
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+
+                paths2D.forEach(path => {
+                    if (path.length === 0) return;
+                    ctx.beginPath();
+                    ctx.moveTo(path[0].sx, path[0].sy);
+                    for (let i = 1; i < path.length; i++) {
+                        ctx.lineTo(path[i].sx, path[i].sy);
+                    }
+                    ctx.stroke();
+                });
+                ctx.restore();
+            }
+
+            // --- ANIMATION CONTROLLER SPEED EASING ---
+            function easeInOut(t) {
+                return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+            }
+
+            // --- ANIMATION CONTROLLER WITH STAGE-CHAINING ---
+            function startChainAnimation(steps) {
+                if (animating) return;
+                animating = true;
+                animationQueue = steps;
+                currentStepIdx = 0;
+                
+                toggleInteractiveElements(false);
+                runNextAnimationStep();
+            }
+
+            function runNextAnimationStep() {
+                if (currentStepIdx >= animationQueue.length) {
+                    animating = false;
+                    basePaths = animationQueue[animationQueue.length - 1].targetPaths;
+                    currentTheta = 0;
+                    currentProgress = 0;
+                    activeGlowAxis = null;
+                    
+                    updateInterceptPoint();
+                    toggleInteractiveElements(true);
+                    drawScene();
+                    return;
+                }
+
+                let step = animationQueue[currentStepIdx];
+                animationType = step.type;
+                activeGlowAxis = step.axis;
+                sourcePaths = JSON.parse(JSON.stringify(basePaths));
+                targetPaths = step.targetPaths;
+                animationStart = performance.now();
+
+                // Call step equations update if provided
+                if (step.onStart) {
+                    step.onStart();
+                }
+
+                requestAnimationFrame(animateStepFrame);
+            }
+
+            function animateStepFrame(now) {
+                let elapsed = now - animationStart;
+                let progress = Math.min(elapsed / animationDuration, 1.0);
+                let eased = easeInOut(progress);
+                
+                if (animationType === 'reflect') {
+                    currentTheta = eased * Math.PI;
+                } else {
+                    currentProgress = eased;
+                }
+                
+                drawScene();
+
+                if (progress < 1.0) {
+                    requestAnimationFrame(animateStepFrame);
+                } else {
+                    // Stage finished: commit point coordinates
+                    basePaths = targetPaths;
+                    currentTheta = 0;
+                    currentProgress = 0;
+                    currentStepIdx++;
+                    
+                    // Proceed with brief structural delay between transforms for distinct steps
+                    setTimeout(runNextAnimationStep, 80);
+                }
+            }
+
+            function toggleInteractiveElements(enabled) {
+                funcSelect.disabled = !enabled;
+                dilationInput.disabled = !enabled;
+                btnReset.disabled = !enabled;
+                btnShowIntercepts.disabled = !enabled;
+                btnAddRandom.disabled = !enabled;
+                reflectBtns.forEach(b => b.disabled = !enabled);
+                presetBtns.forEach(b => b.disabled = !enabled);
+                btnDilateV.disabled = !enabled;
+                btnDilateH.disabled = !enabled;
+            }
+
+            // --- INTERCEPT RETENTION & ESCAPE PRUNING LOGIC ---
+            function updateInterceptPoint() {
+                for (let i = markedPoints.length - 1; i >= 0; i--) {
+                    let mp = markedPoints[i];
+                    if (mp.type === 'standard') continue;
+
+                    let mathPt = getMathPtForTransform(basePaths, mp);
+                    if (!mathPt) {
+                        markedPoints.splice(i, 1);
+                    }
+                }
+            }
+
+            // --- DYNAMIC ALGEBRAIC FORMULA UPDATER ---
+            function updateEquationString() {
+                let f = functions[baseFuncId];
+                if (f.isY === null) {
+                    eqDisplay.innerHTML = f.name;
+                    return;
+                }
+
+                let { A, B, h, k, swapped } = eqState;
+
+                let xVar = swapped ? "y" : "x";
+                let yVar = swapped ? "x" : "y";
+
+                // Build inner string: B * (xVar - h)
+                let inner = xVar;
+                if (Math.abs(h) > 0.05) {
+                    inner = `(${xVar} ${h > 0 ? '-' : '+'} ${Math.abs(h).toFixed(1)})`;
+                }
+                if (B === -1) inner = `-${inner}`;
+                else if (Math.abs(B - 1) > 0.01) inner = `${B.toFixed(1)}${inner}`;
+
+                // Build outer string: A * f(inner) + k
+                let rightSide = f.eqTpl.replace('x', inner);
+                let fullRight = rightSide;
+                
+                if (A === -1) fullRight = `-${rightSide}`;
+                else if (Math.abs(A - 1) > 0.01) fullRight = `${A.toFixed(1)}${rightSide}`;
+
+                if (Math.abs(k) > 0.05) {
+                    fullRight += ` ${k > 0 ? '+' : '-'} ${Math.abs(k).toFixed(1)}`;
+                }
+                
+                eqDisplay.innerHTML = `${yVar} = ${fullRight}`;
+            }
+
+            // --- TRANSFORMATION STATE GENERATION ---
+            function loadFunction(id) {
+                baseFuncId = id;
+                basePaths = functions[id].gen();
+                eqState = { A: 1, B: 1, h: 0, k: 0, swapped: false };
+                markedPoints = [];
+                updateEquationString();
+                drawScene();
+            }
+
+            // Trigger visual 3D reflections
+            function triggerReflection(axis) {
+                let transformed = basePaths.map(path => 
+                    path.map(p => {
+                        let tp = transformPoint(p, axis, Math.PI);
+                        return { x: tp.x, y: tp.y };
+                    })
+                );
+
+                let steps = [{
+                    type: 'reflect',
+                    axis: axis,
+                    targetPaths: transformed,
+                    onStart: () => {
+                        if (axis === 'x') {
+                            if (!eqState.swapped) { eqState.A *= -1; eqState.k *= -1; }
+                            else { eqState.B *= -1; eqState.h *= -1; }
+                        }
+                        if (axis === 'y') {
+                            if (!eqState.swapped) { eqState.B *= -1; eqState.h *= -1; }
+                            else { eqState.A *= -1; eqState.k *= -1; }
+                        }
+                        if (axis === 'yx') {
+                            eqState.swapped = !eqState.swapped;
+                        }
+                        updateEquationString();
+                    }
+                }];
+
+                startChainAnimation(steps);
+            }
+
+            function triggerDilation(type) {
+                const c = parseFloat(dilationInput.value);
+                if (isNaN(c) || Math.abs(c) < 0.05 || c === 0) {
+                    showError(); return;
+                }
+                hideError();
+
+                let steps = [];
+
+                if (c < 0) {
+                    // --- MULTI-STAGE ACTION: REFLECTION FIRST, THEN SCALE ---
+                    const axis = (type === 'vertical') ? 'x' : 'y';
+                    let reflectedPaths = basePaths.map(path => 
+                        path.map(p => {
+                            let tp = transformPoint(p, axis, Math.PI);
+                            return { x: tp.x, y: tp.y };
+                        })
+                    );
+
+                    // Stage 1: Reflect over axis
+                    steps.push({
+                        type: 'reflect',
+                        axis: axis,
+                        targetPaths: reflectedPaths,
+                        onStart: () => {
+                            if (axis === 'x') {
+                                if (!eqState.swapped) { eqState.A *= -1; eqState.k *= -1; }
+                                else { eqState.B *= -1; eqState.h *= -1; }
+                            } else {
+                                if (!eqState.swapped) { eqState.B *= -1; eqState.h *= -1; }
+                                else { eqState.A *= -1; eqState.k *= -1; }
+                            }
+                            updateEquationString();
+                        }
+                    });
+
+                    // Stage 2: Scale horizontally/vertically by positive magnitude
+                    const mag = Math.abs(c);
+                    let finalPaths;
+                    if (type === 'vertical') {
+                        finalPaths = reflectedPaths.map(path => path.map(p => ({ x: p.x, y: p.y * mag })));
+                    } else {
+                        finalPaths = reflectedPaths.map(path => path.map(p => ({ x: p.x * mag, y: p.y })));
+                    }
+
+                    steps.push({
+                        type: 'dilate',
+                        axis: axis,
+                        targetPaths: finalPaths,
+                        onStart: () => {
+                            if (type === 'vertical') {
+                                if (!eqState.swapped) { eqState.A *= mag; eqState.k *= mag; }
+                                else { eqState.B /= mag; eqState.h *= mag; }
+                            } else {
+                                if (!eqState.swapped) { eqState.B /= mag; eqState.h *= mag; }
+                                else { eqState.A *= mag; eqState.k *= mag; }
+                            }
+                            updateEquationString();
+                        }
+                    });
+
+                } else {
+                    // --- SINGLE-STAGE ACTION: STANDARD POSITIVE DILATION ---
+                    let transformed;
+                    let glowAxis;
+                    if (type === 'vertical') {
+                        glowAxis = 'x';
+                        transformed = basePaths.map(path => path.map(p => ({ x: p.x, y: p.y * c })));
+                    } else {
+                        glowAxis = 'y';
+                        transformed = basePaths.map(path => path.map(p => ({ x: p.x * c, y: p.y })));
+                    }
+
+                    steps.push({
+                        type: 'dilate',
+                        axis: glowAxis,
+                        targetPaths: transformed,
+                        onStart: () => {
+                            if (type === 'vertical') {
+                                if (!eqState.swapped) { eqState.A *= c; eqState.k *= c; }
+                                else { eqState.B /= c; eqState.h *= c; }
+                            } else {
+                                if (!eqState.swapped) { eqState.B /= c; eqState.h *= c; }
+                                else { eqState.A *= c; eqState.k *= c; }
+                            }
+                            updateEquationString();
+                        }
+                    });
+                }
+
+                startChainAnimation(steps);
+            }
+
+            // --- USER NOTIFICATION CHANNELS ---
+            function showError() {
+                errorCard.classList.remove('hidden');
+                setTimeout(() => errorCard.classList.add('hidden'), 4000);
+            }
+            function hideError() { errorCard.classList.add('hidden'); }
+
+
+            // --- MOUSE & TOUCH INTERACTION ---
+            function getEventPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: (clientX - rect.left) * (canvas.width / rect.width),
+                    y: (clientY - rect.top) * (canvas.height / rect.height)
+                };
+            }
+
+            function findNearestPoint(cx, cy) {
+                let minDist = Infinity;
+                let best = null;
+                // Check against current active rendering positions
+                let rendered = getStatic2DPaths(basePaths);
+                for (let i = 0; i < rendered.length; i++) {
+                    for (let j = 0; j < rendered[i].length; j++) {
+                        let pt = rendered[i][j];
+                        let dist = Math.hypot(pt.sx - cx, pt.sy - cy);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            best = { pathIdx: i, pointIdx: j };
+                        }
+                    }
+                }
+                return { best, minDist };
+            }
+
+            function handleDown(e) {
+                if (animating) return;
+                const pos = getEventPos(e);
+                isDragging = true;
+                isDragMoved = false; // Reset drag flag
+                dragStartX = pos.x;
+                dragStartY = pos.y;
+                lastMouseX = pos.x;
+                lastMouseY = pos.y;
+                
+                if (e.cancelable) e.preventDefault(); 
+            }
+
+            function handleMove(e) {
+                if (animating) return;
+                const pos = getEventPos(e);
+                
+                if (!isDragging) {
+                    const { best, minDist } = findNearestPoint(pos.x, pos.y);
+                    canvas.style.cursor = (best && minDist < 35) ? 'grab' : 'crosshair';
+                    return;
+                }
+
+                // If dragged more than a tiny threshold, consider it a drag event (not a click)
+                if (Math.hypot(pos.x - dragStartX, pos.y - dragStartY) > 5) {
+                    isDragMoved = true; 
+                    canvas.style.cursor = 'grabbing';
+                }
+
+                if (isDragMoved) {
+                    let canvasDx = pos.x - lastMouseX;
+                    let canvasDy = pos.y - lastMouseY;
+                    let mathDx = canvasDx / SCALE;
+                    let mathDy = -canvasDy / SCALE;
+
+                    // Shift all points in mathematical space
+                    for (let path of basePaths) {
+                        for (let p of path) { p.x += mathDx; p.y += mathDy; }
+                    }
+
+                    if (!eqState.swapped) {
+                        eqState.h += mathDx; eqState.k += mathDy;
+                    } else {
+                        eqState.k += mathDx; eqState.h += mathDy;
+                    }
+
+                    // Dynamically slide the tracked index if it's an intercept
+                    updateInterceptPoint();
+
+                    updateEquationString();
+                    drawScene();
+                }
+
+                lastMouseX = pos.x; 
+                lastMouseY = pos.y;
+                if (e.cancelable) e.preventDefault();
+            }
+
+            function handleUp(e) {
+                if (!isDragging) return;
+                isDragging = false;
+                canvas.style.cursor = 'crosshair';
+
+                // If it was a clean click without significant dragging
+                if (!isDragMoved) {
+                    let clickedExistingIndex = -1;
+                    
+                    // Check if clicked near an existing marked point to remove it
+                    for (let i = 0; i < markedPoints.length; i++) {
+                        let mp = markedPoints[i];
+                        let pt = getRenderedPt(mp);
+                        if (pt) {
+                            let dist = Math.hypot(pt.sx - dragStartX, pt.sy - dragStartY);
+                            if (dist < 25) {
+                                clickedExistingIndex = i;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (clickedExistingIndex !== -1) {
+                        // Remove the clicked point
+                        markedPoints.splice(clickedExistingIndex, 1);
+                    } else {
+                        // Look for a new point to add
+                        const { best, minDist } = findNearestPoint(dragStartX, dragStartY);
+                        if (best && minDist < 25) {
+                            let path = basePaths[best.pathIdx];
+                            let pt = path[best.pointIdx];
+                            
+                            // Check if click was visually near axes (within ~30px)
+                            let distToYAxisCanvas = Math.abs(dragStartX - CX);
+                            let distToXAxisCanvas = Math.abs(dragStartY - CY);
+
+                            if (distToYAxisCanvas < 30) {
+                                let intercepts = findYIntercepts(path);
+                                if (intercepts.length > 0) {
+                                    let bestInt = intercepts[0];
+                                    let minD = Infinity;
+                                    intercepts.forEach(int => {
+                                        let proj = projectTo2D({ x: 0, y: int.y, z: 0 });
+                                        let d = Math.hypot(proj.sx - dragStartX, proj.sy - dragStartY);
+                                        if (d < minD) { minD = d; bestInt = int; }
+                                    });
+                                    if (minD < 40) {
+                                        markedPoints.push({
+                                            pathIdx: best.pathIdx,
+                                            segmentIdx: bestInt.segmentIdx,
+                                            type: 'y-intercept'
+                                        });
+                                        drawScene();
+                                        return;
+                                    }
+                                }
+                            }
+                            
+                            if (distToXAxisCanvas < 30) {
+                                let intercepts = findXIntercepts(path);
+                                if (intercepts.length > 0) {
+                                    let bestInt = intercepts[0];
+                                    let minD = Infinity;
+                                    intercepts.forEach(int => {
+                                        let proj = projectTo2D({ x: int.x, y: 0, z: 0 });
+                                        let d = Math.hypot(proj.sx - dragStartX, proj.sy - dragStartY);
+                                        if (d < minD) { minD = d; bestInt = int; }
+                                    });
+                                    if (minD < 40) {
+                                        markedPoints.push({
+                                            pathIdx: best.pathIdx,
+                                            segmentIdx: bestInt.segmentIdx,
+                                            type: 'x-intercept'
+                                        });
+                                        drawScene();
+                                        return;
+                                    }
+                                }
+                            }
+
+                            // Standard point: Snap and prioritize nearest whole integer x-coordinate
+                            let targetX = Math.round(pt.x);
+                            let bestSnapIdx = best.pointIdx;
+                            let minXDiff = Infinity;
+                            
+                            for (let k = 0; k < path.length; k++) {
+                                let diff = Math.abs(path[k].x - targetX);
+                                if (diff < minXDiff) {
+                                    minXDiff = diff;
+                                    bestSnapIdx = k;
+                                }
+                            }
+                            
+                            if (minXDiff < 0.5) {
+                                best.pointIdx = bestSnapIdx;
+                            }
+                            
+                            best.type = 'standard';
+                            markedPoints.push(best);
+                        }
+                    }
+                    drawScene();
+                }
+            }
+
+            canvas.addEventListener('mousedown', handleDown);
+            canvas.addEventListener('mousemove', handleMove);
+            window.addEventListener('mouseup', handleUp);
+            
+            canvas.addEventListener('touchstart', handleDown, {passive: false});
+            canvas.addEventListener('touchmove', handleMove, {passive: false});
+            window.addEventListener('touchend', handleUp);
+
+
+            // --- UI EVENT LISTENERS ---
+            
+            // Equation Visibility Toggle
+            toggleEq.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    eqDisplay.style.opacity = '1';
+                    eqDisplay.style.height = '48px';
+                    eqDisplay.style.padding = '14px';
+                    eqDisplay.style.borderWidth = '1px';
+                    eqDisplay.style.marginTop = '0px';
+                } else {
+                    eqDisplay.style.opacity = '0';
+                    eqDisplay.style.height = '0px';
+                    eqDisplay.style.padding = '0px';
+                    eqDisplay.style.borderWidth = '0px';
+                    eqDisplay.style.marginTop = '-10px';
+                }
+            });
+
+            // Toggle show/hide y=x line and button
+            const btnReflectYx = document.querySelector('.reflect-btn[data-axis="yx"]');
+            toggleYx.addEventListener('change', (e) => {
+                const showYx = e.target.checked;
+                if (showYx) {
+                    btnReflectYx.classList.remove('hidden');
+                } else {
+                    btnReflectYx.classList.add('hidden');
+                }
+                drawScene(); // Redraw axis coordinates on canvas dynamically
+            });
+
+            // Point Tracking Features
+            btnShowIntercepts.addEventListener('click', () => {
+                if (animating) return;
+                let interceptsAdded = false;
+                for (let i = 0; i < basePaths.length; i++) {
+                    let path = basePaths[i];
+                    
+                    // Y-intercepts (using exact crossings)
+                    let yInts = findYIntercepts(path);
+                    yInts.forEach(int => {
+                        if (!markedPoints.some(mp => mp.pathIdx === i && mp.type === 'y-intercept' && Math.abs(mp.segmentIdx - int.segmentIdx) < 5)) {
+                            markedPoints.push({
+                                pathIdx: i,
+                                segmentIdx: int.segmentIdx,
+                                type: 'y-intercept'
+                            });
+                            interceptsAdded = true;
+                        }
+                    });
+
+                    // X-intercepts (using exact crossings)
+                    let xInts = findXIntercepts(path);
+                    xInts.forEach(int => {
+                        if (!markedPoints.some(mp => mp.pathIdx === i && mp.type === 'x-intercept' && Math.abs(mp.segmentIdx - int.segmentIdx) < 5)) {
+                            markedPoints.push({
+                                pathIdx: i,
+                                segmentIdx: int.segmentIdx,
+                                type: 'x-intercept'
+                            });
+                            interceptsAdded = true;
+                        }
+                    });
+                }
+                if (interceptsAdded) drawScene();
+            });
+
+            btnAddRandom.addEventListener('click', () => {
+                if (animating || basePaths.length === 0) return;
+                
+                // Pick random path
+                let pathIdx = Math.floor(Math.random() * basePaths.length);
+                let path = basePaths[pathIdx];
+                if (path.length === 0) return;
+                
+                // Keep trying to find a point that is on-screen
+                for (let attempt = 0; attempt < 20; attempt++) {
+                    let pointIdx = Math.floor(Math.random() * path.length);
+                    let pt = path[pointIdx];
+                    
+                    if (Math.abs(pt.x) < 12 && Math.abs(pt.y) < 12) {
+                        if (!markedPoints.some(mp => mp.pathIdx === pathIdx && mp.type === 'standard' && mp.pointIdx === pointIdx)) {
+                            markedPoints.push({ pathIdx, pointIdx, type: 'standard' });
+                            drawScene();
+                            return;
+                        }
+                    }
+                }
+            });
+
+            funcSelect.addEventListener('change', (e) => loadFunction(e.target.value));
+            reflectBtns.forEach(btn => btn.addEventListener('click', () => triggerReflection(btn.dataset.axis)));
+            presetBtns.forEach(btn => btn.addEventListener('click', () => dilationInput.value = btn.dataset.val));
+            btnDilateV.addEventListener('click', () => triggerDilation('vertical'));
+            btnDilateH.addEventListener('click', () => triggerDilation('horizontal'));
+            btnReset.addEventListener('click', () => loadFunction(funcSelect.value));
+            
+            btnHelp.addEventListener('click', () => modalHelp.classList.remove('hidden'));
+            document.querySelectorAll('.close-modal').forEach(btn => modalHelp.classList.add('hidden'));
+            window.addEventListener('resize', () => drawScene());
+
+            // Initial Launch
+            loadFunction('sin');
+        });
+    </script>
+</body>
+</html>

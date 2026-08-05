@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trig Quadrant Master: The ASTC Challenge</title>
+    <style>
+        /* === CSS Variables & Base Setup === */
+        :root {
+            --primary: #2B6CB0;    /* Calm Blue */
+            --primary-dark: #2C5282;
+            --secondary: #38B2AC;  /* Calm Teal/Green */
+            --secondary-dark: #319795;
+            --bg-color: #F7FAFC;
+            --panel-bg: #FFFFFF;
+            --text-main: #2D3748;
+            --text-muted: #718096;
+            --danger: #E53E3E;
+            --success: #48BB78;
+            --q1-color: #EBF8FF;
+            --q2-color: #F0FFF4;
+            --q3-color: #FFF5F5;
+            --q4-color: #FFFFF0;
+            --hover-shade: rgba(0,0,0,0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* === Top Bar & Header === */
+        header {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: var(--panel-bg);
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .title-area h1 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-help { background-color: var(--primary); color: white; }
+        .btn-help:hover { background-color: var(--primary-dark); }
+        .btn-htp { background-color: var(--secondary); color: white; }
+        .btn-htp:hover { background-color: var(--secondary-dark); }
+
+        /* === Stats & Timer === */
+        .stats-panel {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            background: var(--panel-bg);
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .score-display { color: var(--secondary-dark); }
+        .high-score { color: var(--text-muted); font-size: 0.9rem; }
+
+        .timer-container {
+            width: 100%;
+            max-width: 800px;
+            height: 10px;
+            background-color: #E2E8F0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .timer-bar {
+            height: 100%;
+            width: 100%;
+            background-color: var(--primary);
+            transition: width 0.1s linear, background-color 0.3s;
+        }
+
+        /* === Game Area === */
+        .game-container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--panel-bg);
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .problem-display {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #EDF2F7;
+            border-radius: 10px;
+            width: 100%;
+            font-size: 1.3rem;
+        }
+
+        .conditions {
+            font-weight: bold;
+            color: var(--primary-dark);
+            margin-top: 10px;
+            font-size: 1.6rem;
+            letter-spacing: 1px;
+        }
+
+        /* === SVG Coordinate Plane === */
+        .plane-wrapper {
+            position: relative;
+            width: 400px;
+            height: 400px;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .quadrant {
+            cursor: pointer;
+            transition: fill 0.3s, transform 0.1s, filter 0.2s;
+        }
+        
+        .quadrant:hover {
+            opacity: 0.9;
+            filter: brightness(0.85);
+        }
+        
+        .quadrant.selected {
+            stroke: var(--success);
+            stroke-width: 4;
+            opacity: 0.9;
+        }
+
+        /* Quadrant specific default fills */
+        #q1-path { fill: var(--q1-color); }
+        #q2-path { fill: var(--q2-color); }
+        #q3-path { fill: var(--q3-color); }
+        #q4-path { fill: var(--q4-color); }
+
+        .axis {
+            stroke: #4A5568;
+            stroke-width: 3;
+            pointer-events: none;
+        }
+
+        .axis-label {
+            font-size: 18px;
+            font-weight: bold;
+            fill: #4A5568;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .quadrant-label {
+            font-size: 24px;
+            font-weight: bold;
+            fill: #A0AEC0;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .astc-letter {
+            font-size: 32px;
+            font-weight: bold;
+            fill: var(--primary);
+            opacity: 0.15;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        /* === Modals === */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            position: relative;
+            transform: translateY(-20px);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-title { margin-bottom: 15px; font-size: 1.5rem; }
+        .modal-body { margin-bottom: 25px; font-size: 1.1rem; line-height: 1.5; color: var(--text-main); }
+        .modal-close-btn { background: var(--primary); color: white; width: 100%; padding: 12px; font-size: 1.1rem;}
+        
+        .success-text { color: var(--success); }
+        .danger-text { color: var(--danger); }
+
+        /* ASTC Cheat Sheet Styles */
+        .astc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .astc-cell {
+            padding: 15px;
+            border-radius: 8px;
+            background: #F7FAFC;
+            border: 2px solid #E2E8F0;
+        }
+        .astc-cell h3 { margin-bottom: 5px; color: var(--primary); }
+        .astc-cell p { font-size: 0.9rem; color: var(--text-muted); }
+
+        /* Media Queries */
+        @media (max-width: 600px) {
+            .plane-wrapper { width: 300px; height: 300px; }
+            .conditions { font-size: 1.2rem; }
+            header { flex-direction: column; gap: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="title-area">
+            <h1>Trig Quadrant Master</h1>
+            <p>The ASTC Challenge</p>
+        </div>
+        <div class="controls">
+            <button class="btn-htp" onclick="openModal('htpModal')">How to Play</button>
+            <button class="btn-help" onclick="openModal('helpModal')">ASTC Help (?)</button>
+        </div>
+    </header>
+
+    <div class="stats-panel">
+        <div>Round: <span id="roundDisplay">1</span> / 6</div>
+        <div class="score-display">Score: <span id="scoreDisplay">0</span></div>
+        <div class="high-score">High Score: <span id="highScoreDisplay">0</span></div>
+    </div>
+
+    <div class="timer-container">
+        <div class="timer-bar" id="timerBar"></div>
+    </div>
+
+    <div class="game-container">
+        <div class="problem-display">
+            <div>Find the possible quadrant(s) where:</div>
+            <div class="conditions" id="conditionsDisplay">Loading...</div>
+        </div>
+
+        <div class="plane-wrapper">
+            <!-- Inline SVG for the Cartesian Plane forming a circle -->
+            <svg viewBox="0 0 400 400" id="cartesianPlane">
+                <!-- Quadrants (Pie slices) -->
+                <!-- Q2 (Top Left) -->
+                <path id="q2-path" class="quadrant" d="M 200 200 L 200 20 A 180 180 0 0 0 20 200 Z" onclick="handleQuadrantClick(2)"></path>
+                <!-- Q1 (Top Right) -->
+                <path id="q1-path" class="quadrant" d="M 200 200 L 380 200 A 180 180 0 0 0 200 20 Z" onclick="handleQuadrantClick(1)"></path>
+                <!-- Q3 (Bottom Left) -->
+                <path id="q3-path" class="quadrant" d="M 200 200 L 20 200 A 180 180 0 0 0 200 380 Z" onclick="handleQuadrantClick(3)"></path>
+                <!-- Q4 (Bottom Right) -->
+                <path id="q4-path" class="quadrant" d="M 200 200 L 200 380 A 180 180 0 0 0 380 200 Z" onclick="handleQuadrantClick(4)"></path>
+
+                <!-- Axes -->
+                <line x1="0" y1="200" x2="400" y2="200" class="axis"></line>
+                <line x1="200" y1="0" x2="200" y2="400" class="axis"></line>
+
+                <!-- Axis Labels -->
+                <text x="385" y="190" class="axis-label">x</text>
+                <text x="210" y="15" class="axis-label">y</text>
+
+                <!-- Quadrant Numerals -->
+                <text x="290" y="100" class="quadrant-label">I</text>
+                <text x="90" y="100" class="quadrant-label">II</text>
+                <text x="90" y="310" class="quadrant-label">III</text>
+                <text x="290" y="310" class="quadrant-label">IV</text>
+
+                <!-- ASTC Background Letters -->
+                <text x="280" y="140" class="astc-letter">A</text>
+                <text x="95" y="140" class="astc-letter">S</text>
+                <text x="95" y="280" class="astc-letter">T</text>
+                <text x="280" y="280" class="astc-letter">C</text>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- How To Play Modal -->
+    <div class="modal-overlay" id="htpModal">
+        <div class="modal-content">
+            <h2 class="modal-title" style="color: var(--secondary-dark);">How to Play</h2>
+            <div class="modal-body">
+                <p>You will be presented with 1 or 2 trigonometric conditions (e.g., <strong>sin(&theta;) &gt; 0</strong>).</p>
+                <p style="margin-top:10px;">Your goal is to click the correct <strong>Quadrant</strong> on the circular number plane that satisfies ALL given conditions.</p>
+                <p style="margin-top:10px;">If multiple quadrants are correct, you must click <strong>ALL correct quadrants</strong> to win the round!</p>
+                <p style="margin-top:10px;">Answer quickly to earn more points. You have 6 rounds. Good luck!</p>
+            </div>
+            <button class="modal-close-btn" onclick="closeModal('htpModal'); if(gameState.round===1 && !timerInterval) startNextRound();">Let's Go!</button>
+        </div>
+    </div>
+
+    <!-- Help / ASTC Cheat Sheet Modal -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2 class="modal-title">ASTC Cheat Sheet</h2>
+            <div class="modal-body">
+                <p>Remember the rule: <strong>A</strong>ll <strong>S</strong>tudents <strong>T</strong>ake <strong>C</strong>alculus</p>
+                <div class="astc-grid">
+                    <div class="astc-cell">
+                        <h3>Quadrant II (S)</h3>
+                        <p><strong>S</strong>ine is Positive (+)<br>Cos & Tan are (-)</p>
+                    </div>
+                    <div class="astc-cell">
+                        <h3>Quadrant I (A)</h3>
+                        <p><strong>A</strong>ll functions are Positive (+)</p>
+                    </div>
+                    <div class="astc-cell">
+                        <h3>Quadrant III (T)</h3>
+                        <p><strong>T</strong>angent is Positive (+)<br>Sin & Cos are (-)</p>
+                    </div>
+                    <div class="astc-cell">
+                        <h3>Quadrant IV (C)</h3>
+                        <p><strong>C</strong>osine is Positive (+)<br>Sin & Tan are (-)</p>
+                    </div>
+                </div>
+            </div>
+            <button class="modal-close-btn" onclick="closeModal('helpModal')">Close</button>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div class="modal-overlay" id="feedbackModal">
+        <div class="modal-content">
+            <h2 class="modal-title" id="feedbackTitle">Feedback</h2>
+            <div class="modal-body" id="feedbackMessage"></div>
+            <button class="modal-close-btn" onclick="closeModal('feedbackModal'); processNextPhase();">Continue</button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal-overlay" id="gameOverModal">
+        <div class="modal-content">
+            <h2 class="modal-title">Game Over!</h2>
+            <div class="modal-body">
+                <p style="font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">Final Score: <span id="finalScoreDisplay"></span></p>
+                <p>Your Rank:</p>
+                <h3 id="rankDisplay" style="font-size: 2rem; color: var(--primary); margin: 15px 0;"></h3>
+                <p id="rankMessage"></p>
+            </div>
+            <button class="modal-close-btn" onclick="resetGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // === Core Data & Logic ===
+
+        const MAX_ROUNDS = 6;
+        const ROUND_TIME_MS = 25000; // Increased to 25 seconds per round
+        
+        let gameState = {
+            round: 1,
+            score: 0,
+            highScore: localStorage.getItem('astcHighScore') || 0,
+            currentConditions: [],
+            correctQuadrants: [],
+            clickedQuadrants: [],
+            timeLeft: ROUND_TIME_MS
+        };
+
+        let timerInterval;
+        let lastTick;
+
+        // ASTC Truth Table (1 = positive, -1 = negative)
+        const astcTable = {
+            1: { sin: 1, cos: 1, tan: 1 },
+            2: { sin: 1, cos: -1, tan: -1 },
+            3: { sin: -1, cos: -1, tan: 1 },
+            4: { sin: -1, cos: 1, tan: -1 }
+        };
+
+        const pedagogicalExplanations = {
+            1: "In Quadrant 1 ('A' for All), all trigonometric functions are positive.",
+            2: "In Quadrant 2 ('S' for Sine), only Sine is positive. Cosine and Tangent are negative.",
+            3: "In Quadrant 3 ('T' for Tangent), only Tangent is positive. Sine and Cosine are negative.",
+            4: "In Quadrant 4 ('C' for Cosine), only Cosine is positive. Sine and Tangent are negative."
+        };
+
+        // UI Elements
+        const DOM = {
+            roundDisplay: document.getElementById('roundDisplay'),
+            scoreDisplay: document.getElementById('scoreDisplay'),
+            highScoreDisplay: document.getElementById('highScoreDisplay'),
+            conditionsDisplay: document.getElementById('conditionsDisplay'),
+            timerBar: document.getElementById('timerBar'),
+            feedbackTitle: document.getElementById('feedbackTitle'),
+            feedbackMessage: document.getElementById('feedbackMessage'),
+            finalScoreDisplay: document.getElementById('finalScoreDisplay'),
+            rankDisplay: document.getElementById('rankDisplay'),
+            rankMessage: document.getElementById('rankMessage')
+        };
+
+        // Initialization
+        window.onload = () => {
+            DOM.highScoreDisplay.innerText = gameState.highScore;
+            openModal('htpModal'); // Show instructions first
+        };
+
+        function resetGame() {
+            closeModal('gameOverModal');
+            gameState.round = 1;
+            gameState.score = 0;
+            updateStatsUI();
+            startNextRound();
+        }
+
+        // === Problem Generation ===
+
+        function generateRound() {
+            gameState.clickedQuadrants = [];
+            document.querySelectorAll('.quadrant').forEach(q => q.classList.remove('selected'));
+
+            // Determine if 1 or 2 conditions
+            const numConditions = Math.random() < 0.4 ? 1 : 2;
+            const funcs = ['sin', 'cos', 'tan'];
+            
+            // Shuffle and pick distinct functions to prevent contradictions (like sin>0 and sin<0)
+            funcs.sort(() => 0.5 - Math.random());
+            const selectedFuncs = funcs.slice(0, numConditions);
+            
+            gameState.currentConditions = [];
+            
+            selectedFuncs.forEach(fn => {
+                const isPositive = Math.random() < 0.5;
+                const signVal = isPositive ? 1 : -1;
+                
+                // Determine display format randomly
+                const formatType = Math.floor(Math.random() * 3);
+                let text = "";
+                
+                if (formatType === 0) {
+                    text = `${fn}(&theta;) ${isPositive ? '>' : '<'} 0`;
+                } else if (formatType === 1) {
+                    text = `${fn}(&theta;) is ${isPositive ? 'positive' : 'negative'}`;
+                } else {
+                    // Generate a specific realistic value, e.g. -0.5 to -0.9 or 0.1 to 0.9
+                    let val = (Math.random() * 0.8 + 0.1).toFixed(2);
+                    if (!isPositive) val = "-" + val;
+                    text = `${fn}(&theta;) = ${val}`;
+                }
+
+                gameState.currentConditions.push({ fn, sign: signVal, text });
+            });
+
+            // Calculate valid quadrants
+            gameState.correctQuadrants = [1, 2, 3, 4].filter(q => {
+                return gameState.currentConditions.every(cond => astcTable[q][cond.fn] === cond.sign);
+            });
+
+            // Display
+            DOM.conditionsDisplay.innerHTML = gameState.currentConditions.map(c => c.text).join(' <span style="color:#A0AEC0; font-size:1.2rem; margin:0 10px;">AND</span> ');
+        }
+
+        // === Timer Logic ===
+
+        function startTimer() {
+            gameState.timeLeft = ROUND_TIME_MS;
+            lastTick = Date.now();
+            updateTimerUI();
+            
+            timerInterval = setInterval(() => {
+                const now = Date.now();
+                const delta = now - lastTick;
+                lastTick = now;
+                gameState.timeLeft -= delta;
+                
+                if (gameState.timeLeft <= 0) {
+                    gameState.timeLeft = 0;
+                    clearInterval(timerInterval);
+                    handleTimeOut();
+                }
+                updateTimerUI();
+            }, 50);
+        }
+
+        function updateTimerUI() {
+            const percentage = (gameState.timeLeft / ROUND_TIME_MS) * 100;
+            DOM.timerBar.style.width = `${percentage}%`;
+            
+            if (percentage > 50) DOM.timerBar.style.backgroundColor = 'var(--primary)';
+            else if (percentage > 25) DOM.timerBar.style.backgroundColor = '#D69E2E'; // Yellow
+            else DOM.timerBar.style.backgroundColor = 'var(--danger)';
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function handleTimeOut() {
+            // Treat as wrong answer without clicking
+            showFeedback(false, null);
+        }
+
+        // === Interaction & Game Flow ===
+
+        function handleQuadrantClick(qNumber) {
+            if (gameState.timeLeft <= 0) return; // Ignore if time is up but not processed
+            
+            if (gameState.clickedQuadrants.includes(qNumber)) return; // Ignore already clicked
+
+            const isCorrect = gameState.correctQuadrants.includes(qNumber);
+            
+            if (isCorrect) {
+                gameState.clickedQuadrants.push(qNumber);
+                document.getElementById(`q${qNumber}-path`).classList.add('selected');
+                
+                if (gameState.clickedQuadrants.length === gameState.correctQuadrants.length) {
+                    stopTimer();
+                    showFeedback(true, qNumber);
+                }
+            } else {
+                stopTimer();
+                showFeedback(false, qNumber);
+            }
+        }
+
+        function getFullFuncName(abbr) {
+            if (abbr === 'sin') return 'Sine';
+            if (abbr === 'cos') return 'Cosine';
+            return 'Tangent';
+        }
+
+        function showFeedback(isCorrect, clickedQ) {
+            let title = "";
+            let message = "";
+
+            if (isCorrect) {
+                // Calculate score based on time left (max 1000 per round)
+                const points = Math.floor((gameState.timeLeft / ROUND_TIME_MS) * 1000) + 100; // Base 100 points for correct
+                gameState.score += points;
+                
+                title = `<span class="success-text">Spot On! +${points}</span>`;
+                const qStr = gameState.correctQuadrants.map(q => `Q${q}`).join(' and ');
+                message = `<p>Great job! You correctly identified ${qStr}.</p>`;
+                
+                // Explain why briefly
+                const explanations = gameState.correctQuadrants.map(q => pedagogicalExplanations[q]).join('<br><br>');
+                message += `<div style="margin-top:10px; font-size:0.95rem; color:var(--text-muted); text-align:left;">${explanations}</div>`;
+                
+            } else {
+                title = `<span class="danger-text">Not Quite!</span>`;
+                
+                if (clickedQ === null) {
+                    message = "<p>You ran out of time! Let's review the conditions.</p>";
+                } else {
+                    // Diagnose specific mistake
+                    let failedCondition = gameState.currentConditions.find(cond => astcTable[clickedQ][cond.fn] !== cond.sign);
+                    
+                    if (failedCondition) {
+                        const fnName = getFullFuncName(failedCondition.fn);
+                        const requiredState = failedCondition.sign === 1 ? 'positive' : 'negative';
+                        const actualState = astcTable[clickedQ][failedCondition.fn] === 1 ? 'positive' : 'negative';
+                        
+                        message = `<p>The problem requires <strong>${fnName}</strong> to be <strong>${requiredState}</strong>.</p>`;
+                        message += `<p style="margin-top:10px;">However, in Quadrant ${clickedQ}, ${fnName} is <strong>${actualState}</strong>.</p>`;
+                    }
+                    
+                    message += `<div style="margin-top:15px; padding:10px; background:#F7FAFC; border-radius:8px; border-left:4px solid var(--primary); text-align:left; font-size:0.95rem;">
+                        <strong>Remember ASTC:</strong><br> ${pedagogicalExplanations[clickedQ]}
+                    </div>`;
+                }
+                
+                const correctList = gameState.correctQuadrants.map(q => `Q${q}`).join(" or ");
+                message += `<p style="margin-top:15px; font-weight:bold;">The correct answer could have been: ${correctList}.</p>`;
+            }
+
+            DOM.feedbackTitle.innerHTML = title;
+            DOM.feedbackMessage.innerHTML = message;
+            updateStatsUI();
+            openModal('feedbackModal');
+        }
+
+        function processNextPhase() {
+            if (gameState.round >= MAX_ROUNDS) {
+                endGame();
+            } else {
+                gameState.round++;
+                startNextRound();
+            }
+        }
+
+        function startNextRound() {
+            updateStatsUI();
+            generateRound();
+            startTimer();
+        }
+
+        function updateStatsUI() {
+            DOM.roundDisplay.innerText = gameState.round;
+            DOM.scoreDisplay.innerText = gameState.score;
+            if (gameState.score > gameState.highScore) {
+                gameState.highScore = gameState.score;
+                localStorage.setItem('astcHighScore', gameState.highScore);
+                DOM.highScoreDisplay.innerText = gameState.highScore;
+            }
+        }
+
+        function endGame() {
+            let rank = "";
+            let rankMsg = "";
+            const s = gameState.score;
+
+            if (s >= 9000) {
+                rank = "Trig Sniper 🎯";
+                rankMsg = "Flawless precision! You have mastered the coordinate plane.";
+            } else if (s >= 7000) {
+                rank = "ASTC Navigator 🧭";
+                rankMsg = "Great job! You know your way around the quadrants.";
+            } else if (s >= 4000) {
+                rank = "Quadrant Explorer 🗺️";
+                rankMsg = "Good effort! Keep exploring and practicing those ASTC rules.";
+            } else {
+                rank = "Trig Apprentice 📚";
+                rankMsg = "Every master was once a beginner. Review the ASTC help and try again!";
+            }
+
+            DOM.finalScoreDisplay.innerText = gameState.score;
+            DOM.rankDisplay.innerText = rank;
+            DOM.rankMessage.innerText = rankMsg;
+            openModal('gameOverModal');
+        }
+
+        // === Modal Management ===
+        
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+    </script>
+</body>
+</html>

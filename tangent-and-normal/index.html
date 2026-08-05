@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curve & Gradient Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Custom scrollbar for sidebar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        input[type="range"] { accent-color: #3b82f6; }
+        input[type="checkbox"] { accent-color: #3b82f6; }
+        canvas { touch-action: none; }
+
+        @keyframes border-glow {
+            0%, 100% { border-color: #8b5cf6; box-shadow: 0 0 5px rgba(139, 92, 246, 0.2); }
+            50% { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6); }
+        }
+        .game-active-slider {
+            animation: border-glow 2s infinite;
+            border-width: 2px !important;
+        }
+
+        /* Full Screen Congrats Animations */
+        @keyframes text-glow {
+            0%, 100% { text-shadow: 0 0 12px rgba(168, 85, 247, 0.6), 0 0 24px rgba(168, 85, 247, 0.4); }
+            50% { text-shadow: 0 0 24px rgba(59, 130, 246, 0.8), 0 0 36px rgba(59, 130, 246, 0.6); }
+        }
+        .glowing-title {
+            animation: text-glow 2.5s infinite;
+        }
+        @keyframes scale-up-bounce {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-bounce-in {
+            animation: scale-up-bounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes trophy-shimmer {
+            0% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 0px rgba(253, 224, 71, 0)); }
+            50% { transform: rotate(5deg) scale(1.1); filter: drop-shadow(0 0 25px rgba(253, 224, 71, 0.8)); }
+            100% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 0px rgba(253, 224, 71, 0)); }
+        }
+        .shimmer-trophy {
+            animation: trophy-shimmer 4s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans h-screen w-screen overflow-hidden flex flex-col md:flex-row relative">
+
+    <!-- Full-Screen Congratulations Overlay -->
+    <div id="gameCongratsOverlay" class="hidden fixed inset-0 bg-slate-950/90 z-50 flex flex-col items-center justify-center p-6 text-white backdrop-blur-md transition-all duration-500">
+        <div class="max-w-md w-full bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl text-center flex flex-col items-center gap-6 animate-bounce-in">
+            <!-- Large Trophy / Medal -->
+            <div class="shimmer-trophy text-6xl md:text-7xl mb-2">
+                <span id="congratsIcon">🏆</span>
+            </div>
+
+            <!-- Achievement Level Title -->
+            <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-widest font-extrabold text-blue-400">Award Earned</span>
+                <h2 id="congratsTitle" class="text-2xl md:text-3xl font-black glowing-title tracking-tight text-white">Legendary Slalom Master</h2>
+            </div>
+
+            <!-- Score Display -->
+            <div class="bg-slate-800/80 border border-slate-700/50 py-3 px-6 rounded-full font-mono text-lg font-bold flex items-center gap-2">
+                <span>Final Score:</span>
+                <span id="congratsScore" class="text-yellow-400 text-xl font-black">5 / 5</span>
+            </div>
+
+            <p id="congratsDescription" class="text-slate-400 text-sm leading-relaxed px-2">
+                Spectacular! You have mastered the gradients and visualised the curves with perfect precision.
+            </p>
+
+            <!-- Navigation Actions -->
+            <div class="w-full flex flex-col sm:flex-row gap-3 mt-2">
+                <button class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30" onclick="restartGameFromCongrats()">
+                    <i class="fa-solid fa-rotate-right"></i> Play Again
+                </button>
+                <button class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold py-3 px-5 rounded-xl transition-colors flex items-center justify-center gap-2" onclick="goBackToExploreFromCongrats()">
+                    <i class="fa-solid fa-bezier-curve"></i> Explore Mode
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Controls -->
+    <div class="w-full md:w-80 lg:w-96 bg-white shadow-2xl z-10 flex flex-col h-auto md:h-full shrink-0 overflow-y-auto">
+        <div class="p-6 bg-blue-600 text-white">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-person-skiing"></i>
+                Curve Explorer
+            </h1>
+            <p class="text-blue-100 text-sm mt-1">Visualise tangent lines, normal lines, and explore gradients.</p>
+        </div>
+
+        <!-- Mode Selector -->
+        <div class="flex p-4 border-b border-slate-100 bg-slate-50">
+            <button id="btnExplore" class="flex-1 py-2 font-semibold text-blue-600 bg-blue-100 rounded-l-md transition-colors" onclick="setMode('explore')">Explore Mode</button>
+            <button id="btnGame" class="flex-1 py-2 font-semibold text-slate-500 bg-slate-200 rounded-r-md transition-colors hover:bg-slate-300" onclick="setMode('game')">Slalom Game</button>
+        </div>
+
+        <div class="p-6 flex-1 flex flex-col gap-6" id="controlPanel">
+            
+            <!-- Curve Selection (Shared) -->
+            <div>
+                <label class="block text-sm font-semibold text-slate-600 mb-2">Select Curve</label>
+                <select id="curveSelect" class="w-full p-2 border border-slate-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed" onchange="changeCurve()">
+                    <!-- Populated by JS -->
+                </select>
+                <div id="curveEquation" class="text-xs text-slate-500 mt-2 font-mono bg-slate-100 p-2 rounded"></div>
+            </div>
+
+            <!-- Custom Function Input (Hidden by default) -->
+            <div id="customFuncContainer" class="hidden bg-slate-100 p-4 rounded-lg border border-slate-200 flex flex-col gap-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Define f(x)</label>
+                <div class="relative flex items-center">
+                    <span class="absolute left-3 text-slate-400 font-mono pointer-events-none">y =</span>
+                    <input type="text" id="customFuncInput" value="x^2 - 3" class="w-full pl-9 pr-3 py-1.5 border border-slate-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono text-sm shadow-sm" placeholder="e.g. x^2 - 3" oninput="handleCustomFuncInput()">
+                </div>
+                <p id="customFuncFeedback" class="text-[11px] text-emerald-600 mt-0.5 flex items-center gap-1">
+                    <i class="fa-solid fa-circle-check"></i> Valid mathematical function
+                </p>
+                <div class="text-[10px] text-slate-400 leading-relaxed">
+                    Supports: <code class="bg-white px-1 rounded">x</code>, implicit multiplication (e.g. <code class="bg-white px-1 rounded">2x</code>), <code class="bg-white px-1 rounded">sin(x)</code>, <code class="bg-white px-1 rounded">log()</code>, <code class="bg-white px-1 rounded">^</code>, etc.
+                </div>
+            </div>
+
+            <!-- GAME DASHBOARD (Hidden in Explore Mode) -->
+            <div id="gameDashboard" class="hidden flex-col gap-4 bg-indigo-50 p-4 rounded-lg border border-indigo-200 shadow-inner">
+                <div class="flex justify-between items-center mb-1">
+                    <h3 class="font-bold text-indigo-800 text-lg">Target Slope Hunt</h3>
+                    <div class="bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                        Score: <span id="gameScore">0</span> / 5
+                    </div>
+                </div>
+                <p class="text-xs text-indigo-600 mb-2 font-medium">Use the slider below to position the skier. Turn on Pos/Neg colour mode for hints!</p>
+                
+                <div class="bg-white p-3 rounded border border-indigo-100 text-center shadow-sm">
+                    <div class="text-xs font-bold text-slate-500 uppercase mb-1">Target Gradient (m)</div>
+                    <div id="gameTargetDisplay" class="text-3xl font-mono font-bold text-indigo-700">0.00</div>
+                </div>
+
+                <button id="btnSubmitGuess" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-md font-bold transition-colors shadow-md flex items-center justify-center gap-2" onclick="checkMatch()">
+                    <i class="fa-solid fa-crosshairs"></i> Check Position
+                </button>
+
+                <div id="gameFeedback" class="hidden text-center text-sm font-bold p-3 rounded-md shadow-sm transition-all duration-300"></div>
+
+                <div id="gameWinArea" class="hidden text-center mt-2">
+                    <div class="text-3xl mb-1">🏆</div>
+                    <h3 class="font-bold text-lg text-yellow-600">Game Over!</h3>
+                    <button class="mt-2 w-full bg-slate-800 hover:bg-slate-900 text-white py-2 rounded-md transition-colors" onclick="startGame()">Play Again</button>
+                </div>
+            </div>
+
+            <!-- Point Slider -->
+            <div id="sliderContainer" class="bg-slate-50 p-4 rounded-lg border border-slate-100 flex flex-col gap-3 transition-all duration-300">
+                <div class="flex justify-between text-sm font-semibold text-slate-600">
+                    <label id="sliderLabel" class="flex items-center gap-1.5">
+                        <span id="sliderBadge" class="hidden bg-indigo-600 text-white text-[10px] px-1.5 py-0.5 rounded font-bold uppercase animate-bounce">Slide Me!</span>
+                        Point Position (x)
+                    </label>
+                    <span id="xValDisplay" class="text-blue-600 font-mono">0.00</span>
+                </div>
+                <input type="range" id="xSlider" min="-10" max="10" step="0.05" value="0" class="w-full cursor-pointer h-2 bg-slate-200 rounded-lg appearance-none" oninput="updateX()">
+                
+                <!-- Play Engine Controls (Hidden in Game Mode) -->
+                <div id="playEngineControls">
+                    <div class="flex gap-2 mt-2 items-center">
+                        <button id="btnPlay" class="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center shadow-md shadow-blue-100 shrink-0" onclick="togglePlay()" title="Play / Pause">
+                            <i id="playIcon" class="fa-solid fa-play"></i>
+                        </button>
+                        <div class="flex-1 flex items-center justify-between gap-2 bg-white px-3 py-1.5 border border-slate-200 rounded-md">
+                            <span class="text-xs text-slate-500 font-semibold">Speed</span>
+                            <input type="range" id="speedSlider" min="1" max="20" step="0.5" value="3.5" class="w-24 md:w-28 cursor-pointer" oninput="updateSpeed()">
+                        </div>
+                    </div>
+                    <div class="text-[10px] text-slate-400 italic text-center mt-2">
+                        Animation speed is mathematically constant along the curve length!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Display Toggles -->
+            <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 flex flex-col gap-3">
+                <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" id="checkTangent" checked class="w-5 h-5 cursor-pointer" onchange="toggleLines()">
+                    <span class="text-slate-700 font-medium group-hover:text-red-500 transition-colors">Show Tangent Line</span>
+                    <div class="ml-auto w-4 h-1 bg-red-500 rounded"></div>
+                </label>
+                <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" id="checkNormal" class="w-5 h-5 cursor-pointer" onchange="toggleLines()">
+                    <span class="text-slate-700 font-medium group-hover:text-emerald-500 transition-colors">Show Normal Line</span>
+                    <div class="ml-auto w-4 h-1 bg-emerald-500 rounded"></div>
+                </label>
+                
+                <!-- Derivative Tracer Feature Toggle -->
+                <label class="flex items-center gap-3 cursor-pointer group" id="toggleDerivativeContainer">
+                    <input type="checkbox" id="checkDerivative" class="w-5 h-5 cursor-pointer" onchange="toggleDerivative()">
+                    <span class="text-slate-700 font-medium group-hover:text-amber-500 transition-colors">Trace Derivative Graph</span>
+                    <div class="ml-auto w-4 h-1 bg-amber-500 rounded"></div>
+                </label>
+                <!-- Clear Derivative Trace Button -->
+                <button id="btnClearTrace" class="hidden text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 py-1.5 px-3 rounded-md transition-colors self-start flex items-center gap-1.5 border border-slate-300 font-semibold shadow-sm ml-8" onclick="clearDerivativeTrace()">
+                    <i class="fa-solid fa-eraser"></i> Clear Trace Line
+                </button>
+                
+                <!-- Show Skier Master Toggle -->
+                <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" id="checkSkier" class="w-5 h-5 cursor-pointer" onchange="toggleLines()">
+                    <span class="text-slate-700 font-medium group-hover:text-slate-800 transition-colors">Show Skier</span>
+                    <div class="ml-auto w-4 h-1 bg-slate-800 rounded"></div>
+                </label>
+                
+                <!-- Sub-options for Skier (Indented and grouped) -->
+                <div class="ml-8 flex flex-col gap-2 border-l-2 border-slate-200 pl-3">
+                    <label class="flex items-center gap-2 cursor-pointer group">
+                        <input type="checkbox" id="checkSkierBinary" class="w-4 h-4 cursor-pointer text-blue-600 rounded" onchange="toggleSkierColour()">
+                        <span class="text-xs text-slate-600 font-medium group-hover:text-slate-800 transition-colors">Pos/Neg Colour Mode</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer group">
+                        <input type="checkbox" id="checkSkierEcho" class="w-4 h-4 cursor-pointer text-blue-600 rounded" onchange="toggleSkierEcho()">
+                        <span class="text-xs text-slate-600 font-medium group-hover:text-slate-800 transition-colors">Echo Trail Effect</span>
+                    </label>
+                </div>
+
+                <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" id="checkLargeDisplayMode" class="w-5 h-5 cursor-pointer" onchange="toggleLargeDisplayMode()">
+                    <span class="text-slate-700 font-medium group-hover:text-violet-600 transition-colors">Large Presentation Mode</span>
+                </label>
+            </div>
+            
+            <!-- Info & HUD Overlays Box -->
+            <div id="infoOverlaysBox" class="bg-blue-50 p-4 rounded-lg border border-blue-100 text-sm flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="checkLargeTangent" class="w-4 h-4 cursor-pointer rounded text-blue-600" onchange="toggleLargeDisplay()">
+                        <span class="text-slate-700 font-medium">Tangent Gradient (m):</span>
+                    </div>
+                    <span id="tanGradDisplay" class="font-mono font-bold text-red-600">0.00</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="checkLargeNormal" class="w-4 h-4 cursor-pointer rounded text-blue-600" onchange="toggleLargeDisplay()">
+                        <span class="text-slate-700 font-medium">Normal Gradient (-1/m):</span>
+                    </div>
+                    <span id="normGradDisplay" class="font-mono font-bold text-emerald-600">0.00</span>
+                </div>
+                <div class="text-[11px] text-blue-600 bg-blue-100/50 p-2 rounded text-center font-medium">
+                    Checkboxes show the large HUD displays on the canvas window.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Canvas Area -->
+    <div class="flex-1 relative bg-white cursor-crosshair">
+        <canvas id="canvas" class="w-full h-full block"></canvas>
+    </div>
+
+    <script>
+        // --- MATHEMATICS & CURVE DEFINITIONS ---
+        const curves = [
+            { name: "Constant Line", equation: "y = 3", f: (x) => 3, df: (x) => 0 },
+            { name: "Linear (Positive)", equation: "y = x", f: (x) => x, df: (x) => 1 },
+            { name: "Linear (Negative)", equation: "y = -x", f: (x) => -x, df: (x) => -1 },
+            { name: "Vertical Line", equation: "x = 4", isVertical: true, xFixed: 4, f: (y) => y, df: (y) => Infinity },
+            { name: "Parabola (Quadratic)", equation: "y = 0.5x² - 3", f: (x) => 0.5 * x * x - 3, df: (x) => x },
+            { name: "Polynomial (Cubic)", equation: "y = 0.2x³ - x + 1", f: (x) => 0.2 * Math.pow(x, 3) - x + 1, df: (x) => 0.6 * Math.pow(x, 2) - 1 },
+            { name: "Polynomial (Quartic)", equation: "y = x⁴/3 - 2x² - x - 1", f: (x) => Math.pow(x, 4) / 3 - 2 * Math.pow(x, 2) - x - 1, df: (x) => (4 / 3) * Math.pow(x, 3) - 4 * x - 1 },
+            { name: "Polynomial (Quintic)", equation: "y = x⁵/10 - x³", f: (x) => Math.pow(x, 5) / 10 - Math.pow(x, 3), df: (x) => 0.5 * Math.pow(x, 4) - 3 * Math.pow(x, 2) },
+            { name: "Rational Function", equation: "y = 8x / (x² + 4)", f: (x) => (8 * x) / (x * x + 4), df: (x) => (8 * (4 - x * x)) / Math.pow(x * x + 4, 2) },
+            { name: "Exponential", equation: "y = 0.5e^(x/2) - 2", f: (x) => 0.5 * Math.exp(x / 2) - 2, df: (x) => 0.25 * Math.exp(x / 2) },
+            { name: "Logarithmic", equation: "y = log(x)", minX: 0.1, f: (x) => Math.log(x), df: (x) => 1 / x },
+            { name: "Cosine Wave", equation: "y = 3cos(x)", f: (x) => 3 * Math.cos(x), df: (x) => -3 * Math.sin(x) },
+            { name: "Sine Wave", equation: "y = 3sin(x)", f: (x) => 3 * Math.sin(x), df: (x) => 3 * Math.cos(x) },
+            { name: "Complex Harmonic", equation: "y = 2sin(x) + cos(2x)", f: (x) => 2 * Math.sin(x) + Math.cos(2 * x), df: (x) => 2 * Math.cos(x) - 2 * Math.sin(2 * x) },
+            { name: "Custom Function...", isCustom: true, equation: "y = f(x)", f: (x) => x, df: (x) => 1 }
+        ];
+
+        // --- APP STATE ---
+        const state = {
+            mode: 'explore', // 'explore' or 'game'
+            curveIdx: 4, // Default to Parabola (Quadratic)
+            showDerivative: false, // Split Pane Derivative Plane Toggle
+            derivativeTrace: new Array(400).fill(null), // High resolution trace bucketing
+            currentX: 0, 
+            laggedX: 0,   // Continuous smooth lagging coordinate for BOTH skier and tracking point
+            showTangent: true,
+            showNormal: false, // Default to false in explore
+            showSkier: false,  // Default to false in explore
+            skierPosNegColour: false,
+            showSkierEcho: false, // Echo trail sequence
+            skierTrail: [],      // Array of historical lagged X positions
+            showLargeTangent: false,
+            showLargeNormal: false,
+            largeDisplayMode: false, // Accessibility/Presenter mode
+            offScreenTime: 0,        // Active countdown to wait before wrapping point around
+            visibleMinX: -10,        // Left edge of curve actually visible inside viewport
+            visibleMaxX: 10,         // Right edge of curve actually visible inside viewport
+            
+            // Animation values
+            isPlaying: false,
+            playSpeed: 3.5,
+            
+            // Viewport Bounds
+            minX: -10, maxX: 10, minY: -8, maxY: 8,
+
+            // Game Logic State
+            game: {
+                active: false,
+                score: 0,
+                rounds: 0,
+                maxRounds: 5,
+                targetM: 0,
+                targetSecretX: 0,
+                resultsScreenActive: false
+            }
+        };
+
+        // --- EXTRAVAGANT CELEBRATION / CONFETTI ENGINE ---
+        const confettiParticles = [];
+
+        function spawnConfetti(originX, originY) {
+            const colours = ['#ff0055', '#00ff66', '#00ffff', '#ffff00', '#ff00ff', '#8b5cf6', '#ff7700'];
+            for (let i = 0; i < 120; i++) {
+                confettiParticles.push({
+                    x: originX,
+                    y: originY,
+                    vx: (Math.random() - 0.5) * 16,
+                    vy: (Math.random() - 0.85) * 20 - 4,
+                    size: Math.random() * 6 + 4,
+                    colour: colours[Math.floor(Math.random() * colours.length)],
+                    alpha: 1.0,
+                    decay: Math.random() * 0.015 + 0.008,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.2
+                });
+            }
+        }
+
+        // Dedicated continuous rain confetti spawner for the congratulations screen
+        function spawnContinuousConfetti() {
+            const colours = ['#ff0055', '#00ff66', '#00ffff', '#ffff00', '#ff00ff', '#8b5cf6', '#ff7700'];
+            if (Math.random() < 0.25) { // Control the density of incoming falling pieces
+                confettiParticles.push({
+                    x: Math.random() * width,
+                    y: -10,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: Math.random() * 4 + 2,
+                    size: Math.random() * 6 + 4,
+                    colour: colours[Math.floor(Math.random() * colours.length)],
+                    alpha: 1.0,
+                    decay: Math.random() * 0.005 + 0.005,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.1
+                });
+            }
+        }
+
+        function drawConfetti() {
+            for (let i = confettiParticles.length - 1; i >= 0; i--) {
+                const p = confettiParticles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                
+                // Only apply standard high-gravity curve explosion settings to non-falling pieces
+                if (p.decay > 0.008) {
+                    p.vy += 0.35; // Gravity pull
+                } else {
+                    p.vy += 0.05; // Gentle flutter gravity
+                }
+                
+                p.alpha -= p.decay;
+                p.rotation += p.rotationSpeed;
+
+                if (p.alpha <= 0) {
+                    confettiParticles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.colour;
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation);
+                
+                ctx.beginPath();
+                ctx.rect(-p.size / 2, -p.size / 2, p.size, p.size);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // --- DOM ELEMENTS ---
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        
+        const ui = {
+            btnExplore: document.getElementById('btnExplore'),
+            btnGame: document.getElementById('btnGame'),
+            curveSelect: document.getElementById('curveSelect'),
+            curveEquation: document.getElementById('curveEquation'),
+            customFuncContainer: document.getElementById('customFuncContainer'),
+            customFuncInput: document.getElementById('customFuncInput'),
+            customFuncFeedback: document.getElementById('customFuncFeedback'),
+            xSlider: document.getElementById('xSlider'),
+            xValDisplay: document.getElementById('xValDisplay'),
+            sliderLabel: document.getElementById('sliderLabel'),
+            sliderBadge: document.getElementById('sliderBadge'),
+            sliderContainer: document.getElementById('sliderContainer'),
+            checkTangent: document.getElementById('checkTangent'),
+            checkNormal: document.getElementById('checkNormal'),
+            checkDerivative: document.getElementById('checkDerivative'),
+            btnClearTrace: document.getElementById('btnClearTrace'),
+            toggleDerivativeContainer: document.getElementById('toggleDerivativeContainer'),
+            checkSkier: document.getElementById('checkSkier'),
+            checkSkierBinary: document.getElementById('checkSkierBinary'),
+            checkSkierEcho: document.getElementById('checkSkierEcho'),
+            checkLargeDisplayMode: document.getElementById('checkLargeDisplayMode'),
+            checkLargeTangent: document.getElementById('checkLargeTangent'),
+            checkLargeNormal: document.getElementById('checkLargeNormal'),
+            tanGradDisplay: document.getElementById('tanGradDisplay'),
+            normGradDisplay: document.getElementById('normGradDisplay'),
+            playEngineControls: document.getElementById('playEngineControls'),
+            btnPlay: document.getElementById('btnPlay'),
+            playIcon: document.getElementById('playIcon'),
+            speedSlider: document.getElementById('speedSlider'),
+            
+            // Game UI Elements
+            gameDashboard: document.getElementById('gameDashboard'),
+            gameScore: document.getElementById('gameScore'),
+            gameTargetDisplay: document.getElementById('gameTargetDisplay'),
+            btnSubmitGuess: document.getElementById('btnSubmitGuess'),
+            gameFeedback: document.getElementById('gameFeedback'),
+            gameWinArea: document.getElementById('gameWinArea'),
+            
+            // Congrats Overlay UI
+            gameCongratsOverlay: document.getElementById('gameCongratsOverlay'),
+            congratsIcon: document.getElementById('congratsIcon'),
+            congratsTitle: document.getElementById('congratsTitle'),
+            congratsScore: document.getElementById('congratsScore'),
+            congratsDescription: document.getElementById('congratsDescription')
+        };
+
+        // --- INITIALIZATION ---
+        function init() {
+            curves.forEach((curve, index) => {
+                const opt = document.createElement('option');
+                opt.value = index;
+                opt.textContent = curve.name;
+                ui.curveSelect.appendChild(opt);
+            });
+
+            // Set the selected curve index in the dropdown to match state.curveIdx
+            ui.curveSelect.value = state.curveIdx;
+
+            // Set default toggle values for Explore mode in HTML input elements
+            ui.checkTangent.checked = state.showTangent;
+            ui.checkNormal.checked = state.showNormal;
+            ui.checkDerivative.checked = state.showDerivative;
+            ui.checkSkier.checked = state.showSkier;
+            ui.checkSkierBinary.checked = state.skierPosNegColour;
+            ui.checkSkierEcho.checked = state.showSkierEcho;
+            ui.checkLargeDisplayMode.checked = state.largeDisplayMode;
+
+            state.laggedX = state.currentX;
+
+            handleCustomFuncInput();
+            updateExploreUI();
+            
+            window.addEventListener('resize', handleResize);
+            handleResize();
+            setupCanvasInteraction();
+
+            lastTime = performance.now();
+            requestAnimationFrame(animationLoop);
+        }
+
+        // --- CANVAS RENDERING ---
+        let width, height;
+
+        function getLayout() {
+            const split = (state.mode === 'explore' && state.showDerivative);
+            return {
+                split,
+                topY: 0,
+                topHeight: split ? height * 0.52 : height,
+                bottomY: split ? height * 0.58 : 0,
+                bottomHeight: split ? height * 0.42 : 0
+            };
+        }
+
+        function handleResize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            width = rect.width;
+            height = rect.height;
+
+            const xRange = state.maxX - state.minX;
+            const aspect = height / width;
+            const yRange = xRange * aspect;
+            state.minY = -yRange / 2;
+            state.maxY = yRange / 2;
+
+            updateVisibleBounds();
+            draw();
+        }
+
+        function mapX(x) { return ((x - state.minX) / (state.maxX - state.minX)) * width; }
+        function unmapX(px) { return (px / width) * (state.maxX - state.minX) + state.minX; }
+
+        function mapY(y) { 
+            const layout = getLayout();
+            return layout.topHeight - ((y - state.minY) / (state.maxY - state.minY)) * layout.topHeight; 
+        }
+
+        // Fixed range mapping [-6, 6] for the derivative plot on the bottom pane
+        function mapYBottom(dy) {
+            const layout = getLayout();
+            if (!layout.split) return 0;
+            const minY_deriv = -6;
+            const maxY_deriv = 6;
+            const relativeY = (dy - minY_deriv) / (maxY_deriv - minY_deriv);
+            return layout.bottomY + layout.bottomHeight - relativeY * layout.bottomHeight;
+        }
+
+        function getSkierColour(m) {
+            if (state.skierPosNegColour) {
+                if (m > 0.001 || m === Infinity) return '#00e600'; // Vivid Green
+                else if (m < -0.001 || m === -Infinity) return '#ff0000'; // Vivid Red
+                else return '#64748b'; // Slate
+            }
+            return '#0f172a'; // Deep Slate
+        }
+
+        function updateVisibleBounds() {
+            const curve = curves[state.curveIdx];
+            if (curve.isVertical) {
+                state.visibleMinX = state.minY;
+                state.visibleMaxX = state.maxY;
+                return;
+            }
+            const activeMin = curve.minX !== undefined ? curve.minX : -10;
+            const activeMax = curve.maxX !== undefined ? curve.maxX : 10;
+            
+            let firstVisible = null;
+            let lastVisible = null;
+            
+            const steps = 400;
+            const dx = (activeMax - activeMin) / steps;
+            for (let i = 0; i <= steps; i++) {
+                const x = activeMin + i * dx;
+                const y = curve.f(x);
+                if (!isNaN(y) && isFinite(y) && y >= state.minY && y <= state.maxY) {
+                    if (firstVisible === null) firstVisible = x;
+                    lastVisible = x;
+                }
+            }
+            
+            state.visibleMinX = firstVisible !== null ? firstVisible : activeMin;
+            state.visibleMaxX = lastVisible !== null ? lastVisible : activeMax;
+            
+            // Add a tiny padding to let the point slide slightly out of sight before hiding
+            const padding = 0.04 * (activeMax - activeMin);
+            state.visibleMinX = Math.max(activeMin, state.visibleMinX - padding);
+            state.visibleMaxX = Math.min(activeMax, state.visibleMaxX + padding);
+        }
+
+        // Renders a precise, beautiful drafting-style circle (perfectly centered, hand-drawn look)
+        function drawDraftingCircle(cx, cy, r, color, fillOpacity = 0.25) {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = color;
+
+            // Draw two concentric traces extremely close together to mimic precision drafting pens
+            ctx.globalAlpha = 0.85;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.globalAlpha = 0.45;
+            ctx.beginPath();
+            ctx.arc(cx + 0.4, cy - 0.2, r - 0.2, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Precise blue-print style alignment crosshair to guarantee mathematical precision
+            ctx.strokeStyle = color;
+            ctx.globalAlpha = 0.35;
+            ctx.lineWidth = 1.0;
+            ctx.beginPath();
+            ctx.moveTo(cx - r * 1.4, cy);
+            ctx.lineTo(cx + r * 1.4, cy);
+            ctx.moveTo(cx, cy - r * 1.4);
+            ctx.lineTo(cx, cy + r * 1.4);
+            ctx.stroke();
+
+            // Translucent inner shading fill
+            ctx.fillStyle = color;
+            ctx.globalAlpha = fillOpacity;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r * 0.85, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Renders two closely-aligned, perfectly smooth, mathematically precise lines (architectural pen style)
+        function drawDraftingLinePath(pointsArray, color, lineWidth = 3) {
+            if (pointsArray.length < 2) return;
+            ctx.save();
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // First Pass: Mathematically perfect core trace
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth * 0.85;
+            ctx.globalAlpha = 0.85;
+            ctx.beginPath();
+            let first = true;
+            for (let i = 0; i < pointsArray.length; i++) {
+                const pt = pointsArray[i];
+                if (pt === null) {
+                    first = true;
+                    continue;
+                }
+                if (first) {
+                    ctx.moveTo(pt.x, pt.y);
+                    first = false;
+                } else {
+                    ctx.lineTo(pt.x, pt.y);
+                }
+            }
+            ctx.stroke();
+
+            // Second Pass: Fine-line pen overlay with a tiny constant offset (representing drafting precision)
+            ctx.lineWidth = lineWidth * 0.4;
+            ctx.globalAlpha = 0.45;
+            ctx.beginPath();
+            first = true;
+            for (let i = 0; i < pointsArray.length; i++) {
+                const pt = pointsArray[i];
+                if (pt === null) {
+                    first = true;
+                    continue;
+                }
+                // Very subtle, constant offset that preserves absolute flatness and mathematical accuracy
+                const px = pt.x + 0.5;
+                const py = pt.y - 0.3;
+                if (first) {
+                    ctx.moveTo(px, py);
+                    first = false;
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            }
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawGridAndAxes() {
+            const layout = getLayout();
+            ctx.lineWidth = state.largeDisplayMode ? 2 : 1;
+            ctx.strokeStyle = '#f1f5f9';
+            
+            const startX = Math.floor(state.minX);
+            const endX = Math.ceil(state.maxX);
+            for (let x = startX; x <= endX; x++) {
+                if (x === 0) continue;
+                let px = mapX(x);
+                ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, height); ctx.stroke();
+            }
+
+            // Draw horizontal grid lines for top viewport
+            const startY = Math.floor(state.minY);
+            const endY = Math.ceil(state.maxY);
+            for (let y = startY; y <= endY; y++) {
+                if (y === 0) continue;
+                let py = mapY(y);
+                ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(width, py); ctx.stroke();
+            }
+
+            // Draw primary axes of top viewport
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = state.largeDisplayMode ? 4 : 2;
+            let pY0 = mapY(0);
+            ctx.beginPath(); ctx.moveTo(0, pY0); ctx.lineTo(width, pY0); ctx.stroke();
+            let pX0 = mapX(0);
+            ctx.beginPath(); ctx.moveTo(pX0, 0); ctx.lineTo(pX0, layout.topHeight); ctx.stroke();
+            
+            ctx.fillStyle = '#64748b';
+            ctx.font = state.largeDisplayMode ? 'bold 16px sans-serif' : '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            const offsetDist = state.largeDisplayMode ? 8 : 5;
+            for (let x = startX; x <= endX; x+=2) {
+                if (x !== 0) ctx.fillText(x, mapX(x), pY0 + offsetDist);
+            }
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let y = startY; y <= endY; y+=2) {
+                if (y !== 0) ctx.fillText(y, pX0 - offsetDist, mapY(y));
+            }
+
+            if (layout.split) {
+                // Visual gutter strip separator
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(0, layout.topHeight, width, layout.bottomY - layout.topHeight);
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, layout.topHeight);
+                ctx.lineTo(width, layout.topHeight);
+                ctx.moveTo(0, layout.bottomY);
+                ctx.lineTo(width, layout.bottomY);
+                ctx.stroke();
+
+                // Draw secondary horizontal grid lines (at derivatives -4, -2, 2, 4)
+                ctx.strokeStyle = '#f1f5f9';
+                ctx.lineWidth = 1;
+                const dyGridLines = [-4, -2, 2, 4];
+                dyGridLines.forEach(dy => {
+                    let py = mapYBottom(dy);
+                    ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(width, py); ctx.stroke();
+                });
+
+                // Horizontal axis for derivative graph (y' = 0)
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 2;
+                let py0_deriv = mapYBottom(0);
+                ctx.beginPath(); ctx.moveTo(0, py0_deriv); ctx.lineTo(width, py0_deriv); ctx.stroke();
+
+                // Vertical axis line inside derivative graph
+                ctx.beginPath(); ctx.moveTo(pX0, layout.bottomY); ctx.lineTo(pX0, layout.bottomY + layout.bottomHeight); ctx.stroke();
+
+                // Secondary labels
+                ctx.fillStyle = '#64748b';
+                ctx.font = '11px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                dyGridLines.concat([0]).forEach(dy => {
+                    ctx.fillText(dy, pX0 - 5, mapYBottom(dy));
+                });
+
+                // Label for Derivative graph
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText("DERIVATIVE PLANE (y' = f'(x))", 12, layout.bottomY + 8);
+            }
+        }
+
+        function drawCurve(curve) {
+            ctx.beginPath();
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = state.largeDisplayMode ? 6 : 3;
+
+            if (curve.isVertical) {
+                let px = mapX(curve.xFixed);
+                ctx.moveTo(px, 0); ctx.lineTo(px, getLayout().topHeight); ctx.stroke();
+                return;
+            }
+            
+            const step = (state.maxX - state.minX) / width;
+            let first = true;
+            for (let x = state.minX; x <= state.maxX; x += step) {
+                let y = curve.f(x);
+                if (isNaN(y) || !isFinite(y)) { first = true; continue; }
+
+                let px = mapX(x);
+                let py = mapY(y);
+
+                if (py < -1000 || py > height + 1000) { first = true; continue; }
+
+                if (first) { ctx.moveTo(px, py); first = false; } 
+                else { ctx.lineTo(px, py); }
+            }
+            ctx.stroke();
+        }
+
+        // Draw standard solid nodes
+        function drawPoint(x, y, color) {
+            let px = mapX(x); 
+            let py = mapY(y);
+            const outerRadius = state.largeDisplayMode ? 11 : 7;
+            const innerRadius = state.largeDisplayMode ? 5 : 3;
+            ctx.beginPath(); ctx.arc(px, py, outerRadius, 0, 2 * Math.PI); ctx.fillStyle = 'white'; ctx.fill();
+            ctx.lineWidth = state.largeDisplayMode ? 3 : 2; ctx.strokeStyle = color; ctx.stroke();
+            ctx.beginPath(); ctx.arc(px, py, innerRadius, 0, 2 * Math.PI); ctx.fillStyle = color; ctx.fill();
+        }
+
+        function drawSkier(x, y, m, alpha = 1.0) {
+            let px = mapX(x); let py = mapY(y);
+            let angle = (m === Infinity || m === -Infinity || Math.abs(m) > 10000) ? -Math.PI / 2 : Math.atan2(mapY(y + m) - py, mapX(x + 1) - px);
+
+            ctx.save();
+            ctx.translate(px, py);
+            ctx.rotate(angle);
+            ctx.globalAlpha = alpha;
+            
+            // Adjust scaling of skier dynamically in presentation mode
+            const scaleFactor = state.largeDisplayMode ? 1.2 : 0.8;
+            ctx.scale(scaleFactor, scaleFactor); 
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const color = getSkierColour(m);
+
+            ctx.lineWidth = 7; ctx.strokeStyle = color; ctx.beginPath();
+            ctx.moveTo(-50, 0); ctx.lineTo(40, 0); ctx.quadraticCurveTo(55, 0, 60, -10); ctx.stroke();
+
+            ctx.lineWidth = 16; ctx.beginPath(); ctx.moveTo(-5, -6); ctx.lineTo(10, -26); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(10, -26); ctx.lineTo(-15, -42); ctx.stroke();
+
+            ctx.lineWidth = 20; ctx.beginPath(); ctx.moveTo(-15, -42); ctx.quadraticCurveTo(0, -56, 16, -52); ctx.stroke();
+
+            ctx.fillStyle = color; ctx.beginPath(); ctx.arc(30, -72, 12, 0, Math.PI * 2); ctx.fill();
+
+            ctx.lineWidth = 10; ctx.beginPath(); ctx.moveTo(10, -48); ctx.lineTo(28, -32); ctx.stroke();
+            
+            // Ski Pole (perfectly parallel to the ski board/tangent line)
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(-45, -32); // Back of pole
+            ctx.lineTo(45, -32);  // Front of pole passing exactly through hand at (28, -32)
+            ctx.stroke();
+
+            // Pole Basket (near the back of the parallel pole on the left)
+            ctx.beginPath();
+            ctx.moveTo(-35, -39);
+            ctx.lineTo(-35, -25);
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        function drawLineFromSlope(x0, y0, m, color, width) {
+            ctx.beginPath(); ctx.strokeStyle = color; 
+            ctx.lineWidth = state.largeDisplayMode ? width * 2 : width;
+            if (m === Infinity || m === -Infinity || Math.abs(m) > 10000) {
+                let px = mapX(x0); ctx.moveTo(px, 0); ctx.lineTo(px, getLayout().topHeight); ctx.stroke();
+                return;
+            }
+
+            const lineF = (x) => m * (x - x0) + y0;
+            let yLeft = lineF(state.minX); let yRight = lineF(state.maxX);
+
+            if (isNaN(yLeft) || isNaN(yRight)) {
+                let startValidX = state.minX;
+                while (startValidX < state.maxX && isNaN(lineF(startValidX))) { startValidX += 0.1; }
+                ctx.moveTo(mapX(startValidX), mapY(lineF(startValidX))); ctx.lineTo(mapX(state.maxX), mapY(lineF(state.maxX))); ctx.stroke();
+                return;
+            }
+
+            ctx.moveTo(mapX(state.minX), mapY(yLeft)); ctx.lineTo(mapX(state.maxX), mapY(yRight)); ctx.stroke();
+        }
+
+        function drawLargeHUD(targetX, targetY, m) {
+            if (!state.showLargeTangent && !state.showLargeNormal) return;
+
+            const curve = curves[state.curveIdx];
+            let ptX = mapX(targetX);
+            let ptY = mapY(targetY);
+
+            // Dynamically resize HUD elements for presentation view
+            const padW = state.largeDisplayMode ? 280 : 210; 
+            const padH = state.largeDisplayMode ? 96 : 72; 
+            const spacing = state.largeDisplayMode ? 55 : 40;
+            const blockHeight = state.largeDisplayMode ? 104 : 80;
+
+            let hudX = ptX + spacing; 
+            let hudY = ptY - blockHeight;
+
+            if (hudX + padW > width) hudX = ptX - padW - spacing;
+            if (hudX < 10) hudX = 10;
+            if (hudY < 10) hudY = ptY + spacing;
+            
+            const totalBlocks = (state.showLargeTangent ? 1 : 0) + (state.showLargeNormal ? 1 : 0);
+            const totalHeight = totalBlocks * blockHeight;
+            if (hudY + totalHeight > height) hudY = height - totalHeight - 10;
+
+            let currentYOffset = hudY;
+
+            if (state.showLargeTangent) {
+                let tanVal = isNaN(m) ? "NaN" : (curve.isVertical ? "Infinity" : m.toFixed(3));
+                if (state.mode === 'game') tanVal = "???"; // Hide in game mode
+                
+                const tangentColour = state.skierPosNegColour ? getSkierColour(m) : "#ef4444";
+                drawHUDPanel(hudX, currentYOffset, "Tangent Gradient (m)", tanVal, tangentColour, padW, padH);
+                currentYOffset += blockHeight;
+            }
+
+            if (state.showLargeNormal) {
+                let normVal = isNaN(m) ? "NaN" : (curve.isVertical ? "0.000" : (Math.abs(m) < 0.001 ? "Infinity" : (-1/m).toFixed(3)));
+                if (state.mode === 'game') normVal = "???"; // Hide in game mode
+                drawHUDPanel(hudX, currentYOffset, "Normal Gradient (-1/m)", normVal, "#10b981", padW, padH);
+            }
+        }
+
+        function drawHUDPanel(x, y, label, val, accentColour, padW, padH) {
+            ctx.save();
+            ctx.shadowColor = "rgba(0, 0, 0, 0.08)"; ctx.shadowBlur = 12; ctx.shadowOffsetY = 4;
+            ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+            ctx.beginPath(); ctx.roundRect(x, y, padW, padH, 10); ctx.fill();
+            ctx.restore();
+
+            ctx.fillStyle = accentColour;
+            ctx.beginPath(); ctx.roundRect(x, y, 6, padH, { topLeft: 10, bottomLeft: 10 }); ctx.fill();
+
+            ctx.fillStyle = "#64748b"; 
+            ctx.font = state.largeDisplayMode ? "bold 14px sans-serif" : "bold 11px sans-serif"; 
+            ctx.textAlign = "left";
+            ctx.fillText(label.toUpperCase(), x + 18, y + (state.largeDisplayMode ? 32 : 25));
+
+            ctx.fillStyle = accentColour; 
+            ctx.font = state.largeDisplayMode ? "bold 34px monospace" : "bold 26px monospace";
+            ctx.fillText(val, x + 18, y + (state.largeDisplayMode ? 72 : 54));
+        }
+
+        function draw() {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+
+            drawGridAndAxes();
+
+            const curve = curves[state.curveIdx];
+            const layout = getLayout();
+            
+            // Visual coordinates derived completely from the lagged position parameter
+            const targetParam = state.laggedX;
+
+            // Clip rendering strictly to the top pane boundaries
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(0, layout.topY, width, layout.topHeight);
+            ctx.clip();
+
+            drawCurve(curve);
+            
+            let targetX, targetY, m;
+            if (curve.isVertical) {
+                targetX = curve.xFixed;
+                targetY = targetParam;
+                m = Infinity;
+            } else {
+                targetX = targetParam;
+                targetY = curve.f(targetParam);
+                m = curve.df(targetParam);
+            }
+
+            if (!isNaN(targetY)) {
+                // Render normal line on top plot
+                if (state.showNormal && !isNaN(m)) {
+                    const normSlope = curve.isVertical ? 0 : -1 / m;
+                    drawLineFromSlope(targetX, targetY, normSlope, '#10b981', 2);
+                }
+                
+                // Render tangent line on top plot
+                if (state.showTangent && !isNaN(m)) {
+                    const tangentColour = state.skierPosNegColour ? getSkierColour(m) : '#ef4444';
+                    drawLineFromSlope(targetX, targetY, m, tangentColour, 2);
+                }
+
+                // Render skier trailing echo segments if enabled
+                if (state.showSkier && state.showSkierEcho) {
+                    const echoIndices = [6, 12, 18, 24, 30, 36];
+                    const opacities = [0.55, 0.40, 0.28, 0.18, 0.10, 0.04];
+                    for (let i = 0; i < echoIndices.length; i++) {
+                        const idx = echoIndices[i];
+                        if (idx < state.skierTrail.length) {
+                            const echoX = state.skierTrail[idx];
+                            let echoDrawX, echoDrawY, echoM;
+                            if (curve.isVertical) {
+                                echoDrawX = curve.xFixed;
+                                echoDrawY = echoX;
+                                echoM = Infinity;
+                            } else {
+                                echoDrawX = echoX;
+                                echoDrawY = curve.f(echoX);
+                                echoM = curve.df(echoX);
+                            }
+                            if (!isNaN(echoDrawY)) {
+                                drawSkier(echoDrawX, echoDrawY, echoM, opacities[i]);
+                            }
+                        }
+                    }
+                }
+
+                // Draw Skier & Main Point on top plot
+                if (state.showSkier && !isNaN(m)) {
+                    drawSkier(targetX, targetY, m, 1.0);
+                }
+                drawPoint(targetX, targetY, '#8b5cf6');
+            }
+
+            ctx.restore(); // Restore context to remove top pane clipping
+
+            if (!isNaN(targetY)) {
+                // --- INTEGRATED: Derivative Secondary Plane Visuals ---
+                if (layout.split && !curve.isVertical && !isNaN(m)) {
+                    let ptX = mapX(targetX);
+                    let ptY_top = mapY(targetY);
+                    let ptY_bottom = mapYBottom(m);
+
+                    // 1. Draw dashed connecting line between panels (unclipped so it crosses the gutter)
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(139, 92, 246, 0.55)'; // violet alignment line
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(ptX, ptY_top);
+                    ctx.lineTo(ptX, ptY_bottom);
+                    ctx.stroke();
+                    ctx.restore();
+
+                    // Clip rendering strictly to the bottom pane boundaries
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(0, layout.bottomY, width, layout.bottomHeight);
+                    ctx.clip();
+
+                    // 2. Draw derivative trace curve using smooth drafting line algorithm
+                    const tracePoints = [];
+                    for (let i = 0; i < 400; i++) {
+                        const dy = state.derivativeTrace[i];
+                        if (dy !== null) {
+                            const minX_c = curve.minX !== undefined ? curve.minX : -10;
+                            const maxX_c = curve.maxX !== undefined ? curve.maxX : 10;
+                            const traceX = minX_c + (i / 399) * (maxX_c - minX_c);
+                            tracePoints.push({ x: mapX(traceX), y: mapYBottom(dy) });
+                        } else {
+                            tracePoints.push(null); // Preserve path disconnections
+                        }
+                    }
+                    drawDraftingLinePath(tracePoints, '#f59e0b', state.largeDisplayMode ? 5 : 3.5);
+
+                    // 3. Draw active derivative coordinate node using precise drafting crosshair circles
+                    drawDraftingCircle(ptX, ptY_bottom, state.largeDisplayMode ? 12 : 8, '#f59e0b', 0.25);
+                    
+                    ctx.restore(); // Restore context to remove bottom pane clipping
+                }
+                
+                // Render large presenter HUD panel
+                drawLargeHUD(targetX, targetY, m);
+            }
+
+            // Draw celebratory confetti particle layers
+            drawConfetti();
+        }
+
+        // --- INTERACTION ---
+        function setupCanvasInteraction() {
+            let isDragging = false;
+
+            const updateFromPointer = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const px = clientX - rect.left;
+                
+                let mathVal = unmapX(px);
+                const curve = curves[state.curveIdx];
+                const activeMin = curve.minX !== undefined ? curve.minX : -10;
+                const activeMax = curve.maxX !== undefined ? curve.maxX : 10;
+                
+                mathVal = Math.max(activeMin, Math.min(activeMax, mathVal));
+                state.currentX = mathVal;
+                ui.xSlider.value = mathVal;
+                updateExploreUI();
+                draw();
+            };
+
+            canvas.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                if (state.isPlaying) togglePlay();
+                updateFromPointer(e);
+            });
+            window.addEventListener('mousemove', (e) => { if (isDragging) updateFromPointer(e); });
+            window.addEventListener('mouseup', () => { isDragging = false; });
+            canvas.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                if (state.isPlaying) togglePlay();
+                updateFromPointer(e); e.preventDefault();
+            }, {passive: false});
+            window.addEventListener('touchmove', (e) => { if (isDragging) updateFromPointer(e); }, {passive: false});
+            window.addEventListener('touchend', () => { isDragging = false; });
+        }
+
+        function recordDerivativeTrace() {
+            if (state.mode !== 'explore' || !state.showDerivative) return;
+            const curve = curves[state.curveIdx];
+            if (curve.isVertical) return;
+
+            // Paint trace using the visual lagging coordinates to keep tracing line perfectly smooth
+            const x = state.laggedX;
+            const m = curve.df(x);
+            if (isNaN(m) || !isFinite(m)) return;
+
+            const activeMin = curve.minX !== undefined ? curve.minX : -10;
+            const activeMax = curve.maxX !== undefined ? curve.maxX : 10;
+
+            // Map standard X to array index [0..399]
+            const bin = Math.floor(((x - activeMin) / (activeMax - activeMin)) * 400);
+            if (bin >= 0 && bin < 400) {
+                state.derivativeTrace[bin] = m;
+            }
+        }
+
+        function clearDerivativeTrace() {
+            state.derivativeTrace.fill(null);
+            draw();
+        }
+
+        let lastTime;
+        function animationLoop(timestamp) {
+            let dt = (timestamp - lastTime) / 1000.0;
+            lastTime = timestamp;
+            if (dt > 0.1) dt = 0.1;
+
+            if (state.isPlaying && state.mode !== 'game') {
+                const curve = curves[state.curveIdx];
+                const activeMin = curve.minX !== undefined ? curve.minX : -10;
+                const activeMax = curve.maxX !== undefined ? curve.maxX : 10;
+
+                if (state.offScreenTime > 0) {
+                    state.offScreenTime += dt;
+                    if (state.offScreenTime >= 1.0) {
+                        state.currentX = state.visibleMinX;
+                        state.laggedX = state.currentX; // Snaps lagged state instantly to left entrance
+                        state.skierTrail = [];          // Flush trails to avoid visual elastic jumps
+                        state.offScreenTime = 0;
+                    }
+                } else {
+                    let dx;
+                    if (curve.isVertical) {
+                        dx = state.playSpeed * dt;
+                    } else {
+                        const fPrime = curve.df(state.currentX);
+                        if (isNaN(fPrime) || !isFinite(fPrime)) { 
+                            dx = 0.05; 
+                        } else {
+                            // --- Peak Gravity Slow-Down Logic ---
+                            let speedMultiplier = 1.0;
+                            const h = 0.001; // refined delta for precision
+                            const fDoublePrime = (curve.df(state.currentX + h) - curve.df(state.currentX - h)) / (2 * h);
+
+                            // Only slow down near concave-down stationary points (peaks)
+                            if (fDoublePrime < -0.05) { 
+                                const distToPeak = Math.abs(fPrime / fDoublePrime);
+                                if (distToPeak <= 0.2) {
+                                    const factor = distToPeak / 0.2;
+                                    speedMultiplier = 0.05 + 0.95 * (factor * factor);
+                                }
+                            }
+
+                            const actualSpeed = state.playSpeed * speedMultiplier;
+                            const ds_dx = Math.sqrt(1 + fPrime * fPrime);
+                            dx = (actualSpeed * dt) / ds_dx;
+                        }
+                    }
+
+                    state.currentX += dx;
+
+                    // Trigger 1-second delay upon crossing horizontal bounds
+                    if (state.currentX >= state.visibleMaxX) {
+                        state.offScreenTime = 0.001;
+                        state.currentX = state.visibleMaxX;
+                    }
+                }
+
+                ui.xSlider.value = state.currentX;
+                updateExploreUI();
+            }
+
+            // Calculate lagging position (Inertia) for both skier and purple point
+            let diff = state.currentX - state.laggedX;
+            if (Math.abs(diff) > 5) {
+                state.laggedX = state.currentX;
+            } else {
+                state.laggedX += diff * 0.08; // Smooth 8% ease factor per frame
+            }
+
+            // Store lagged history for rendering the echo trail sequence
+            state.skierTrail.unshift(state.laggedX);
+            if (state.skierTrail.length > 50) {
+                state.skierTrail.pop();
+            }
+
+            // Spawn continuous shower particles if results screen is active
+            if (state.game.resultsScreenActive) {
+                spawnContinuousConfetti();
+            }
+
+            // Continuously record trace coordinate markers as point glides
+            recordDerivativeTrace();
+
+            // Keep numeric readouts beautifully synchronised with the lagging visual coordinate
+            updateExploreUI();
+
+            draw();
+            requestAnimationFrame(animationLoop);
+        }
+
+        function togglePlay() {
+            state.isPlaying = !state.isPlaying;
+            if (state.isPlaying) {
+                ui.playIcon.className = "fa-solid fa-pause";
+                ui.btnPlay.classList.replace('bg-blue-600', 'bg-amber-600');
+                ui.btnPlay.classList.replace('hover:bg-blue-700', 'hover:bg-amber-700');
+            } else {
+                ui.playIcon.className = "fa-solid fa-play";
+                ui.btnPlay.classList.replace('bg-amber-600', 'bg-blue-600');
+                ui.btnPlay.classList.replace('hover:bg-amber-700', 'hover:bg-blue-700');
+            }
+        }
+
+        function updateSpeed() { state.playSpeed = parseFloat(ui.speedSlider.value); }
+
+        function handleCustomFuncInput() {
+            const rawValue = ui.customFuncInput.value;
+            try {
+                let sanitized = rawValue.toLowerCase().replace(/\s+/g, '');
+                const fns = ['exp', 'sin', 'cos', 'tan', 'log', 'ln', 'sqrt', 'abs', 'pow'];
+                fns.forEach(fn => {
+                    const regex = new RegExp(fn, 'g');
+                    sanitized = sanitized.replace(regex, `_FN_${fn.toUpperCase()}_`);
+                });
+                sanitized = sanitized.replace(/pi|π/g, '_CONST_PI_');
+                sanitized = sanitized.replace(/e/g, '_CONST_E_');
+
+                sanitized = sanitized.replace(/(\d)(?=[x_(\(])/g, '$1*');
+                sanitized = sanitized.replace(/(x)(?=[\dx_(\(])/g, '$1*');
+                sanitized = sanitized.replace(/(\))(?=[\dx_(\(])/g, '$1*');
+                sanitized = sanitized.replace(/(_CONST_[A-Z]+_)(?=[\dx_(\(])/g, '$1*');
+                sanitized = sanitized.replace(/(_FN_[A-Z]+_)(?=[\dx_])/g, '$1*');
+
+                const mathMap = {
+                    '_FN_EXP_': 'Math.exp', '_FN_SIN_': 'Math.sin', '_FN_COS_': 'Math.cos',
+                    '_FN_TAN_': 'Math.tan', '_FN_LOG_': 'Math.log', '_FN_LN_': 'Math.log',
+                    '_FN_SQRT_': 'Math.sqrt', '_FN_ABS_': 'Math.abs', '_FN_POW_': 'Math.pow',
+                    '_CONST_PI_': 'Math.PI', '_CONST_E_': 'Math.E'
+                };
+
+                Object.keys(mathMap).forEach(token => { sanitized = sanitized.split(token).join(mathMap[token]); });
+                sanitized = sanitized.replace(/\^/g, '**');
+
+                const allowedTokens = /^[0-9x+\-*/().,Math\.PIMath\.EMath\.sinMath\.cosMath\.tanMath\.logMath\.expMath\.sqrtMath\.absMath\.pow]+$/;
+                if (sanitized !== "" && !allowedTokens.test(sanitized)) throw new Error("Invalid syntax");
+
+                const customF = new Function('x', `with(Math) { try { return ${sanitized || '0'}; } catch(e) { return NaN; } }`);
+                let testVal = customF(1);
+
+                const customDF = (x) => {
+                    const h = 0.0001;
+                    const y1 = customF(x + h); const y2 = customF(x - h);
+                    if (isNaN(y1) || isNaN(y2)) return NaN;
+                    return (y1 - y2) / (2 * h);
+                };
+
+                const customIdx = curves.findIndex(c => c.isCustom);
+                if (customIdx !== -1) {
+                    curves[customIdx].f = customF; curves[customIdx].df = customDF;
+                }
+
+                ui.customFuncFeedback.className = "text-[11px] text-emerald-600 mt-0.5 flex items-center gap-1";
+                ui.customFuncFeedback.innerHTML = '<i class="fa-solid fa-circle-check"></i> Valid mathematical function';
+                
+                updateVisibleBounds();
+                clearDerivativeTrace(); // Flush trace on changes
+                draw(); updateExploreUI();
+            } catch (err) {
+                ui.customFuncFeedback.className = "text-[11px] text-red-500 mt-0.5 flex items-center gap-1";
+                ui.customFuncFeedback.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Invalid math expression';
+            }
+        }
+
+        function setMode(mode) {
+            state.mode = mode;
+            if (mode === 'explore') {
+                ui.btnExplore.className = "flex-1 py-2 font-semibold text-blue-600 bg-blue-100 rounded-l-md transition-colors";
+                ui.btnGame.className = "flex-1 py-2 font-semibold text-slate-500 bg-slate-200 rounded-r-md transition-colors hover:bg-slate-300";
+                
+                ui.playEngineControls.classList.remove('hidden');
+                ui.gameDashboard.classList.add('hidden');
+                ui.gameDashboard.classList.remove('flex');
+                ui.toggleDerivativeContainer.classList.remove('hidden'); // Show derivative option
+
+                // Restore Explore Mode Defaults
+                state.showTangent = true;
+                state.showNormal = false;
+                state.showSkier = false;
+
+                ui.checkTangent.checked = true;
+                ui.checkNormal.checked = false;
+                ui.checkSkier.checked = false;
+
+                // Enable Selection dropdown
+                ui.curveSelect.disabled = false;
+
+                // Restore original slider style
+                ui.sliderContainer.classList.remove('game-active-slider', 'bg-indigo-50', 'border-indigo-300');
+                ui.sliderContainer.classList.add('bg-slate-50', 'border-slate-100');
+                ui.sliderBadge.classList.add('hidden');
+
+                // Dismiss Congrats
+                ui.gameCongratsOverlay.classList.add('hidden');
+                state.game.resultsScreenActive = false;
+            } else {
+                ui.btnGame.className = "flex-1 py-2 font-semibold text-blue-600 bg-blue-100 rounded-r-md transition-colors";
+                ui.btnExplore.className = "flex-1 py-2 font-semibold text-slate-500 bg-slate-200 rounded-l-md transition-colors hover:bg-slate-300";
+                
+                if (state.isPlaying) togglePlay(); // Pause engine
+                ui.playEngineControls.classList.add('hidden');
+                ui.gameDashboard.classList.remove('hidden');
+                ui.gameDashboard.classList.add('flex');
+                ui.toggleDerivativeContainer.classList.add('hidden'); // Hide derivative in Game mode
+                ui.btnClearTrace.classList.add('hidden');
+
+                // Game Mode Defaults: ONLY Skier is displayed
+                state.showTangent = false;
+                state.showNormal = false;
+                state.showSkier = true;
+
+                ui.checkTangent.checked = false;
+                ui.checkNormal.checked = false;
+                ui.checkSkier.checked = true;
+
+                // Disable Selection dropdown so game curves are auto-selected
+                ui.curveSelect.disabled = true;
+
+                // Make slider stand out dynamically
+                ui.sliderContainer.classList.remove('bg-slate-50', 'border-slate-100');
+                ui.sliderContainer.classList.add('game-active-slider', 'bg-indigo-50', 'border-indigo-300');
+                ui.sliderBadge.classList.remove('hidden');
+
+                if (!state.game.active) startGame();
+            }
+            // Align lagging parameter instantly to prevent erratic jumps across modes
+            state.laggedX = state.currentX;
+            state.skierTrail = [];
+            state.offScreenTime = 0;
+            clearDerivativeTrace();
+            updateVisibleBounds();
+            updateExploreUI();
+            draw();
+        }
+
+        function updateExploreUI() {
+            const curve = curves[state.curveIdx];
+            const evalX = state.laggedX;
+            
+            ui.xValDisplay.textContent = evalX.toFixed(2);
+            ui.curveEquation.textContent = curve.equation;
+            
+            if (curve.isVertical) {
+                ui.sliderLabel.childNodes[ui.sliderLabel.childNodes.length - 1].textContent = " Point Position (y)";
+                ui.tanGradDisplay.textContent = state.mode === 'game' ? "Hidden" : "Infinity";
+                ui.normGradDisplay.textContent = state.mode === 'game' ? "Hidden" : "0.000";
+            } else {
+                ui.sliderLabel.childNodes[ui.sliderLabel.childNodes.length - 1].textContent = " Point Position (x)";
+                const m = curve.df(evalX);
+                
+                if (isNaN(m) || !isFinite(m)) {
+                    ui.tanGradDisplay.textContent = "Undefined";
+                    ui.normGradDisplay.textContent = "Undefined";
+                } else {
+                    if (state.mode === 'game') {
+                        ui.tanGradDisplay.textContent = "Hidden in Game";
+                        ui.normGradDisplay.textContent = "Hidden in Game";
+                        ui.tanGradDisplay.className = "font-mono font-bold text-slate-400 italic";
+                        ui.normGradDisplay.className = "font-mono font-bold text-slate-400 italic";
+                    } else {
+                        ui.tanGradDisplay.className = "font-mono font-bold text-red-600";
+                        ui.normGradDisplay.className = "font-mono font-bold text-emerald-600";
+                        ui.tanGradDisplay.textContent = m.toFixed(3);
+                        ui.normGradDisplay.textContent = Math.abs(m) < 0.001 ? "Infinity (Vertical)" : (-1/m).toFixed(3);
+                    }
+                }
+            }
+        }
+
+        function changeCurve() {
+            state.curveIdx = parseInt(ui.curveSelect.value);
+            const curve = curves[state.curveIdx];
+
+            if (curve.isCustom) ui.customFuncContainer.classList.remove('hidden');
+            else ui.customFuncContainer.classList.add('hidden');
+
+            const activeMin = curve.minX !== undefined ? curve.minX : -10;
+            const activeMax = curve.maxX !== undefined ? curve.maxX : 10;
+            
+            ui.xSlider.min = activeMin; ui.xSlider.max = activeMax;
+            state.currentX = activeMin === -10 ? 0 : activeMin;
+            ui.xSlider.value = state.currentX;
+            
+            state.laggedX = state.currentX;
+            state.skierTrail = [];
+            state.offScreenTime = 0;
+
+            clearDerivativeTrace();
+            updateVisibleBounds();
+
+            if (state.mode === 'game' && state.game.active) {
+                generateGameTarget();
+            }
+
+            updateExploreUI(); draw();
+        }
+
+        function updateX() {
+            if (state.isPlaying) togglePlay();
+            state.currentX = parseFloat(ui.xSlider.value);
+            updateExploreUI(); draw();
+        }
+
+        function toggleLines() {
+            state.showTangent = ui.checkTangent.checked;
+            state.showNormal = ui.checkNormal.checked;
+            state.showSkier = ui.checkSkier.checked;
+            draw();
+        }
+
+        function toggleDerivative() {
+            state.showDerivative = ui.checkDerivative.checked;
+            if (state.showDerivative) {
+                ui.btnClearTrace.classList.remove('hidden');
+                clearDerivativeTrace();
+            } else {
+                ui.btnClearTrace.classList.add('hidden');
+            }
+            handleResize(); // Triggers redrawing split screen coordinates
+        }
+
+        function toggleSkierColour() {
+            state.skierPosNegColour = ui.checkSkierBinary.checked; draw();
+        }
+
+        function toggleSkierEcho() {
+            state.showSkierEcho = ui.checkSkierEcho.checked;
+            if (!state.showSkierEcho) {
+                state.skierTrail = [];
+            }
+            draw();
+        }
+
+        function toggleLargeDisplayMode() {
+            state.largeDisplayMode = ui.checkLargeDisplayMode.checked;
+            draw();
+        }
+
+        function toggleLargeDisplay() {
+            state.showLargeTangent = ui.checkLargeTangent.checked;
+            state.showLargeNormal = ui.checkLargeNormal.checked; draw();
+        }
+
+        function getLogBaseValue(m) {
+            if (m === Infinity) return Infinity;
+            if (m === -Infinity) return -Infinity;
+            if (isNaN(m)) return NaN;
+            return Math.sign(m) * Math.log2(1 + Math.abs(m));
+        }
+
+        function startGame() {
+            state.game.active = true;
+            state.game.score = 0;
+            state.game.rounds = 0;
+            state.game.resultsScreenActive = false;
+            ui.gameScore.textContent = state.game.score;
+            ui.gameWinArea.classList.add('hidden');
+            ui.gameFeedback.classList.add('hidden');
+            ui.btnSubmitGuess.classList.remove('hidden');
+            ui.gameCongratsOverlay.classList.add('hidden');
+            
+            generateGameTarget();
+        }
+
+        // Filter playable curves (curves with dynamically changing non-constant gradients)
+        function generateGameTarget() {
+            state.game.rounds++;
+            
+            const playableCurveIndices = [];
+            curves.forEach((curve, index) => {
+                if (!curve.isVertical && 
+                    curve.name !== "Constant Line" && 
+                    curve.name !== "Linear (Positive)" && 
+                    curve.name !== "Linear (Negative)" && 
+                    !curve.isCustom) {
+                    playableCurveIndices.push(index);
+                }
+            });
+            
+            // Randomly select one of these playable curves
+            const randomIdx = playableCurveIndices[Math.floor(Math.random() * playableCurveIndices.length)];
+            
+            state.curveIdx = randomIdx;
+            ui.curveSelect.value = randomIdx;
+            
+            const curve = curves[randomIdx];
+            ui.customFuncContainer.classList.add('hidden'); // Ensure Custom editor remains hidden in Game Mode
+
+            const activeMin = curve.minX !== undefined ? curve.minX : -10;
+            const activeMax = curve.maxX !== undefined ? curve.maxX : 10;
+            
+            ui.xSlider.min = activeMin; 
+            ui.xSlider.max = activeMax;
+
+            // Reset player's position to a clean starting location
+            state.currentX = activeMin === -10 ? 0 : activeMin;
+            ui.xSlider.value = state.currentX;
+            state.laggedX = state.currentX;
+            state.skierTrail = [];
+            state.offScreenTime = 0;
+
+            let found = false;
+            let attempts = 0;
+            let targetX, targetM;
+
+            // Find a valid target coordinate where derivative exists, is finite, and is non-zero
+            while (!found && attempts < 100) {
+                targetX = activeMin + Math.random() * (activeMax - activeMin);
+                targetM = curve.df(targetX);
+                // Target slope range must be visually distinct: between 0.15 and 6
+                if (!isNaN(targetM) && isFinite(targetM) && Math.abs(targetM) <= 6 && Math.abs(targetM) >= 0.15) {
+                    found = true;
+                }
+                attempts++;
+            }
+
+            if (found) {
+                state.game.targetM = Math.round(targetM * 10) / 10;
+            } else {
+                state.game.targetM = 1.0; // Fail-safe default
+            }
+
+            ui.gameTargetDisplay.textContent = state.game.targetM.toFixed(2);
+            ui.gameFeedback.classList.add('hidden');
+            updateVisibleBounds();
+            updateExploreUI();
+            draw();
+        }
+
+        function checkMatch() {
+            if (!state.game.active) return;
+
+            const curve = curves[state.curveIdx];
+            // Grade using the final settled lagged X coordinate value to be mathematically fair
+            let currentM = curve.df(state.laggedX);
+            
+            // Log-base Answer Grading: sign(m)*log2(1+|m|)
+            const logCurrent = getLogBaseValue(currentM);
+            const logTarget = getLogBaseValue(state.game.targetM);
+            
+            const logDiff = Math.abs(logCurrent - logTarget);
+            const logTolerance = 0.22; // Mathematically proportional matching window
+            
+            const isCorrect = !isNaN(logDiff) && logDiff <= logTolerance;
+            ui.gameFeedback.classList.remove('hidden');
+
+            if (isCorrect) {
+                state.game.score++;
+                ui.gameScore.textContent = state.game.score;
+                ui.gameFeedback.textContent = `Excellent! Spot on. (Actual: ${currentM.toFixed(2)})`;
+                ui.gameFeedback.className = "text-center text-sm font-bold p-3 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm animate-bounce";
+                
+                // Spawn extravagant canvas confetti celebration!
+                let ptX = mapX(state.laggedX);
+                let ptY = mapY(curve.f(state.laggedX));
+                spawnConfetti(ptX, ptY);
+            } else {
+                ui.gameFeedback.textContent = `Missed! You were at ${currentM.toFixed(2)}`;
+                ui.gameFeedback.className = "text-center text-sm font-bold p-3 rounded-md bg-red-100 text-red-800 border border-red-300 shadow-sm";
+            }
+
+            // Temporarily reveal exact numeric gradient
+            ui.tanGradDisplay.textContent = currentM.toFixed(3);
+            ui.tanGradDisplay.className = "font-mono font-bold text-slate-800";
+            draw();
+
+            if (state.game.rounds >= state.game.maxRounds) {
+                ui.btnSubmitGuess.classList.add('hidden');
+                setTimeout(() => {
+                    showFullScreenCongrats(state.game.score);
+                }, 1500);
+            } else {
+                ui.btnSubmitGuess.disabled = true;
+                ui.btnSubmitGuess.classList.add('opacity-50');
+                
+                setTimeout(() => {
+                    ui.btnSubmitGuess.disabled = false;
+                    ui.btnSubmitGuess.classList.remove('opacity-50');
+                    updateExploreUI(); // Hide numeric readouts again
+                    generateGameTarget();
+                }, 2000);
+            }
+        }
+
+        function showFullScreenCongrats(score) {
+            state.game.active = false;
+            state.game.resultsScreenActive = true;
+
+            // Setup score readout
+            ui.congratsScore.textContent = `${score} / 5`;
+
+            // Assign achievements, badges, and messages dynamically
+            if (score === 5) {
+                ui.congratsIcon.textContent = "🏆";
+                ui.congratsTitle.textContent = "Legendary Slalom Master";
+                ui.congratsDescription.textContent = "Spectacular! You have mastered the gradients and visualised the curves with perfect precision. Absolutely flawless shredding!";
+                ui.congratsTitle.className = "text-2xl md:text-3xl font-black glowing-title tracking-tight text-yellow-400";
+            } else if (score === 4) {
+                ui.congratsIcon.textContent = "🥇";
+                ui.congratsTitle.textContent = "Elite Slope Shredder";
+                ui.congratsDescription.textContent = "Fantastic effort! Your visual estimation of slopes and rates of change is incredibly sharp. Excellent work.";
+                ui.congratsTitle.className = "text-2xl md:text-3xl font-black glowing-title tracking-tight text-indigo-400";
+            } else if (score === 3) {
+                ui.congratsIcon.textContent = "🥈";
+                ui.congratsTitle.textContent = "Pro Ski Tracker";
+                ui.congratsDescription.textContent = "Nice job! You passed the challenge with a solid performance. You have developed a great feel for slopes!";
+                ui.congratsTitle.className = "text-2xl md:text-3xl font-black glowing-title tracking-tight text-teal-400";
+            } else {
+                ui.congratsIcon.textContent = "🎿";
+                ui.congratsTitle.textContent = "Snow Patrol Cadet";
+                ui.congratsDescription.textContent = "Good try! You completed the run. Slopes can be tricky, but practicing in Explore Mode will sharpen your skills in no time!";
+                ui.congratsTitle.className = "text-2xl md:text-3xl font-black tracking-tight text-slate-300";
+            }
+
+            // Spawn massive opening blast of confetti
+            spawnConfetti(width / 2, height / 3);
+
+            // Display overlay
+            ui.gameCongratsOverlay.classList.remove('hidden');
+        }
+
+        function restartGameFromCongrats() {
+            ui.gameCongratsOverlay.classList.add('hidden');
+            startGame();
+        }
+
+        function goBackToExploreFromCongrats() {
+            setMode('explore');
+        }
+
+        // Initialize application
+        window.onload = init;
+
+    </script>
+</body>
+</html>

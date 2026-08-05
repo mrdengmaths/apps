@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Parabola Grapher Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+        }
+        /* Custom styles for better visual feedback on drag */
+        canvas {
+            cursor: grab;
+        }
+        canvas:active {
+            cursor: grabbing;
+        }
+        /* Style for the help modal */
+        #helpModal {
+            transition: opacity 0.3s ease;
+        }
+        /* Confetti styles */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            opacity: 0.7;
+            border-radius: 50%;
+            animation: fall 3s linear forwards;
+        }
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-sky-100 dark:bg-slate-900 text-gray-800 dark:text-gray-200 flex items-center justify-center min-h-screen p-4">
+
+    <div id="game-container" class="w-full max-w-4xl mx-auto bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 md:p-8 text-center">
+
+        <!-- Header: Title and Score -->
+        <header class="mb-4">
+            <h1 class="text-3xl md:text-4xl font-bold text-indigo-600 dark:text-indigo-400">Parabola Challenge</h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">Match the graph to the equation!</p>
+            <div class="flex justify-center items-center space-x-4 md:space-x-8 mt-4 text-lg">
+                <div><span class="font-semibold text-green-500">Correct:</span> <span id="correct-score">0</span></div>
+                <div><span class="font-semibold text-red-500">Incorrect:</span> <span id="incorrect-score">0</span></div>
+                <div><span class="font-semibold text-blue-500">Streak:</span> <span id="streak-score">0</span></div>
+            </div>
+        </header>
+
+        <!-- Coefficient Toggle Switch -->
+        <div class="flex items-center justify-center space-x-3 my-4">
+            <span class="text-gray-600 dark:text-gray-400">Fractions</span>
+            <label for="coeff-toggle" class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="coeff-toggle" class="sr-only peer" checked>
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+            </label>
+            <span class="font-semibold text-gray-800 dark:text-gray-200">Integers Only</span>
+        </div>
+
+        <!-- Equation Display -->
+        <div id="equation-container" class="my-4 p-4 bg-sky-50 dark:bg-slate-700 rounded-lg">
+            <p class="text-xl md:text-2xl font-mono" id="equation-display">y = x²</p>
+        </div>
+
+        <!-- Canvas for Graph -->
+        <div class="relative w-full aspect-square max-w-md mx-auto bg-white dark:bg-slate-900 rounded-lg overflow-hidden shadow-inner">
+             <canvas id="graph-canvas"></canvas>
+        </div>
+
+        <!-- Feedback Message -->
+        <div id="feedback-container" class="h-12 mt-4 flex items-center justify-center">
+            <p id="feedbackMessage" class="text-lg font-semibold transition-opacity duration-300 opacity-0"></p>
+        </div>
+
+        <!-- Controls -->
+        <div class="mt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button id="checkButton" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-800">Check Graph</button>
+            <button id="nextButton" class="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 hidden">Next Question</button>
+            <button id="helpButton" class="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600">Help</button>
+        </div>
+
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 max-w-lg w-full">
+            <h2 class="text-2xl font-bold mb-4 text-indigo-600 dark:text-indigo-400">How to Play & Help</h2>
+            <div class="text-left space-y-4 text-gray-700 dark:text-gray-300">
+                <p><strong>Objective:</strong> Drag the points on the graph to make the blue parabola match the equation shown.</p>
+                <div>
+                    <h3 class="font-semibold text-lg">Controls:</h3>
+                    <ul class="list-disc list-inside ml-4 mt-2 space-y-2">
+                        <li><strong class="text-purple-500">Purple Point (Vertex):</strong> Drag this point to move the entire parabola left, right, up, or down. This changes the <strong>turning point</strong>.</li>
+                        <li><strong class="text-cyan-500">Cyan Point (Branch):</strong> Drag this point to change the parabola's shape. Move it away from the vertex to make it wider, or closer to make it narrower. Dragging it across the horizontal line through the vertex will flip the parabola upside down.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-lg">Maths Hints (y = a(x-h)² + k):</h3>
+                     <ul class="list-disc list-inside ml-4 mt-2 space-y-2">
+                        <li>The <strong>vertex</strong> (turning point) is at the coordinate (h, k).</li>
+                        <li>The value of '<strong>a</strong>' controls the opening. If 'a' is positive, it opens upwards. If 'a' is negative, it opens downwards. A larger |a| makes the graph narrower.</li>
+                        <li>The <strong>y-intercept</strong> is where the graph crosses the y-axis (where x=0).</li>
+                        <li>The <strong>x-intercepts</strong> (or roots) are where the graph crosses the x-axis (where y=0).</li>
+                    </ul>
+                </div>
+            </div>
+            <button id="closeHelpButton" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">Got it!</button>
+        </div>
+    </div>
+    
+    <!-- Confetti Container -->
+    <div id="confetti-container" class="fixed top-0 left-0 w-full h-full pointer-events-none z-50"></div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const canvas = document.getElementById('graph-canvas');
+            const ctx = canvas.getContext('2d');
+            const equationDisplay = document.getElementById('equation-display');
+            const checkButton = document.getElementById('checkButton');
+            const nextButton = document.getElementById('nextButton');
+            const feedbackMessage = document.getElementById('feedbackMessage');
+            const correctScoreEl = document.getElementById('correct-score');
+            const incorrectScoreEl = document.getElementById('incorrect-score');
+            const streakScoreEl = document.getElementById('streak-score');
+            const helpButton = document.getElementById('helpButton');
+            const helpModal = document.getElementById('helpModal');
+            const closeHelpButton = document.getElementById('closeHelpButton');
+            const confettiContainer = document.getElementById('confetti-container');
+            const coeffToggle = document.getElementById('coeff-toggle');
+
+            // Game State
+            let scale = 20; // Pixels per unit
+            let origin = { x: 0, y: 0 };
+            let targetParabola = {};
+            let userParabola = { a: 1, h: 0, k: 0 }; // y = a(x-h)^2 + k
+            let dragging = null; // 'vertex', 'branch', or null
+            let scores = { correct: 0, incorrect: 0, streak: 0 };
+
+            // Audio Context for sound effects
+            let audioCtx;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.error("Web Audio API is not supported in this browser");
+            }
+
+            // --- Sound Generation ---
+            function playSound(type) {
+                if (!audioCtx) return;
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.01);
+
+                if (type === 'correct') {
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    oscillator.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.2); // C6
+                } else if (type === 'incorrect') {
+                    oscillator.type = 'square';
+                    oscillator.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+                    oscillator.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.2); // A2
+                } else if (type === 'click') {
+                    oscillator.type = 'triangle';
+                    oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+                }
+
+                oscillator.start(audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+                oscillator.stop(audioCtx.currentTime + 0.3);
+            }
+
+            // --- Canvas Setup and Drawing ---
+            function setupCanvas() {
+                const container = canvas.parentElement;
+                const dpr = window.devicePixelRatio || 1;
+                const rect = container.getBoundingClientRect();
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                ctx.scale(dpr, dpr);
+                canvas.style.width = `${rect.width}px`;
+                canvas.style.height = `${rect.height}px`;
+                
+                origin.x = rect.width / 2;
+                origin.y = rect.height / 2;
+                
+                // UPDATED: Set scale to fit -5 to 5 on both axes
+                const scaleX = rect.width / 11; // 11 units to have some padding
+                const scaleY = rect.height / 11; // 11 units for padding
+                scale = Math.min(scaleX, scaleY);
+
+                draw();
+            }
+
+            function drawGrid() {
+                ctx.strokeStyle = 'rgba(186, 230, 253, 0.9)'; // sky-200 with opacity
+                if(document.documentElement.classList.contains('dark')) {
+                    ctx.strokeStyle = 'rgba(71, 85, 105, 0.7)'; // slate-700 with opacity
+                }
+                ctx.lineWidth = 1;
+
+                for (let i = -Math.ceil(origin.x / scale); i * scale < origin.x; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(origin.x + i * scale, 0);
+                    ctx.lineTo(origin.x + i * scale, canvas.height);
+                    ctx.stroke();
+                }
+                for (let i = -Math.ceil(origin.y / scale); i * scale < origin.y; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, origin.y + i * scale);
+                    ctx.lineTo(canvas.width, origin.y + i * scale);
+                    ctx.stroke();
+                }
+            }
+            
+            function drawAxes() {
+                ctx.strokeStyle = '#075985'; // sky-800
+                if(document.documentElement.classList.contains('dark')) {
+                    ctx.strokeStyle = '#7dd3fc'; // sky-300
+                }
+                ctx.lineWidth = 2; 
+                ctx.fillStyle = ctx.strokeStyle;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                const labelFont = `${0.4 * scale}px Inter`;
+                ctx.font = labelFont;
+
+                for (let i = -Math.floor(origin.x / scale); i * scale < origin.x; i++) {
+                    if (i !== 0) {
+                        ctx.fillText(i, origin.x + i * scale, origin.y + (scale * 0.6));
+                    }
+                }
+                for (let i = -Math.floor(origin.y / scale); i * scale < origin.y; i++) {
+                     if (i !== 0) {
+                        ctx.fillText(-i, origin.x - (scale*0.6), origin.y + i * scale);
+                    }
+                }
+                
+                ctx.font = `italic ${0.5 * scale}px Inter`;
+                ctx.fillText('O', origin.x - (scale * 0.5), origin.y + (scale * 0.5));
+            }
+
+            function drawParabola(a, h, k, color, lineWidth) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = lineWidth;
+                ctx.beginPath();
+
+                const startX = -origin.x / scale;
+                const endX = origin.x / scale;
+                
+                for (let x = startX; x <= endX; x += 0.05) {
+                    const y = a * Math.pow(x - h, 2) + k;
+                    const canvasX = origin.x + x * scale;
+                    const canvasY = origin.y - y * scale;
+                    if (x === startX) {
+                        ctx.moveTo(canvasX, canvasY);
+                    } else {
+                        ctx.lineTo(canvasX, canvasY);
+                    }
+                }
+                ctx.stroke();
+            }
+
+            function drawControlPoints() {
+                const { a, h, k } = userParabola;
+                
+                const vertexX = origin.x + h * scale;
+                const vertexY = origin.y - k * scale;
+                ctx.fillStyle = '#8b5cf6'; // purple-500
+                ctx.beginPath();
+                ctx.arc(vertexX, vertexY, 8, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                const branchPointXCoord = h + 1;
+                const branchPointYCoord = a * Math.pow(branchPointXCoord - h, 2) + k;
+                const branchX = origin.x + branchPointXCoord * scale;
+                const branchY = origin.y - branchPointYCoord * scale;
+                ctx.fillStyle = '#06b6d4'; // cyan-500
+                ctx.beginPath();
+                ctx.arc(branchX, branchY, 8, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            function draw() {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canvas.getBoundingClientRect();
+                ctx.clearRect(0, 0, rect.width, rect.height);
+                drawGrid();
+                drawAxes();
+                drawParabola(userParabola.a, userParabola.h, userParabola.k, '#3b82f6', 3); // blue-500
+                drawControlPoints();
+            }
+
+            // --- Game Logic ---
+            function generateQuestion() {
+                let a, r1, r2, h, k, b, c;
+                
+                const integersOnly = coeffToggle.checked;
+                let aValues;
+
+                if (integersOnly) {
+                    aValues = [1, -1, 2, -2]; 
+                } else {
+                    aValues = [1, -1, 2, -2, 0.5, -0.5, 1.5, -1.5];
+                }
+                
+                // UPDATED: Tighter constraints for square view
+                do {
+                    a = aValues[Math.floor(Math.random() * aValues.length)];
+
+                    r1 = Math.floor(Math.random() * 9) - 4; // -4 to 4
+                    r2 = Math.floor(Math.random() * 9) - 4; // -4 to 4
+                    
+                    h = (r1 + r2) / 2;
+                    k = -a * Math.pow((r1 - r2) / 2, 2);
+
+                    b = -2 * a * h;
+                    c = a * h * h + k;
+
+                } while (Math.abs(h) > 4.5 || Math.abs(k) > 4.5 || Math.abs(c) > 5);
+
+                targetParabola = { a, h, k, b, c };
+                
+                let equationStr = `y = `;
+                equationStr += (a === 1) ? 'x²' : (a === -1) ? '-x²' : `${a}x²`;
+                if (b !== 0) {
+                    const bVal = Math.round(b * 100) / 100;
+                    equationStr += (bVal > 0 ? ' + ' : ' - ') + `${Math.abs(bVal)}x`;
+                }
+                if (c !== 0) {
+                    const cVal = Math.round(c * 100) / 100;
+                    equationStr += (cVal > 0 ? ' + ' : ' - ') + `${Math.abs(cVal)}`;
+                }
+                if (b === 0 && c === 0 && a === 0) equationStr = 'y = 0';
+                if (b === 0 && c === 0 && a !== 0 && Math.abs(a) !== 1) equationStr = `y = ${a}x²`;
+
+                equationDisplay.textContent = equationStr.replace(/\+ -/g, '- ').replace(/1x/g, 'x');
+                resetUserParabola();
+            }
+            
+            function resetUserParabola() {
+                userParabola = { a: 1, h: 0, k: 0 };
+                checkButton.classList.remove('hidden');
+                nextButton.classList.add('hidden');
+                feedbackMessage.textContent = '';
+                feedbackMessage.classList.remove('text-green-500', 'text-red-500');
+                feedbackMessage.classList.add('opacity-0');
+                draw();
+            }
+
+            function checkAnswer() {
+                const tolerance = 0.2;
+                const { a, h, k } = userParabola;
+                const { a: targetA, h: targetH, k: targetK } = targetParabola;
+
+                const vertexCorrect = Math.abs(h - targetH) < tolerance && Math.abs(k - targetK) < tolerance;
+                const openingCorrect = Math.abs(a - targetA) < tolerance;
+
+                let feedback = [];
+                if (vertexCorrect && openingCorrect) {
+                    feedbackMessage.textContent = "Correct! All features match!";
+                    feedbackMessage.className = 'text-lg font-semibold text-green-500 dark:text-green-400 opacity-100';
+                    scores.correct++;
+                    scores.streak++;
+                    playSound('correct');
+                    triggerConfetti();
+                    checkButton.classList.add('hidden');
+                    nextButton.classList.remove('hidden');
+                } else {
+                    feedbackMessage.className = 'text-lg font-semibold text-red-500 dark:text-red-400 opacity-100';
+                    scores.incorrect++;
+                    scores.streak = 0;
+                    playSound('incorrect');
+                    
+                    if (!vertexCorrect) {
+                        feedback.push("Your turning point is not quite right.");
+                    }
+                    if (!openingCorrect) {
+                         const directionWrong = Math.sign(a) !== Math.sign(targetA);
+                         const widthWrong = Math.abs(Math.abs(a) - Math.abs(targetA)) > tolerance;
+                         if(directionWrong) {
+                            feedback.push("Check the direction your parabola is opening (up or down).");
+                         } else if (widthWrong) {
+                            feedback.push("The opening of your parabola is incorrect (too wide or too narrow).");
+                         }
+                    }
+                    
+                    const userYInt = a * h * h + k;
+                    const targetYInt = targetParabola.c;
+                    if (Math.abs(userYInt - targetYInt) > 0.5 && !feedback.some(f => f.includes('opening'))) {
+                        feedback.push("Your Y-intercept seems off.");
+                    }
+
+                    feedbackMessage.textContent = feedback.length > 0 ? feedback.join(' ') : "Incorrect. Keep trying! You're getting closer!";
+                }
+                updateScores();
+            }
+            
+            function updateScores() {
+                correctScoreEl.textContent = scores.correct;
+                incorrectScoreEl.textContent = scores.incorrect;
+                streakScoreEl.textContent = scores.streak;
+            }
+
+            // --- Event Handling ---
+            function getMousePos(evt) {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    x: evt.clientX - rect.left,
+                    y: evt.clientY - rect.top
+                };
+            }
+            
+            function getTouchPos(evt) {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    x: evt.touches[0].clientX - rect.left,
+                    y: evt.touches[0].clientY - rect.top
+                };
+            }
+
+            function handleStart(e) {
+                e.preventDefault();
+                const pos = e.type === 'touchstart' ? getTouchPos(e) : getMousePos(e);
+                
+                const vertexPos = { x: origin.x + userParabola.h * scale, y: origin.y - userParabola.k * scale };
+                const branchPointXCoord = userParabola.h + 1;
+                const branchPointYCoord = userParabola.a * Math.pow(branchPointXCoord - userParabola.h, 2) + userParabola.k;
+                const branchPos = { x: origin.x + branchPointXCoord * scale, y: origin.y - branchPointYCoord * scale };
+
+                const distToVertex = Math.hypot(pos.x - vertexPos.x, pos.y - vertexPos.y);
+                const distToBranch = Math.hypot(pos.x - branchPos.x, pos.y - branchPos.y);
+
+                if (distToVertex < 15) {
+                    dragging = 'vertex';
+                } else if (distToBranch < 15) {
+                    dragging = 'branch';
+                }
+                if (dragging) canvas.style.cursor = 'grabbing';
+            }
+
+            function handleMove(e) {
+                if (!dragging) return;
+                e.preventDefault();
+                const pos = e.type === 'touchmove' ? getTouchPos(e) : getMousePos(e);
+                
+                if (dragging === 'vertex') {
+                    userParabola.h = (pos.x - origin.x) / scale;
+                    userParabola.k = -(pos.y - origin.y) / scale;
+                } else if (dragging === 'branch') {
+                    const targetX = userParabola.h + 1;
+                    const targetY = -(pos.y - origin.y) / scale;
+                    
+                    const denominator = Math.pow(targetX - userParabola.h, 2);
+                    if (Math.abs(denominator) > 0.001) {
+                        userParabola.a = (targetY - userParabola.k) / denominator;
+                    }
+                }
+                draw();
+            }
+
+            function handleEnd(e) {
+                e.preventDefault();
+                dragging = null;
+                canvas.style.cursor = 'grab';
+            }
+
+            function handleKey(e) {
+                if (e.key === 'Enter') {
+                    if (!nextButton.classList.contains('hidden')) {
+                        nextButton.click();
+                    } else if (!checkButton.classList.contains('hidden')) {
+                        checkButton.click();
+                    }
+                }
+            }
+            
+            // --- UI and Animations ---
+            function triggerConfetti() {
+                for (let i = 0; i < 100; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    const colors = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6'];
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.left = `${Math.random() * 100}vw`;
+                    confetti.style.top = `${-20 - Math.random() * 20}px`;
+                    confetti.style.animationDelay = `${Math.random() * 2}s`;
+                    confetti.style.transform = `scale(${0.5 + Math.random()})`
+                    confettiContainer.appendChild(confetti);
+                    
+                    setTimeout(() => {
+                        confetti.remove();
+                    }, 3000);
+                }
+            }
+            
+            function toggleHelpModal(show) {
+                if (show) {
+                    helpModal.classList.remove('hidden');
+                    setTimeout(() => helpModal.style.opacity = 1, 10);
+                } else {
+                    helpModal.style.opacity = 0;
+                    setTimeout(() => helpModal.classList.add('hidden'), 300);
+                }
+            }
+
+            // --- Initialisation ---
+            function init() {
+                // Setup canvas and event listeners
+                setupCanvas();
+                window.addEventListener('resize', setupCanvas);
+                
+                canvas.addEventListener('mousedown', handleStart);
+                canvas.addEventListener('mousemove', handleMove);
+                document.addEventListener('mouseup', handleEnd);
+                
+                canvas.addEventListener('touchstart', handleStart, { passive: false });
+                canvas.addEventListener('touchmove', handleMove, { passive: false });
+                document.addEventListener('touchend', handleEnd);
+
+                // Button listeners
+                checkButton.addEventListener('click', () => {
+                    playSound('click');
+                    checkAnswer();
+                });
+                nextButton.addEventListener('click', () => {
+                    playSound('click');
+                    generateQuestion();
+                });
+                helpButton.addEventListener('click', () => toggleHelpModal(true));
+                closeHelpButton.addEventListener('click', () => toggleHelpModal(false));
+                
+                coeffToggle.addEventListener('change', () => {
+                    playSound('click');
+                    generateQuestion();
+                });
+
+                // Keyboard listener
+                document.addEventListener('keydown', handleKey);
+
+                // Start game
+                generateQuestion();
+                updateScores();
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>

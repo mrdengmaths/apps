@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Venn to Two-Way Table Converter Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Prevent scrollbars from confetti */
+        }
+        /* Custom styles for input appearance */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+            text-align: center;
+            font-weight: 600;
+        }
+        .correct-cell {
+            background-color: #d1fae5; /* green-100 */
+            border-color: #10b981; /* green-500 */
+            color: #047857; /* green-700 */
+        }
+        .incorrect-cell {
+            background-color: #fee2e2; /* red-100 */
+            border-color: #ef4444; /* red-500 */
+            color: #b91c1c; /* red-700 */
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        /* Styles for the modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        /* Confetti styles */
+        #confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            overflow: hidden;
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            opacity: 0.7;
+            animation: fall 5s linear forwards;
+        }
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- Confetti Container -->
+    <div id="confetti-container"></div>
+    
+    <!-- How to Play Modal -->
+    <div id="howToPlayModal" class="modal-overlay">
+        <div class="bg-white rounded-lg shadow-2xl p-8 max-w-lg w-full relative">
+            <h2 class="text-2xl font-bold mb-4">How to Play</h2>
+            <p class="mb-4">Your goal is to fill the two-way table using the numbers from the Venn diagram.</p>
+            <ul class="list-disc list-inside space-y-2 mb-6">
+                <li>The overlapping region of the circles (A and B) goes into the cell for 'A and B'.</li>
+                <li>The part of circle A that doesn't overlap is 'A only'.</li>
+                <li>The part of circle B that doesn't overlap is 'B only'.</li>
+                <li>The number outside the circles is 'Neither A nor B'.</li>
+                <li>'Total' cells are the sum of the corresponding row or column.</li>
+            </ul>
+            <button onclick="toggleModal('howToPlayModal')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal-overlay">
+        <div class="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full relative">
+            <h2 class="text-2xl font-bold mb-4">Help & Formulas</h2>
+            <p class="mb-4">Remember these key relationships:</p>
+            <div class="space-y-2 text-lg bg-blue-50 p-4 rounded-md">
+                <p><strong>Total A</strong> = (A only) + (A and B)</p>
+                <p><strong>Total B</strong> = (B only) + (A and B)</p>
+                <p><strong>Grand Total</strong> = Sum of all 4 Venn regions</p>
+            </div>
+             <button onclick="toggleModal('helpModal')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="w-full max-w-5xl bg-white p-6 md:p-8 rounded-2xl shadow-lg">
+        <!-- Header: Title and Score -->
+        <header class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4 sm:mb-0">Venn to Two-Way Table Converter</h1>
+            <div class="flex space-x-4 text-center">
+                <div class="bg-blue-100 text-blue-800 p-3 rounded-lg">
+                    <div class="font-bold text-xl" id="score">0</div>
+                    <div class="text-sm">Solved</div>
+                </div>
+                <div class="bg-green-100 text-green-800 p-3 rounded-lg">
+                    <div class="font-bold text-xl" id="streak">0</div>
+                    <div class="text-sm">Streak</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Game Area -->
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            
+            <!-- Venn Diagram Side -->
+            <div class="flex flex-col items-center justify-center p-4">
+                 <h2 class="text-xl font-semibold mb-2 text-gray-600">Venn Diagram</h2>
+                <svg viewBox="0 0 400 300" class="w-full max-w-sm">
+                    <!-- Universal Set Box -->
+                    <rect x="1" y="1" width="398" height="298" fill="none" stroke="#9ca3af" stroke-width="2" rx="10"></rect>
+                    
+                    <!-- Circle A -->
+                    <circle cx="150" cy="150" r="100" fill="#93c5fd" fill-opacity="0.5" stroke="#3b82f6" stroke-width="2"></circle>
+                    <text x="150" y="50" font-size="20" font-weight="bold" fill="#1d4ed8" text-anchor="middle">A</text>
+                    
+                    <!-- Circle B -->
+                    <circle cx="250" cy="150" r="100" fill="#a7f3d0" fill-opacity="0.5" stroke="#10b981" stroke-width="2"></circle>
+                    <text x="250" y="50" font-size="20" font-weight="bold" fill="#047857" text-anchor="middle">B</text>
+
+                    <!-- Data Labels -->
+                    <text id="venn-a-only" x="110" y="155" font-size="28" font-weight="bold" fill="#1e3a8a" text-anchor="middle">?</text>
+                    <text id="venn-b-only" x="290" y="155" font-size="28" font-weight="bold" fill="#065f46" text-anchor="middle">?</text>
+                    <text id="venn-a-and-b" x="200" y="155" font-size="28" font-weight="bold" fill="#1e293b" text-anchor="middle">?</text>
+                    <text id="venn-neither" x="50" y="270" font-size="28" font-weight="bold" fill="#4b5563" text-anchor="middle">?</text>
+                </svg>
+            </div>
+
+            <!-- Two-Way Table Side -->
+            <div class="flex flex-col items-center justify-center p-4">
+                 <h2 class="text-xl font-semibold mb-2 text-gray-600">Two-Way Table</h2>
+                <table class="w-full max-w-sm border-separate border-spacing-1">
+                    <thead>
+                        <tr>
+                            <th class="p-2"></th>
+                            <th class="p-2 rounded-lg bg-blue-200 text-blue-800 font-bold">A</th>
+                            <th class="p-2 rounded-lg bg-gray-200 text-gray-800 font-bold">not A</th>
+                            <th class="p-2 rounded-lg bg-purple-200 text-purple-800 font-bold">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th class="p-2 rounded-lg bg-green-200 text-green-800 font-bold">B</th>
+                            <td><input type="number" id="cell-a-b" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></td>
+                            <td><input type="number" id="cell-nota-b" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></td>
+                            <td><input type="number" id="cell-total-b" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></td>
+                        </tr>
+                        <tr>
+                            <th class="p-2 rounded-lg bg-gray-200 text-gray-800 font-bold">not B</th>
+                             <td><input type="number" id="cell-a-notb" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></td>
+                            <td><input type="number" id="cell-nota-notb" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></td>
+                            <td><input type="number" id="cell-total-notb" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></td>
+                        </tr>
+                         <tr>
+                            <th class="p-2 rounded-lg bg-purple-200 text-purple-800 font-bold">Total</th>
+                             <td><input type="number" id="cell-total-a" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></td>
+                            <td><input type="number" id="cell-total-nota" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></td>
+                            <td><input type="number" id="cell-grand-total" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition font-extrabold"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+        
+        <!-- Footer: Feedback and Controls -->
+        <footer class="mt-6 text-center">
+            <div id="feedbackMessage" class="min-h-[2.5rem] flex items-center justify-center p-2 mb-4 text-lg font-semibold text-red-600"></div>
+            <div class="flex items-center justify-center space-x-4">
+                <button id="helpButton" onclick="toggleModal('helpModal')" class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition shadow">Help</button>
+                <button id="checkButton" class="px-8 py-4 text-xl font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed">Check Table</button>
+                <button id="howToPlayButton" onclick="toggleModal('howToPlayModal')" class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition shadow">How to Play</button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Element References ---
+            const dom = {
+                venn: {
+                    aOnly: document.getElementById('venn-a-only'),
+                    bOnly: document.getElementById('venn-b-only'),
+                    aAndB: document.getElementById('venn-a-and-b'),
+                    neither: document.getElementById('venn-neither'),
+                },
+                table: {
+                    a_b: document.getElementById('cell-a-b'),
+                    nota_b: document.getElementById('cell-nota-b'),
+                    total_b: document.getElementById('cell-total-b'),
+                    a_notb: document.getElementById('cell-a-notb'),
+                    nota_notb: document.getElementById('cell-nota-notb'),
+                    total_notb: document.getElementById('cell-total-notb'),
+                    total_a: document.getElementById('cell-total-a'),
+                    total_nota: document.getElementById('cell-total-nota'),
+                    grand_total: document.getElementById('cell-grand-total'),
+                },
+                ui: {
+                    checkButton: document.getElementById('checkButton'),
+                    feedbackMessage: document.getElementById('feedbackMessage'),
+                    score: document.getElementById('score'),
+                    streak: document.getElementById('streak'),
+                    confettiContainer: document.getElementById('confetti-container')
+                }
+            };
+
+            // --- Game State ---
+            let state = {
+                answers: {},
+                score: 0,
+                streak: 0,
+                gameStatus: 'playing', // 'playing' or 'all_correct'
+            };
+            
+            const tableInputs = Object.values(dom.table);
+
+            // --- Audio Context for Sounds ---
+            let audioCtx;
+            const initAudio = () => {
+                if (!audioCtx) {
+                    try {
+                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch (e) {
+                        console.error("Web Audio API is not supported in this browser");
+                    }
+                }
+            };
+            document.body.addEventListener('click', initAudio, { once: true });
+
+
+            function playSound(type) {
+                if (!audioCtx) return;
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                if (type === 'correct') {
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+                } else if (type === 'incorrect') {
+                    oscillator.type = 'square';
+                    oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+                } else if (type === 'win') {
+                    playSoundEffect(880, 0.1, 0.05, 'triangle');
+                    setTimeout(() => playSoundEffect(1046.5, 0.1, 0.05, 'triangle'), 100);
+                    setTimeout(() => playSoundEffect(1318.5, 0.15, 0.1, 'triangle'), 200);
+                }
+
+                if (type !== 'win') {
+                    oscillator.start();
+                    oscillator.stop(audioCtx.currentTime + 0.5);
+                }
+            }
+
+            function playSoundEffect(freq, duration, volume, type) {
+                if (!audioCtx) return;
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.type = type;
+                oscillator.frequency.value = freq;
+                gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + duration);
+            }
+
+            // --- Game Logic ---
+            function generateQuestion() {
+                // 1. Generate random values for Venn diagram regions
+                const aOnly = Math.floor(Math.random() * 41) + 5; // 5-45
+                const bOnly = Math.floor(Math.random() * 41) + 5;
+                const aAndB = Math.floor(Math.random() * 41) + 5;
+                const neither = Math.floor(Math.random() * 41) + 5;
+
+                // 2. Update Venn diagram display
+                dom.venn.aOnly.textContent = aOnly;
+                dom.venn.bOnly.textContent = bOnly;
+                dom.venn.aAndB.textContent = aAndB;
+                dom.venn.neither.textContent = neither;
+
+                // 3. Calculate and store correct table answers
+                state.answers = {
+                    a_b: aAndB,
+                    nota_b: bOnly,
+                    a_notb: aOnly,
+                    nota_notb: neither,
+                    total_a: aAndB + aOnly,
+                    total_b: aAndB + bOnly,
+                    total_nota: bOnly + neither,
+                    total_notb: aOnly + neither,
+                    grand_total: aOnly + bOnly + aAndB + neither,
+                };
+                
+                // 4. Reset UI
+                resetTable();
+                state.gameStatus = 'playing';
+                updateButtonState();
+            }
+
+            function resetTable() {
+                tableInputs.forEach(input => {
+                    input.value = '';
+                    input.readOnly = false;
+                    input.classList.remove('correct-cell', 'incorrect-cell');
+                });
+                dom.ui.feedbackMessage.textContent = '';
+                dom.ui.checkButton.textContent = 'Check Table';
+                dom.ui.checkButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+                dom.ui.checkButton.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+            }
+
+            function checkAllInputsFilled() {
+                const allFilled = tableInputs.every(input => input.value.trim() !== '');
+                dom.ui.checkButton.disabled = !allFilled;
+            }
+
+            function checkTable() {
+                let incorrectCount = 0;
+                let firstError = null;
+
+                // Mapping keys to feedback details
+                const feedbackMap = {
+                    'a_b': { type: 'Intersection', name: "'A and B'" },
+                    'nota_b': { type: 'Intersection', name: "'B only'" },
+                    'a_notb': { type: 'Intersection', name: "'A only'" },
+                    'nota_notb': { type: 'Intersection', name: "'Neither A nor B'" },
+                    'total_b': { type: 'Marginal Total', name: "'Row B'" },
+                    'total_notb': { type: 'Marginal Total', name: "'Row not B'" },
+                    'total_a': { type: 'Marginal Total', name: "'Column A'" },
+                    'total_nota': { type: 'Marginal Total', name: "'Column not A'" },
+                    'grand_total': { type: 'Grand Total' }
+                };
+
+                for (const key in dom.table) {
+                    const inputEl = dom.table[key];
+                    const userAnswer = parseInt(inputEl.value, 10);
+                    const correctAnswer = state.answers[key];
+
+                    inputEl.classList.remove('correct-cell', 'incorrect-cell');
+
+                    if (userAnswer === correctAnswer) {
+                        inputEl.classList.add('correct-cell');
+                        inputEl.readOnly = true;
+                    } else {
+                        inputEl.classList.add('incorrect-cell');
+                        inputEl.readOnly = false;
+                        incorrectCount++;
+                        if (!firstError) {
+                            firstError = feedbackMap[key];
+                        }
+                    }
+                }
+                
+                updateFeedback(incorrectCount, firstError);
+                updateScore(incorrectCount);
+                
+                if(incorrectCount === 0) {
+                   handleWin();
+                } else {
+                    playSound('incorrect');
+                }
+            }
+
+            function updateFeedback(incorrectCount, error) {
+                 if (incorrectCount > 0 && error) {
+                    if (error.type === 'Intersection') {
+                        dom.ui.feedbackMessage.textContent = `Check the value you transferred for the region ${error.name}.`;
+                    } else if (error.type === 'Marginal Total') {
+                        dom.ui.feedbackMessage.textContent = `Check your total for ${error.name}. Remember, totals are sums.`;
+                    } else if (error.type === 'Grand Total') {
+                        dom.ui.feedbackMessage.textContent = `Check your Grand Total. It's the sum of everything!`;
+                    }
+                } else {
+                    dom.ui.feedbackMessage.textContent = '';
+                }
+            }
+            
+            function updateScore(incorrectCount) {
+                if (incorrectCount > 0) {
+                    state.streak = 0;
+                } else {
+                    // Score is updated on win
+                }
+                dom.ui.streak.textContent = state.streak;
+            }
+            
+            function handleWin() {
+                state.gameStatus = 'all_correct';
+                state.score++;
+                state.streak++;
+                dom.ui.score.textContent = state.score;
+                dom.ui.streak.textContent = state.streak;
+                dom.ui.feedbackMessage.textContent = 'Congratulations! All correct!';
+                dom.ui.feedbackMessage.classList.add('text-green-600');
+                dom.ui.feedbackMessage.classList.remove('text-red-600');
+                
+                updateButtonState();
+                triggerConfetti();
+                playSound('win');
+            }
+            
+            function updateButtonState() {
+                if (state.gameStatus === 'all_correct') {
+                    dom.ui.checkButton.textContent = 'Next Question';
+                    dom.ui.checkButton.disabled = false;
+                    dom.ui.checkButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                    dom.ui.checkButton.classList.add('bg-green-600', 'hover:bg-green-700');
+                } else {
+                    dom.ui.checkButton.textContent = 'Check Table';
+                    dom.ui.feedbackMessage.classList.remove('text-green-600');
+                    dom.ui.feedbackMessage.classList.add('text-red-600');
+                    checkAllInputsFilled();
+                }
+            }
+
+            function triggerConfetti() {
+                const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6'];
+                for (let i = 0; i < 100; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.classList.add('confetti');
+                    confetti.style.left = `${Math.random() * 100}vw`;
+                    confetti.style.animationDelay = `${Math.random() * 2}s`;
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.transform = `translateY(-10vh) rotate(${Math.random() * 360}deg)`;
+                    dom.ui.confettiContainer.appendChild(confetti);
+                    
+                    setTimeout(() => {
+                        confetti.remove();
+                    }, 5000);
+                }
+            }
+
+            // --- Event Listeners ---
+            tableInputs.forEach(input => {
+                input.addEventListener('input', checkAllInputsFilled);
+            });
+
+            dom.ui.checkButton.addEventListener('click', () => {
+                if (state.gameStatus === 'playing') {
+                    checkTable();
+                } else if (state.gameStatus === 'all_correct') {
+                    generateQuestion();
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!dom.ui.checkButton.disabled) {
+                        dom.ui.checkButton.click();
+                    }
+                }
+                // Disable common developer tool shortcuts
+                if (e.key === 'F12' || 
+                   (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+                   (e.metaKey && e.altKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || // Cmd+Option+I/J/C for Mac
+                   (e.ctrlKey && e.key === 'U')) {
+                    e.preventDefault();
+                }
+            });
+
+            // Disable right-click context menu
+            document.addEventListener('contextmenu', event => event.preventDefault());
+            
+            // --- Initialisation ---
+            generateQuestion();
+        });
+
+        // --- Modal Control ---
+        function toggleModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.toggle('visible');
+        }
+
+    </script>
+</body>
+</html>
+

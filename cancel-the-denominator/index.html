@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraction Multiplier Game</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* Custom styles to apply the Inter font and for canvas */
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+        }
+        /* Style for the canvas to ensure it overlays everything */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allows clicks to go through the canvas */
+            z-index: 9999;
+        }
+        /* Custom styling for radio buttons for a better look */
+        .custom-radio-label {
+            transition: all 0.2s ease-in-out;
+        }
+        input[type="radio"]:checked + .custom-radio-label {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+            border-color: #4f46e5; /* indigo-600 */
+        }
+        /* Styling for the vertical fraction display */
+        .fraction {
+            display: inline-flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 0 0.5rem;
+            vertical-align: middle;
+        }
+        .fraction-bar {
+            width: 100%;
+            min-width: 40px;
+            border-top: 2px solid #1e1b4b; /* slate-900 */
+            margin: 2px 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Canvas for the confetti animation -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Main Game Container -->
+    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-6 md:p-10 text-center space-y-6">
+        
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Fraction Multiplier Game</h1>
+        <p class="text-gray-600">Master the art of multiplying a fraction by its denominator!</p>
+        
+        <!-- Scoreboard -->
+        <div class="flex justify-center gap-6 text-lg">
+            <div>
+                <span class="font-semibold text-gray-700">Correct:</span>
+                <span id="correct-score" class="font-bold text-indigo-600">0</span>
+            </div>
+            <div>
+                <span class="font-semibold text-gray-700">Streak:</span>
+                <span id="streak-score" class="font-bold text-green-600">0</span>
+            </div>
+        </div>
+
+        <!-- Question Type Switch -->
+        <div class="flex justify-center items-center gap-4 pt-4">
+            <span class="font-medium text-gray-700">Question Type:</span>
+            <div class="flex rounded-lg border border-gray-300 p-1">
+                <input type="radio" id="mode-numbers" name="gameMode" value="numbers" class="sr-only" checked>
+                <label for="mode-numbers" class="custom-radio-label cursor-pointer rounded-md px-4 py-2 text-sm font-medium">Pure Numbers</label>
+                
+                <input type="radio" id="mode-algebra" name="gameMode" value="algebra" class="sr-only">
+                <label for="mode-algebra" class="custom-radio-label cursor-pointer rounded-md px-4 py-2 text-sm font-medium">Algebra</label>
+            </div>
+        </div>
+
+        <!-- Question Display -->
+        <div id="question-container" class="bg-indigo-50 rounded-xl p-8 my-4 flex items-center justify-center min-h-[120px]">
+            <div id="question-text" class="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter flex items-center justify-center gap-x-3 sm:gap-x-4"></div>
+        </div>
+
+        <!-- Answer Input -->
+        <div class="relative">
+            <input type="text" id="answer-input" class="w-full max-w-md mx-auto text-2xl text-center p-4 rounded-xl border-2 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 transition" placeholder="Type your answer here...">
+        </div>
+
+        <!-- Feedback Message -->
+        <div id="feedback-container" class="h-12 flex items-center justify-center">
+            <p id="feedback-message" class="text-xl font-medium transition-opacity duration-300 opacity-0"></p>
+        </div>
+
+        <!-- Instructions Section -->
+        <div class="pt-4 text-left text-gray-600 bg-gray-50 p-4 rounded-lg">
+            <h2 class="font-bold text-lg text-gray-800 mb-2">How to Play</h2>
+            <ul class="list-disc list-inside space-y-1">
+                <li>Type your answer in the box and press <kbd class="px-2 py-1.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg">Enter</kbd>.</li>
+                <li>If correct, press <kbd class="px-2 py-1.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg">Enter</kbd> again for the next question.</li>
+                <li>The rule is: Multiplying by the denominator cancels it out, leaving the numerator.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Element References ---
+            const questionText = document.getElementById('question-text');
+            const answerInput = document.getElementById('answer-input');
+            const feedbackMessage = document.getElementById('feedback-message');
+            const correctScoreEl = document.getElementById('correct-score');
+            const streakScoreEl = document.getElementById('streak-score');
+            const modeSwitches = document.querySelectorAll('input[name="gameMode"]');
+            const confettiCanvas = document.getElementById('confetti-canvas');
+            const ctx = confettiCanvas.getContext('2d');
+
+            // --- Game State Variables ---
+            let currentAnswer = null;
+            let correctCount = 0;
+            let streakCount = 0;
+            let gameMode = 'numbers'; // 'numbers' or 'algebra'
+            let isAnsweredCorrectly = false; // Manages the "Enter to continue" flow
+            let questionCounter = 0; // Tracks question number for the 1-in-5 rule
+
+            // --- Helper Functions ---
+            function gcd(a, b) {
+                return b === 0 ? a : gcd(b, a % b);
+            }
+
+            // --- Web Audio API for Sound Effects ---
+            let audioCtx;
+            function initAudio() {
+                if (!audioCtx) {
+                    try {
+                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch(e) {
+                        console.error("Web Audio API is not supported in this browser");
+                    }
+                }
+            }
+            document.body.addEventListener('click', initAudio, { once: true });
+            document.body.addEventListener('keydown', initAudio, { once: true });
+
+            function playSound(type) {
+                if (!audioCtx) return;
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.01);
+                if (type === 'correct') {
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+                } else { // incorrect
+                    oscillator.type = 'square';
+                    oscillator.frequency.setValueAtTime(164.81, audioCtx.currentTime); // E3
+                    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+                }
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.5);
+            }
+            
+            // --- Confetti Animation ---
+            let confettiParticles = [];
+            function triggerConfetti() {
+                confettiCanvas.width = window.innerWidth;
+                confettiCanvas.height = window.innerHeight;
+                const colors = ['#4f46e5', '#818cf8', '#a78bfa', '#34d399', '#fde047'];
+                for (let i = 0; i < 150; i++) {
+                    confettiParticles.push({
+                        x: confettiCanvas.width / 2,
+                        y: confettiCanvas.height / 2,
+                        size: Math.random() * 5 + 2,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        vx: (Math.random() - 0.5) * 25,
+                        vy: (Math.random() - 0.7) * 25,
+                        life: 100,
+                    });
+                }
+                if (confettiParticles.length > 0) animateConfetti();
+            }
+
+            function animateConfetti() {
+                ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+                confettiParticles.forEach((p, i) => {
+                    p.vy += 0.5; p.x += p.vx; p.y += p.vy; p.life--;
+                    if (p.life <= 0) {
+                        confettiParticles.splice(i, 1);
+                    } else {
+                        ctx.fillStyle = p.color;
+                        ctx.globalAlpha = p.life / 100;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                    }
+                });
+                if (confettiParticles.length > 0) {
+                    requestAnimationFrame(animateConfetti);
+                } else {
+                    ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+                }
+            }
+
+            // --- Core Game Logic ---
+            function generateQuestion() {
+                questionCounter++; // Increment for each new question
+                
+                const isMultipleQuestion = (questionCounter % 5 === 0); // Exactly 1 in 5 questions
+                let denominator;
+
+                if (isMultipleQuestion) {
+                    // When it's a multiple question, denominator must be < 11 (i.e., 2 to 10)
+                    denominator = Math.floor(Math.random() * 9) + 2;
+                } else {
+                    // For standard questions, use the original wider range
+                    denominator = Math.floor(Math.random() * 18) + 2; // b from 2 to 19
+                }
+
+                let numeratorStr;
+                let multiplier;
+                
+                const k = isMultipleQuestion ? Math.floor(Math.random() * 4) + 2 : 1; // Multiplier k from 2 to 5
+                multiplier = k * denominator;
+
+                if (gameMode === 'numbers') {
+                    let numerator;
+                    if (isMultipleQuestion) {
+                        do {
+                            numerator = Math.floor(Math.random() * 20) + 1;
+                        } while (gcd(numerator, denominator) !== 1);
+                    } else {
+                        numerator = Math.floor(Math.random() * 20) + 1;
+                    }
+                    numeratorStr = numerator.toString();
+                    currentAnswer = (numerator * k).toString();
+                } else { // algebra mode
+                    const algebraType = Math.random();
+                    // For two-term algebra, we avoid the multiple question type to keep it simple
+                    if (isMultipleQuestion && algebraType < 0.5) { // Single term, multiple question
+                        const variable = ['x', 'y', 'z', 'n', 'p'][Math.floor(Math.random() * 5)];
+                        let coeff;
+                        let baseCoeff;
+
+                        do {
+                            coeff = Math.floor(Math.random() * 10) - 4; // -4 to 5
+                            if (coeff === 0 || coeff === 1) { baseCoeff = 1; }
+                            else if (coeff === -1) { baseCoeff = -1; }
+                            else { baseCoeff = coeff; }
+                        } while (gcd(Math.abs(baseCoeff), denominator) !== 1);
+                        
+                        if (baseCoeff === 1) { numeratorStr = variable; }
+                        else if (baseCoeff === -1) { numeratorStr = `-${variable}`; }
+                        else { numeratorStr = `${baseCoeff}${variable}`; }
+                        
+                        const finalCoeff = baseCoeff * k;
+                        if (finalCoeff === 1) { currentAnswer = variable; }
+                        else if (finalCoeff === -1) { currentAnswer = `-${variable}`; }
+                        else { currentAnswer = `${finalCoeff}${variable}`; }
+
+                    } else { // Standard question (single or two-term)
+                        multiplier = denominator; // Override multiplier back to 1*b
+                        if (algebraType < 0.5) { // Standard single term
+                            const coeff = Math.floor(Math.random() * 10) - 4;
+                            const variable = ['x', 'y', 'z', 'n', 'p'][Math.floor(Math.random() * 5)];
+                            if (coeff === 0 || coeff === 1) { numeratorStr = variable; }
+                            else if (coeff === -1) { numeratorStr = `-${variable}`; }
+                            else { numeratorStr = `${coeff}${variable}`; }
+                            currentAnswer = numeratorStr;
+                        } else { // Standard two-term
+                            const coeff = Math.floor(Math.random() * 12) + 2;
+                            const variable = ['a', 'b', 'c', 'm', 'n'][Math.floor(Math.random() * 5)];
+                            const constant = Math.floor(Math.random() * 15) + 1;
+                            const operator = Math.random() < 0.5 ? '+' : '-';
+                            const term1 = `${coeff}${variable}`;
+                            const term2 = constant.toString();
+                            numeratorStr = `${term1} ${operator} ${term2}`;
+                            currentAnswer = numeratorStr;
+                        }
+                    }
+                }
+                
+                // Build the question display with vertical fraction
+                questionText.innerHTML = `
+                    <div class="fraction">
+                        <span class="numerator">${numeratorStr}</span>
+                        <div class="fraction-bar"></div>
+                        <span class="denominator">${denominator}</span>
+                    </div>
+                    <span class="operator">&times;</span>
+                    <span class="multiplier">${multiplier}</span>
+                `;
+            }
+
+            function checkAnswer() {
+                const userAnswer = answerInput.value.trim();
+                if (userAnswer === '') return;
+
+                // Normalize both answers by removing all whitespace for robust comparison
+                const normalizedUserAnswer = userAnswer.replace(/\s/g, '');
+                const normalizedCorrectAnswer = currentAnswer.replace(/\s/g, '');
+
+                if (normalizedUserAnswer === normalizedCorrectAnswer) {
+                    handleCorrectAnswer();
+                } else {
+                    handleIncorrectAnswer();
+                }
+            }
+
+            function handleCorrectAnswer() {
+                isAnsweredCorrectly = true;
+                correctCount++;
+                streakCount++;
+                playSound('correct');
+                triggerConfetti();
+
+                feedbackMessage.textContent = 'Correct! Press Enter to continue.';
+                feedbackMessage.classList.remove('text-red-500');
+                feedbackMessage.classList.add('text-green-600');
+                feedbackMessage.style.opacity = 1;
+
+                answerInput.disabled = true;
+                answerInput.classList.add('bg-green-100', 'border-green-400');
+                updateScores();
+            }
+
+            function handleIncorrectAnswer() {
+                streakCount = 0;
+                playSound('incorrect');
+                const hints = [
+                    "Remember, multiplying by the denominator cancels it out.",
+                    "You are left with just the numerator! Re-examine the question.",
+                    "Focus on the expression at the top of the fraction."
+                ];
+                const randomHint = hints[Math.floor(Math.random() * hints.length)];
+                feedbackMessage.innerHTML = `Incorrect. <span class="block text-base text-gray-500 mt-1">${randomHint}</span>`;
+                feedbackMessage.classList.remove('text-green-600');
+                feedbackMessage.classList.add('text-red-500');
+                feedbackMessage.style.opacity = 1;
+                answerInput.classList.add('animate-shake');
+                setTimeout(() => answerInput.classList.remove('animate-shake'), 500);
+                updateScores();
+            }
+
+            function nextQuestion() {
+                isAnsweredCorrectly = false;
+                feedbackMessage.style.opacity = 0;
+                answerInput.value = '';
+                answerInput.disabled = false;
+                answerInput.classList.remove('bg-green-100', 'border-green-400');
+                answerInput.focus();
+                generateQuestion();
+            }
+
+            function updateScores() {
+                correctScoreEl.textContent = correctCount;
+                streakScoreEl.textContent = streakCount;
+            }
+
+            function resetGame() {
+                correctCount = 0;
+                streakCount = 0;
+                questionCounter = 0; // Reset the 1-in-5 counter
+                updateScores(); // This now correctly updates the UI to 0
+                nextQuestion();
+            }
+
+            // --- Event Listeners ---
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter') return;
+                
+                if (isAnsweredCorrectly) {
+                    e.preventDefault();
+                    nextQuestion();
+                } 
+                else if (document.activeElement === answerInput) {
+                    e.preventDefault();
+                    checkAnswer();
+                }
+            });
+
+            modeSwitches.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    gameMode = e.target.value;
+                    resetGame();
+                });
+            });
+
+            // --- Initialisation ---
+            nextQuestion();
+        });
+    </script>
+
+    <!-- Basic shake animation for incorrect answers -->
+    <style>
+        @keyframes shake {
+            10%, 90% { transform: translateX(-1px); }
+            20%, 80% { transform: translateX(2px); }
+            30%, 50%, 70% { transform: translateX(-4px); }
+            40%, 60% { transform: translateX(4px); }
+        }
+        .animate-shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+    </style>
+
+</body>
+</html>

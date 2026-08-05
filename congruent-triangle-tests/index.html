@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Triangle Builder: SSS, SAS, AAS, ASA, RHS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; touch-action: none; user-select: none; }
+        canvas { cursor: crosshair; touch-action: none; }
+        .btn-action { transition: all 0.2s; }
+        .btn-action:active { transform: scale(0.95); }
+        
+        /* Modal Animation */
+        .modal { transition: opacity 0.3s ease-in-out; opacity: 0; pointer-events: none; }
+        .modal.active { opacity: 1; pointer-events: auto; }
+        
+        .mode-btn { @apply px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all whitespace-nowrap shadow-sm border border-transparent; }
+        .mode-btn.active { @apply bg-white text-indigo-600 shadow-md border-indigo-100 ring-2 ring-indigo-50; }
+        .mode-btn.inactive { @apply bg-slate-100 text-slate-500 hover:bg-white hover:text-indigo-500 hover:shadow-sm; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- Navbar / Header -->
+    <header class="bg-white shadow-sm p-4 flex flex-col md:flex-row justify-between items-center z-10 shrink-0 gap-4">
+        <div class="flex items-center gap-3 w-full md:w-auto justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 text-white p-2 rounded-lg font-bold text-xl shadow-indigo-200 shadow-lg">TriBuild</div>
+                <h1 class="text-lg font-semibold hidden lg:block text-slate-700">Congruence Builder</h1>
+            </div>
+            <!-- Mobile Help Button -->
+            <button onclick="app.toggleInstructions()" class="md:hidden text-slate-400 hover:text-indigo-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg>
+            </button>
+        </div>
+        
+        <!-- Mode Switcher -->
+        <div class="flex w-full md:w-auto overflow-x-auto pb-2 md:pb-0 no-scrollbar justify-start md:justify-center">
+            <div class="flex gap-2 p-1">
+                <button id="btnModeSSS" class="mode-btn" onclick="app.setMode('SSS')">SSS</button>
+                <button id="btnModeSAS" class="mode-btn" onclick="app.setMode('SAS')">SAS</button>
+                <button id="btnModeAAS" class="mode-btn" onclick="app.setMode('AAS')">AAS</button>
+                <button id="btnModeASA" class="mode-btn" onclick="app.setMode('ASA')">ASA</button>
+                <button id="btnModeRHS" class="mode-btn" onclick="app.setMode('RHS')">RHS</button>
+            </div>
+            <button onclick="app.toggleInstructions()" class="hidden md:block text-slate-400 hover:text-indigo-600 ml-4 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex flex-col md:flex-row relative overflow-hidden">
+        
+        <!-- Canvas Container -->
+        <div class="flex-1 relative bg-slate-200" id="canvasContainer">
+            <canvas id="mainCanvas" class="absolute top-0 left-0 w-full h-full block"></canvas>
+            
+            <!-- Canvas Overlay UI -->
+            <div class="absolute top-4 left-4 bg-white/90 backdrop-blur p-4 rounded-2xl shadow-lg border border-slate-200 max-w-xs pointer-events-none select-none z-10">
+                <h3 id="modeTitle" class="font-bold text-indigo-700 text-lg">SSS Construction</h3>
+                <p id="modeDesc" class="text-sm text-slate-500 mt-1 leading-tight">Drag the sides to connect endpoints.</p>
+            </div>
+
+            <!-- Celebration Overlay -->
+            <canvas id="confettiCanvas" class="absolute top-0 left-0 w-full h-full pointer-events-none z-50"></canvas>
+        </div>
+
+        <!-- Right Control Panel -->
+        <aside class="w-full md:w-80 bg-white border-l border-slate-200 p-6 flex flex-col gap-6 shrink-0 shadow-xl z-20 overflow-y-auto h-1/3 md:h-auto border-t md:border-t-0">
+            
+            <!-- Feedback Section -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-inner">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Feedback</h4>
+                <div id="feedbackMessage" class="text-sm text-slate-700 font-medium min-h-[3rem]">
+                    Start by dragging the longest side to the center, then connect the others!
+                </div>
+            </div>
+
+            <!-- Tools -->
+            <div class="space-y-3">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tools</h4>
+                
+                <button id="btnComplete" onclick="app.attemptCompletion()" class="btn-action w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed hidden transition-colors">
+                    Complete Triangle
+                </button>
+                
+                <button onclick="app.checkCongruence()" class="btn-action w-full bg-slate-800 hover:bg-slate-900 text-white py-3.5 rounded-xl font-bold shadow-lg transition-colors">
+                    Check Answer
+                </button>
+                
+                <button onclick="app.reset()" class="text-xs text-slate-400 underline hover:text-slate-600 w-full text-center mt-2 py-2">Reset Canvas</button>
+            </div>
+
+            <!-- Educational Context -->
+            <div class="mt-auto bg-blue-50 p-4 rounded-xl border border-blue-100 text-xs text-blue-800 hidden md:block">
+                <strong>Math Fact:</strong> <span id="mathFact">In SSS, knowing just 3 side lengths forces the triangle to be rigid. It cannot change shape!</span>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Instruction Modal -->
+    <div id="instructionModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto transform transition-all">
+            <div class="flex justify-between items-start mb-6">
+                <h2 class="text-2xl font-bold text-slate-800">How to Construct</h2>
+                <button onclick="app.toggleInstructions()" class="text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full p-1 hover:bg-slate-200 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="space-y-6 text-sm text-slate-600">
+                <div class="bg-indigo-50 p-4 rounded-xl">
+                    <h3 class="font-bold text-indigo-700 mb-2 text-base">SSS (Side-Side-Side)</h3>
+                    <p>Drag the ends of the 3 lines. They will snap together magnetically. Connect all 3 to form a closed triangle.</p>
+                </div>
+                
+                <div>
+                    <h3 class="font-bold text-slate-800 mb-1">SAS (Side-Angle-Side)</h3>
+                    <p>Place the 30&deg; Angle. Snap the 4u and 8u sides to the vertex. Drag the angle tips to rotate it.</p>
+                </div>
+                <hr class="border-slate-100">
+                <div>
+                    <h3 class="font-bold text-slate-800 mb-1">ASA (Angle-Side-Angle)</h3>
+                    <p>Attach both angles (45&deg; and 60&deg;) to the ENDS of the 10u side. The intersection determines the 3rd vertex.</p>
+                </div>
+                <hr class="border-slate-100">
+                <div>
+                    <h3 class="font-bold text-slate-800 mb-1">AAS (Angle-Angle-Side)</h3>
+                    <p>Attach one angle to the side. Place the other angle floating in space (representing the opposite angle). Align arms to form the triangle.</p>
+                </div>
+                <hr class="border-slate-100">
+                <div>
+                    <h3 class="font-bold text-slate-800 mb-1">RHS (Right-Hypotenuse-Side)</h3>
+                    <p>Place the 90&deg; Angle. Snap the 6u Side to the vertex. Snap the 10u Hypotenuse to the end of the 6u side.</p>
+                </div>
+            </div>
+            
+            <button onclick="app.toggleInstructions()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all">Got it!</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Audio System
+         */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const Sound = {
+            playTone: (freq, type, duration, vol=0.1) => {
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            },
+            snap: () => Sound.playTone(600, 'sine', 0.1, 0.1),
+            magnetic: () => Sound.playTone(300, 'sine', 0.1, 0.02),
+            success: () => {
+                Sound.playTone(400, 'sine', 0.1);
+                setTimeout(() => Sound.playTone(600, 'sine', 0.1), 100);
+                setTimeout(() => Sound.playTone(800, 'sine', 0.2), 200);
+            },
+            error: () => {
+                Sound.playTone(150, 'sawtooth', 0.1);
+                setTimeout(() => Sound.playTone(100, 'sawtooth', 0.1), 100);
+            }
+        };
+
+        /**
+         * Geometry Classes
+         */
+        class Point {
+            constructor(x, y) { this.x = x; this.y = y; }
+            dist(p) { return Math.hypot(this.x - p.x, this.y - p.y); }
+        }
+
+        class Segment {
+            constructor(length, color, label, x, y) {
+                this.type = 'segment';
+                this.length = length;
+                this.pixelLength = length * 40; 
+                this.color = color;
+                this.label = label;
+                this.p1 = new Point(x, y);
+                this.p2 = new Point(x + this.pixelLength, y);
+                this.angle = 0;
+                this.isFixed = false; 
+            }
+
+            draw(ctx, isSelected, isGhost=false) {
+                ctx.save();
+                if(isGhost) {
+                    ctx.globalAlpha = 0.3;
+                    ctx.setLineDash([5, 5]);
+                }
+                
+                // Selection halo
+                if(isSelected && !isGhost) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'rgba(99, 102, 241, 0.2)';
+                    ctx.lineWidth = 16;
+                    ctx.lineCap = 'round';
+                    ctx.moveTo(this.p1.x, this.p1.y);
+                    ctx.lineTo(this.p2.x, this.p2.y);
+                    ctx.stroke();
+                }
+
+                ctx.beginPath();
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = isSelected ? 8 : 6;
+                ctx.lineCap = 'round';
+                ctx.moveTo(this.p1.x, this.p1.y);
+                ctx.lineTo(this.p2.x, this.p2.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Labels
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 14px Inter';
+                const midX = (this.p1.x + this.p2.x) / 2;
+                const midY = (this.p1.y + this.p2.y) / 2;
+                ctx.fillText(this.label, midX + 10, midY - 10);
+
+                // Endpoints
+                if(!this.isFixed && !isGhost) {
+                    this.drawEndpoint(ctx, this.p1);
+                    this.drawEndpoint(ctx, this.p2);
+                }
+                ctx.restore();
+            }
+
+            drawEndpoint(ctx, p) {
+                ctx.beginPath();
+                ctx.fillStyle = 'white';
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 2;
+                ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            translate(dx, dy) {
+                this.p1.x += dx; this.p1.y += dy;
+                this.p2.x += dx; this.p2.y += dy;
+            }
+
+            dragPoint(which, nx, ny) {
+                const anchor = which === 1 ? this.p2 : this.p1;
+                const moving = which === 1 ? this.p1 : this.p2;
+                const dx = nx - anchor.x;
+                const dy = ny - anchor.y;
+                this.angle = Math.atan2(dy, dx);
+                moving.x = anchor.x + Math.cos(this.angle) * this.pixelLength;
+                moving.y = anchor.y + Math.sin(this.angle) * this.pixelLength;
+            }
+
+            rotate(deg) {
+                this.angle += deg * Math.PI / 180;
+                const midX = (this.p1.x + this.p2.x) / 2;
+                const midY = (this.p1.y + this.p2.y) / 2;
+                const update = (p) => {
+                    const dx = p.x - midX;
+                    const dy = p.y - midY;
+                    const rad = deg * Math.PI / 180;
+                    p.x = midX + dx * Math.cos(rad) - dy * Math.sin(rad);
+                    p.y = midY + dx * Math.sin(rad) + dy * Math.cos(rad);
+                };
+                update(this.p1);
+                update(this.p2);
+            }
+            
+            isInBounds(w, h, pad) {
+                return (
+                    this.p1.x >= pad && this.p1.x <= w - pad &&
+                    this.p1.y >= pad && this.p1.y <= h - pad &&
+                    this.p2.x >= pad && this.p2.x <= w - pad &&
+                    this.p2.y >= pad && this.p2.y <= h - pad
+                );
+            }
+        }
+
+        class AngleTool {
+            constructor(x, y, degrees=30) {
+                this.type = 'angle';
+                this.vertex = new Point(x, y);
+                this.rotation = 0; 
+                this.value = degrees; 
+                this.arm1Len = 100;
+                this.arm2Len = 100;
+            }
+
+            draw(ctx, isSelected) {
+                ctx.save();
+                ctx.translate(this.vertex.x, this.vertex.y);
+                ctx.rotate(this.rotation);
+
+                if (this.value === 90) {
+                    // Draw Square for 90 degrees
+                    const sqSize = 25;
+                    ctx.beginPath();
+                    ctx.moveTo(sqSize, 0);
+                    ctx.lineTo(sqSize, sqSize);
+                    ctx.lineTo(0, sqSize);
+                    ctx.strokeStyle = isSelected ? '#4338ca' : '#6366f1';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    ctx.lineTo(0, 0); // close for fill
+                    ctx.fillStyle = isSelected ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.15)';
+                    ctx.fill();
+                } else {
+                    // Draw Arc for other angles
+                    ctx.beginPath();
+                    ctx.moveTo(0,0);
+                    ctx.arc(0, 0, 50, 0, this.value * Math.PI/180);
+                    ctx.lineTo(0,0);
+                    ctx.fillStyle = isSelected ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.15)';
+                    ctx.fill();
+                }
+
+                // Arms
+                const baseSize = 100;
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = isSelected ? '#4338ca' : '#6366f1';
+
+                // Arm 1
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(baseSize, 0);
+                ctx.stroke();
+
+                if (this.arm1Len > baseSize) {
+                    ctx.beginPath();
+                    ctx.setLineDash([6, 4]);
+                    ctx.moveTo(baseSize, 0);
+                    ctx.lineTo(this.arm1Len, 0);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // Arm 2
+                const rad2 = this.value * Math.PI/180;
+                const cos2 = Math.cos(rad2);
+                const sin2 = Math.sin(rad2);
+                
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(baseSize * cos2, baseSize * sin2);
+                ctx.stroke();
+
+                if (this.arm2Len > baseSize) {
+                    ctx.beginPath();
+                    ctx.setLineDash([6, 4]);
+                    ctx.moveTo(baseSize * cos2, baseSize * sin2);
+                    ctx.lineTo(this.arm2Len * cos2, this.arm2Len * sin2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // Handles (Tips of arms)
+                this.drawHandle(ctx, this.arm1Len, 0);
+                this.drawHandle(ctx, this.arm2Len * cos2, this.arm2Len * sin2);
+
+                // Text
+                if(this.value !== 90) {
+                    ctx.fillStyle = '#312e81';
+                    ctx.font = 'bold 12px Inter';
+                    const midAng = (this.value/2) * Math.PI/180;
+                    ctx.fillText(this.value + "°", Math.cos(midAng)*60, Math.sin(midAng)*60);
+                }
+
+                // Vertex
+                ctx.beginPath();
+                ctx.fillStyle = '#4338ca';
+                ctx.arc(0, 0, 5, 0, Math.PI*2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            drawHandle(ctx, x, y) {
+                ctx.beginPath();
+                ctx.fillStyle = 'white';
+                ctx.strokeStyle = '#4338ca';
+                ctx.lineWidth = 2;
+                ctx.arc(x, y, 5, 0, Math.PI*2);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            translate(dx, dy) {
+                this.vertex.x += dx;
+                this.vertex.y += dy;
+            }
+
+            rotate(deg) {
+                this.rotation += deg * Math.PI / 180;
+            }
+            
+            isInBounds(w, h, pad) {
+                // Check vertex
+                if (this.vertex.x < pad || this.vertex.x > w - pad || this.vertex.y < pad || this.vertex.y > h - pad) return false;
+                
+                // Check Arm 1 tip
+                const a1x = this.vertex.x + Math.cos(this.rotation) * this.arm1Len;
+                const a1y = this.vertex.y + Math.sin(this.rotation) * this.arm1Len;
+                if (a1x < pad || a1x > w - pad || a1y < pad || a1y > h - pad) return false;
+
+                // Check Arm 2 tip
+                const rad2 = this.rotation + this.value * Math.PI / 180;
+                const a2x = this.vertex.x + Math.cos(rad2) * this.arm2Len;
+                const a2y = this.vertex.y + Math.sin(rad2) * this.arm2Len;
+                if (a2x < pad || a2x > w - pad || a2y < pad || a2y > h - pad) return false;
+
+                return true;
+            }
+        }
+
+        /**
+         * Main Logic
+         */
+        const app = {
+            canvas: document.getElementById('mainCanvas'),
+            ctx: null,
+            mode: 'SSS',
+            components: [],
+            draggedItems: [],
+            selectedItem: null,
+            lastMouse: { x: 0, y: 0 },
+            snapThreshold: 25, 
+            scale: 40,
+            ghostSnap: null, 
+
+            init() {
+                this.ctx = this.canvas.getContext('2d');
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                
+                // Mouse
+                this.canvas.addEventListener('mousedown', e => this.handleStart(this.getPos(e)));
+                window.addEventListener('mousemove', e => this.handleMove(this.getPos(e)));
+                window.addEventListener('mouseup', () => this.handleEnd());
+                
+                // Touch
+                this.canvas.addEventListener('touchstart', e => { e.preventDefault(); this.handleStart(this.getPos(e.touches[0])); }, {passive:false});
+                window.addEventListener('touchmove', e => { e.preventDefault(); this.handleMove(this.getPos(e.touches[0])); }, {passive:false});
+                window.addEventListener('touchend', () => this.handleEnd());
+
+                this.setMode('SSS');
+                this.loop();
+            },
+
+            resize() {
+                const r = document.getElementById('canvasContainer').getBoundingClientRect();
+                this.canvas.width = r.width;
+                this.canvas.height = r.height;
+            },
+
+            getPos(e) {
+                const r = this.canvas.getBoundingClientRect();
+                return { x: e.clientX - r.left, y: e.clientY - r.top };
+            },
+
+            setMode(m) {
+                this.mode = m;
+                ['SSS','SAS','AAS', 'ASA', 'RHS'].forEach(x => {
+                    const btn = document.getElementById('btnMode'+x);
+                    btn.className = (x === m) ? "mode-btn active" : "mode-btn inactive";
+                });
+
+                const titles = {
+                    'SSS': 'SSS Construction',
+                    'SAS': 'SAS Construction',
+                    'AAS': 'AAS Construction',
+                    'ASA': 'ASA Construction',
+                    'RHS': 'RHS Construction'
+                };
+                const descs = {
+                    'SSS': 'Connect 3 sides (4, 8, 10) to form a triangle.',
+                    'SAS': 'Snap sides (4, 8) to the 30° Angle.',
+                    'AAS': '1 side, 2 angles. One angle is opposite the side.',
+                    'ASA': '1 side, 2 angles. The side is INCLUDED between the angles.',
+                    'RHS': 'Snap Leg (6u) and Hypotenuse (10u) to 90° Angle.'
+                };
+                const facts = {
+                    'SSS': '3 sides force a rigid triangle.',
+                    'SAS': '2 sides and included angle lock the shape.',
+                    'AAS': 'Note: In exams, ASA is often categorized under AAS because 2 angles prove the 3rd.',
+                    'ASA': 'Textbooks often group ASA under AAS. If you know 2 angles, you know all 3.',
+                    'RHS': 'Right angle, Hypotenuse, and Side imply the third side (Pythagoras).'
+                };
+
+                document.getElementById('modeTitle').innerText = titles[m];
+                document.getElementById('modeDesc').innerText = descs[m];
+                document.getElementById('mathFact').innerText = facts[m];
+                document.getElementById('btnComplete').style.display = (m !== 'SSS') ? 'block' : 'none';
+
+                this.reset();
+            },
+
+            createSafeSegment(length, color, label) {
+                const padding = 40;
+                const w = this.canvas.width;
+                const h = this.canvas.height;
+                for(let i=0; i<50; i++) {
+                    const x = padding + Math.random() * (w - 2*padding);
+                    const y = padding + Math.random() * (h - 2*padding);
+                    const rot = Math.random() * 360;
+                    const s = new Segment(length, color, label, x, y);
+                    s.rotate(rot); 
+                    if(s.isInBounds(w, h, padding)) return s;
+                }
+                return new Segment(length, color, label, w/2 - (length*40)/2, h/2);
+            },
+
+            createSafeAngle(degrees) {
+                const padding = 40;
+                const w = this.canvas.width;
+                const h = this.canvas.height;
+                for(let i=0; i<50; i++) {
+                    const x = padding + Math.random() * (w - 2*padding);
+                    const y = padding + Math.random() * (h - 2*padding);
+                    const rot = Math.random() * 360;
+                    const a = new AngleTool(x, y, degrees);
+                    a.rotation = rot * Math.PI / 180;
+                    if(a.isInBounds(w, h, padding)) return a;
+                }
+                return new AngleTool(w/2, h/2, degrees);
+            },
+
+            reset() {
+                this.components = [];
+                this.selectedItem = null; 
+                const fb = document.getElementById('feedbackMessage');
+
+                if (this.mode === 'SSS') {
+                    this.components.push(this.createSafeSegment(10, '#ef4444', '10u'));
+                    this.components.push(this.createSafeSegment(8, '#3b82f6', '8u'));
+                    this.components.push(this.createSafeSegment(4, '#10b981', '4u'));
+                    fb.innerText = "SSS: Drag sides to connect endpoints.";
+                } 
+                else if (this.mode === 'SAS') {
+                    this.components.push(this.createSafeAngle(30));
+                    this.components.push(this.createSafeSegment(8, '#3b82f6', '8u'));
+                    this.components.push(this.createSafeSegment(4, '#10b981', '4u'));
+                    fb.innerText = "SAS: Snap sides to the Angle vertex and align with arms.";
+                }
+                else if (this.mode === 'AAS' || this.mode === 'ASA') {
+                    this.components.push(this.createSafeSegment(10, '#ef4444', '10u'));
+                    this.components.push(this.createSafeAngle(45));
+                    this.components.push(this.createSafeAngle(60));
+                    if(this.mode === 'AAS') fb.innerText = "AAS: Attach 1 angle to the side, keep other opposite. Align arms to intersect.";
+                    else fb.innerText = "ASA: Snap BOTH angles to the endpoints of the side.";
+                }
+                else if (this.mode === 'RHS') {
+                    this.components.push(this.createSafeAngle(90));
+                    this.components.push(this.createSafeSegment(6, '#10b981', '6u (Leg)'));
+                    this.components.push(this.createSafeSegment(10, '#ef4444', '10u (Hyp)'));
+                    fb.innerText = "RHS: Snap Leg and Hypotenuse to the 90° Angle.";
+                }
+            },
+
+            handleStart(m) {
+                this.lastMouse = m;
+                this.draggedItems = [];
+                let bestTarget = null;
+                let minDst = Infinity;
+
+                for(let i = 0; i < this.components.length; i++) {
+                    const c = this.components[i];
+                    if(c.isFixed) continue;
+
+                    let dst = Infinity;
+                    let handle = -1;
+
+                    if(c.type === 'segment') {
+                        const d1 = c.p1.dist(m);
+                        const d2 = c.p2.dist(m);
+                        const dBody = this.distToSeg(m, c.p1, c.p2);
+                        
+                        // Priority: Endpoints (subtract 5px from distance to prioritize)
+                        const pDist1 = d1 - 5;
+                        const pDist2 = d2 - 5;
+
+                        if (d1 < 25 && pDist1 < minDst) { dst = pDist1; handle = 1; }
+                        else if (d2 < 25 && pDist2 < minDst) { dst = pDist2; handle = 2; }
+                        else if (dBody < 20 && dBody < minDst && handle === -1) { dst = dBody; handle = 0; }
+                    } else if (c.type === 'angle') {
+                        const d = c.vertex.dist(m) - 5; // Priority bias
+                        if (d < 25 && d < minDst) { dst = d; handle = 0; }
+                        
+                        const a1x = c.vertex.x + Math.cos(c.rotation) * c.arm1Len;
+                        const a1y = c.vertex.y + Math.sin(c.rotation) * c.arm1Len;
+                        const dTip1 = Math.hypot(m.x - a1x, m.y - a1y) - 5; // Priority bias
+                        if(dTip1 < 20 && dTip1 < minDst) { dst = dTip1; handle = 3; }
+
+                        const rad2 = c.rotation + c.value * Math.PI/180;
+                        const a2x = c.vertex.x + Math.cos(rad2) * c.arm2Len;
+                        const a2y = c.vertex.y + Math.sin(rad2) * c.arm2Len;
+                        const dTip2 = Math.hypot(m.x - a2x, m.y - a2y) - 5; // Priority bias
+                        if(dTip2 < 20 && dTip2 < minDst) { dst = dTip2; handle = 4; }
+                    }
+
+                    if (handle !== -1 && dst < minDst) {
+                        minDst = dst;
+                        bestTarget = { item: c, handle: handle };
+                    }
+                }
+
+                if (bestTarget) {
+                    this.selectedItem = bestTarget.item;
+                    this.draggedItems.push(bestTarget);
+
+                    if (bestTarget.item.type === 'segment' && (bestTarget.handle === 1 || bestTarget.handle === 2)) {
+                        const c = bestTarget.item;
+                        const clickedPt = (bestTarget.handle === 1) ? c.p1 : c.p2;
+                        this.components.forEach(other => {
+                            if (other === c || other.type !== 'segment') return;
+                            if (other.p1.dist(clickedPt) < 5) this.draggedItems.push({ item: other, handle: 1 });
+                            else if (other.p2.dist(clickedPt) < 5) this.draggedItems.push({ item: other, handle: 2 });
+                        });
+                    }
+                     else if(bestTarget.handle === 0 && bestTarget.item.type === 'segment') {
+                         const c = bestTarget.item;
+                         this.components.forEach(other => {
+                            if(other === c || other.type !== 'segment') return;
+                            if(other.p1.dist(c.p1) < 5 || other.p1.dist(c.p2) < 5) this.draggedItems.push({ item: other, handle: 1 });
+                            if(other.p2.dist(c.p1) < 5 || other.p2.dist(c.p2) < 5) this.draggedItems.push({ item: other, handle: 2 });
+                        });
+                    }
+                } else {
+                    this.selectedItem = null;
+                }
+            },
+
+            handleMove(m) {
+                if(this.draggedItems.length === 0) return;
+                
+                const dx = m.x - this.lastMouse.x;
+                const dy = m.y - this.lastMouse.y;
+                this.lastMouse = m;
+                this.ghostSnap = null; 
+
+                this.draggedItems.forEach(d => {
+                    if(d.item.type === 'segment') {
+                        if(d.handle === 0) d.item.translate(dx, dy);
+                        else {
+                            // 1. Normal Drag
+                            d.item.dragPoint(d.handle, m.x, m.y);
+                            
+                            // 2. Magnetic Rotation Check
+                            const anchor = (d.handle === 1) ? d.item.p2 : d.item.p1;
+                            const moving = (d.handle === 1) ? d.item.p1 : d.item.p2;
+                            
+                            const attachedAngle = this.components.find(c => c.type === 'angle' && c.vertex.dist(anchor) < 15);
+                            
+                            if (attachedAngle) {
+                                const currentAngle = Math.atan2(moving.y - anchor.y, moving.x - anchor.x);
+                                const arm1 = attachedAngle.rotation;
+                                const arm2 = attachedAngle.rotation + (attachedAngle.value * Math.PI/180);
+                                
+                                const normalize = (a) => (a + Math.PI * 4) % (Math.PI * 2);
+                                const checkSnap = (targetAng) => {
+                                    let diff = Math.abs(normalize(currentAngle) - normalize(targetAng));
+                                    if (diff > Math.PI) diff = 2*Math.PI - diff;
+                                    if (diff < 0.15) { 
+                                        const len = d.item.pixelLength;
+                                        moving.x = anchor.x + Math.cos(targetAng) * len;
+                                        moving.y = anchor.y + Math.sin(targetAng) * len;
+                                        d.item.angle = targetAng; 
+                                        if(window.Sound) window.Sound.magnetic();
+                                    }
+                                };
+                                checkSnap(arm1);
+                                checkSnap(arm2);
+                            }
+                        }
+                    } else if (d.item.type === 'angle') {
+                        if (d.handle === 0) {
+                            d.item.translate(dx, dy);
+                        } else {
+                            // Handle 3 (Arm 1) or 4 (Arm 2)
+                            
+                            let targetX = m.x;
+                            let targetY = m.y;
+                            let didSnapTip = false;
+                            const snapDist = 20;
+
+                            // TIP SNAP LOGIC
+                            for(let c of this.components) {
+                                if(c.type !== 'segment') continue;
+                                if(Math.hypot(c.p1.x - m.x, c.p1.y - m.y) < snapDist) {
+                                    targetX = c.p1.x; targetY = c.p1.y; didSnapTip = true; break;
+                                }
+                                if(Math.hypot(c.p2.x - m.x, c.p2.y - m.y) < snapDist) {
+                                    targetX = c.p2.x; targetY = c.p2.y; didSnapTip = true; break;
+                                }
+                            }
+
+                            const angleToTarget = Math.atan2(targetY - d.item.vertex.y, targetX - d.item.vertex.x);
+                            const distToTarget = Math.hypot(targetX - d.item.vertex.x, targetY - d.item.vertex.y);
+
+                            // Update Length
+                            const newLen = Math.max(100, distToTarget);
+                            if (d.handle === 3) d.item.arm1Len = newLen;
+                            else d.item.arm2Len = newLen;
+
+                            // Update Rotation
+                            if (d.handle === 3) {
+                                d.item.rotation = angleToTarget;
+                            } else {
+                                // Maintain fixed angle spread for Arm 2
+                                d.item.rotation = angleToTarget - (d.item.value * Math.PI / 180);
+                            }
+
+                            // MAGNETIC ROTATION LOGIC (When Vertex is Attached)
+                            if (!didSnapTip) {
+                                const v = d.item.vertex;
+                                const attachedSeg = this.components.find(c => c.type === 'segment' && (c.p1.dist(v) < 15 || c.p2.dist(v) < 15));
+                                
+                                if (attachedSeg) {
+                                     const segAng = Math.atan2(attachedSeg.p2.y - attachedSeg.p1.y, attachedSeg.p2.x - attachedSeg.p1.x);
+                                     
+                                     // Determine the "Other" arm angle
+                                     const otherArmAngle = (d.handle === 3) 
+                                        ? d.item.rotation + d.item.value * Math.PI / 180  // Dragging Arm 1, so Other is Arm 2
+                                        : d.item.rotation;                                // Dragging Arm 2, so Other is Arm 1
+                                     
+                                     const normalize = (a) => (a + Math.PI * 4) % (Math.PI * 2);
+                                     
+                                     // Check if the OTHER arm aligns with segment
+                                     const diffOther = Math.abs(normalize(otherArmAngle) - normalize(segAng));
+                                     const diffOther180 = Math.abs(normalize(otherArmAngle) - normalize(segAng + Math.PI));
+                                     
+                                     let snapRot = null;
+
+                                     // If Dragging Arm 1, we are changing Rotation directly. 
+                                     // We want Arm 2 to match Seg. So Rotation = SegAng - Value
+                                     if (d.handle === 3) {
+                                         if (diffOther < 0.15 || diffOther180 < 0.15) {
+                                            // We want Arm 2 to be SegAng (or flipped)
+                                            // Arm2 = Rotation + Value => Rotation = Arm2 - Value
+                                            const targetArm2 = (diffOther < 0.15) ? segAng : segAng + Math.PI;
+                                            snapRot = targetArm2 - d.item.value * Math.PI / 180;
+                                         }
+                                     } 
+                                     // If Dragging Arm 2, we are changing Rotation indirectly.
+                                     // We want Arm 1 to match Seg. So Rotation = SegAng
+                                     else {
+                                         if (diffOther < 0.15 || diffOther180 < 0.15) {
+                                             // We want Arm 1 to be SegAng (or flipped)
+                                             // Arm1 = Rotation
+                                             const targetArm1 = (diffOther < 0.15) ? segAng : segAng + Math.PI;
+                                             snapRot = targetArm1;
+                                         }
+                                     }
+
+                                     // Also check self-alignment (existing feature)
+                                     const currentArmAngle = (d.handle === 3) ? d.item.rotation : (d.item.rotation + d.item.value * Math.PI / 180);
+                                     const diffSelf = Math.abs(normalize(currentArmAngle) - normalize(segAng));
+                                     const diffSelf180 = Math.abs(normalize(currentArmAngle) - normalize(segAng + Math.PI));
+                                     
+                                     if (diffSelf < 0.15) {
+                                         if (d.handle === 3) snapRot = segAng;
+                                         else snapRot = segAng - (d.item.value * Math.PI / 180);
+                                     } else if (diffSelf180 < 0.15) {
+                                         if (d.handle === 3) snapRot = segAng + Math.PI;
+                                         else snapRot = segAng + Math.PI - (d.item.value * Math.PI / 180);
+                                     }
+
+                                     if (snapRot !== null) {
+                                         d.item.rotation = snapRot;
+                                         if(window.Sound) window.Sound.magnetic(); 
+                                     }
+                                }
+                            } else {
+                                 if(window.Sound) window.Sound.snap();
+                            }
+                        }
+                    }
+                });
+
+                // PREVIEW SNAP
+                const primary = this.draggedItems[0];
+                if(primary.item.type === 'segment' && primary.handle !== 0) {
+                    this.checkMagneticSnap(primary.item, primary.handle, true);
+                }
+                else if(primary.item.type === 'segment' && primary.handle === 0) {
+                    const snap1 = this.getBestSnap(primary.item.p1, primary.item);
+                    if(snap1) { this.ghostSnap = snap1; return; }
+                    const snap2 = this.getBestSnap(primary.item.p2, primary.item);
+                    if(snap2) { this.ghostSnap = snap2; return; }
+                }
+                else if (primary.item.type === 'angle' && primary.handle === 0) {
+                    this.checkAngleSnap(primary.item, true);
+                }
+            },
+
+            handleEnd() {
+                if(this.draggedItems.length > 0) {
+                    const primary = this.draggedItems[0];
+                    let didSnap = false;
+
+                    if(primary.item.type === 'segment' && primary.handle !== 0) {
+                        const snapPos = this.checkMagneticSnap(primary.item, primary.handle, false);
+                        if(snapPos) {
+                            didSnap = true;
+                            this.draggedItems.forEach((d, i) => {
+                                if(i===0) return; 
+                                if(d.handle === 1) { d.item.p1.x = snapPos.x; d.item.p1.y = snapPos.y; }
+                                else if(d.handle === 2) { d.item.p2.x = snapPos.x; d.item.p2.y = snapPos.y; }
+                            });
+                        }
+                    } 
+                    else if(primary.item.type === 'segment' && primary.handle === 0) {
+                         let snap = this.getBestSnap(primary.item.p1, primary.item);
+                         let targetPt = primary.item.p1;
+                         
+                         if(!snap) {
+                             snap = this.getBestSnap(primary.item.p2, primary.item);
+                             targetPt = primary.item.p2;
+                         }
+
+                         if(snap) {
+                             const dx = snap.x - targetPt.x;
+                             const dy = snap.y - targetPt.y;
+                             this.draggedItems.forEach(d => {
+                                 if(d.item.type === 'segment') d.item.translate(dx, dy);
+                                 else d.item.translate(dx, dy);
+                             });
+                             didSnap = true;
+                         }
+                    }
+                    else if (primary.item.type === 'angle' && primary.handle === 0) {
+                        if(this.checkAngleSnap(primary.item, false)) didSnap = true;
+                    }
+
+                    if(didSnap) Sound.snap();
+                }
+                this.draggedItems = [];
+                this.ghostSnap = null;
+            },
+
+            getBestSnap(pt, excludeItem) {
+                let bestDist = this.snapThreshold;
+                let result = null;
+                this.components.forEach(c => {
+                    if(c === excludeItem) return;
+                    if(c.type === 'segment') {
+                        if(pt.dist(c.p1) < bestDist) { bestDist = pt.dist(c.p1); result = {x:c.p1.x, y:c.p1.y}; }
+                        if(pt.dist(c.p2) < bestDist) { bestDist = pt.dist(c.p2); result = {x:c.p2.x, y:c.p2.y}; }
+                    } else if (c.type === 'angle') {
+                        if(pt.dist(c.vertex) < bestDist) { bestDist = pt.dist(c.vertex); result = {x:c.vertex.x, y:c.vertex.y}; }
+                    }
+                });
+                return result;
+            },
+
+            checkMagneticSnap(seg, handle, isPreview) {
+                const pt = (handle === 1) ? seg.p1 : seg.p2;
+                let bestDist = this.snapThreshold;
+                let target = null;
+
+                this.components.forEach(c => {
+                    if(c === seg) return;
+                    if(c.type === 'segment') {
+                        if(pt.dist(c.p1) < bestDist) { bestDist = pt.dist(c.p1); target = c.p1; }
+                        if(pt.dist(c.p2) < bestDist) { bestDist = pt.dist(c.p2); target = c.p2; }
+                    } else if (c.type === 'angle') {
+                        if(pt.dist(c.vertex) < bestDist) { 
+                            bestDist = pt.dist(c.vertex); 
+                            target = c.vertex; 
+                        }
+                    }
+                });
+
+                if(target) {
+                    if(isPreview) {
+                        this.ghostSnap = { x: target.x, y: target.y };
+                    } else {
+                        seg.dragPoint(handle, target.x, target.y); 
+                        return target;
+                    }
+                }
+                return null;
+            },
+
+            checkAngleSnap(angle, isPreview) {
+                let bestDist = this.snapThreshold;
+                let target = null;
+
+                this.components.forEach(c => {
+                    if(c === angle || c.type !== 'segment') return;
+                    if(angle.vertex.dist(c.p1) < bestDist) { target = c.p1; }
+                    else if(angle.vertex.dist(c.p2) < bestDist) { target = c.p2; }
+                });
+
+                if(target) {
+                    if(isPreview) this.ghostSnap = { x: target.x, y: target.y };
+                    else {
+                        angle.vertex.x = target.x;
+                        angle.vertex.y = target.y;
+                        return true;
+                    }
+                }
+                return false;
+            },
+
+            distToSeg(p, v, w) {
+                const l2 = (v.x-w.x)**2 + (v.y-w.y)**2;
+                if(l2===0) return p.dist(v);
+                let t = ((p.x-v.x)*(w.x-v.x) + (p.y-v.y)*(w.y-v.y)) / l2;
+                t = Math.max(0, Math.min(1, t));
+                return Math.hypot(p.x - (v.x + t*(w.x-v.x)), p.y - (v.y + t*(w.y-v.y)));
+            },
+            
+            toggleInstructions() {
+                document.getElementById('instructionModal').classList.toggle('active');
+            },
+
+            loop() {
+                this.ctx.fillStyle = '#f8fafc';
+                this.ctx.fillRect(0,0,this.canvas.width, this.canvas.height);
+                
+                this.ctx.beginPath();
+                this.ctx.strokeStyle = '#e2e8f0';
+                this.ctx.lineWidth=1;
+                for(let x=0; x<this.canvas.width; x+=40) { this.ctx.moveTo(x,0); this.ctx.lineTo(x,this.canvas.height); }
+                for(let y=0; y<this.canvas.height; y+=40) { this.ctx.moveTo(0,y); this.ctx.lineTo(this.canvas.width,y); }
+                this.ctx.stroke();
+
+                this.components.forEach(c => { if(c.type==='angle') c.draw(this.ctx, c === this.selectedItem); });
+                this.components.forEach(c => { if(c.type==='segment') c.draw(this.ctx, c === this.selectedItem); });
+
+                if(this.ghostSnap) {
+                    this.ctx.beginPath();
+                    this.ctx.strokeStyle = '#f43f5e';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.arc(this.ghostSnap.x, this.ghostSnap.y, 8, 0, Math.PI*2);
+                    this.ctx.stroke();
+                }
+                requestAnimationFrame(()=>this.loop());
+            },
+
+            attemptCompletion() {
+                if(this.mode === 'SAS') this.completeSAS();
+                else if(this.mode === 'AAS') this.completeAAS();
+                else if(this.mode === 'ASA') this.completeASA();
+                else if(this.mode === 'RHS') this.completeRHS();
+            },
+
+            completeSAS() {
+                const angle = this.components.find(c => c.type==='angle');
+                const segs = this.components.filter(c => c.type==='segment' && !c.isFixed);
+                if(segs.length !== 2) return;
+                
+                const v = angle.vertex;
+                const s1 = segs[0], s2 = segs[1];
+                const p1 = (s1.p1.dist(v)<15) ? s1.p2 : (s1.p2.dist(v)<15 ? s1.p1 : null);
+                const p2 = (s2.p1.dist(v)<15) ? s2.p2 : (s2.p2.dist(v)<15 ? s2.p1 : null);
+
+                if(p1 && p2) {
+                    this.addFixedSeg(p1, p2);
+                    Sound.success();
+                } else {
+                    Sound.error();
+                    document.getElementById('feedbackMessage').innerText = "Attach both sides to the Angle vertex first.";
+                }
+            },
+
+            completeAAS() {
+                const side = this.components.find(c => c.type==='segment' && !c.isFixed);
+                const angles = this.components.filter(c => c.type==='angle');
+                if(!side || angles.length !== 2) return;
+
+                const isAttached = (ang, pt) => ang.vertex.dist(pt) < 25;
+
+                // Classify Angles
+                const attachedToP1 = angles.filter(a => isAttached(a, side.p1));
+                const attachedToP2 = angles.filter(a => isAttached(a, side.p2));
+                const floating = angles.filter(a => !isAttached(a, side.p1) && !isAttached(a, side.p2));
+
+                // Strict AAS Rule: Only 1 angle attached to the side.
+                // Scenario 1: 1 Floating, 1 Attached.
+                if (floating.length === 1 && (attachedToP1.length + attachedToP2.length === 1)) {
+                    const floatAng = floating[0];
+                    if (this.checkAngleAlignment(floatAng, side.p1, side.p2)) {
+                         this.addFixedSeg(side.p1, floatAng.vertex);
+                         this.addFixedSeg(side.p2, floatAng.vertex);
+                         Sound.success();
+                         document.getElementById('feedbackMessage').innerText = "Triangle Completed (Floating Angle method).";
+                    } else {
+                         Sound.error();
+                         document.getElementById('feedbackMessage').innerText = "Rotate the floating angle so its arms point exactly to the side's endpoints.";
+                    }
+                }
+                // Scenario 2: 2 Attached? Only allowed if one is NOT the included angle (impossible if attached to endpoints).
+                // If both are attached to endpoints, that is ASA, which is invalid for AAS mode here.
+                else if (attachedToP1.length === 1 && attachedToP2.length === 1) {
+                     Sound.error();
+                     document.getElementById('feedbackMessage').innerText = "AAS requires one angle to be OPPOSITE the side. You have attached both angles (ASA).";
+                }
+                else {
+                    Sound.error();
+                    document.getElementById('feedbackMessage').innerText = "AAS: Attach ONE angle to the side, float the other opposite.";
+                }
+            },
+
+            completeASA() {
+                const side = this.components.find(c => c.type==='segment' && !c.isFixed);
+                const angles = this.components.filter(c => c.type==='angle');
+                if(!side || angles.length !== 2) return;
+
+                const isAttached = (ang, pt) => ang.vertex.dist(pt) < 25;
+                const attachedToP1 = angles.filter(a => isAttached(a, side.p1));
+                const attachedToP2 = angles.filter(a => isAttached(a, side.p2));
+
+                if (attachedToP1.length === 1 && attachedToP2.length === 1) {
+                    const a1 = attachedToP1[0];
+                    const a2 = attachedToP2[0];
+                    const p3 = this.findValidIntersection(a1, side.p1, a2, side.p2);
+                    
+                    if(p3) {
+                        this.addFixedSeg(side.p1, p3);
+                        this.addFixedSeg(side.p2, p3);
+                        Sound.success();
+                        document.getElementById('feedbackMessage').innerText = "Perfect ASA Construction!";
+                    } else {
+                        Sound.error();
+                        document.getElementById('feedbackMessage').innerText = "Align the angle arms along the side to find the intersection.";
+                    }
+                } else {
+                    Sound.error();
+                    document.getElementById('feedbackMessage').innerText = "ASA: Both angles must be attached to the endpoints of the side.";
+                }
+            },
+
+            // Helper: Checks if an angle's arms align with two target points
+            checkAngleAlignment(ang, p1, p2) {
+                const v = ang.vertex;
+                const angToP1 = Math.atan2(p1.y - v.y, p1.x - v.x);
+                const angToP2 = Math.atan2(p2.y - v.y, p2.x - v.x);
+                
+                const normalize = (rad) => (rad + Math.PI*4) % (Math.PI*2);
+                const arm1 = normalize(ang.rotation);
+                const arm2 = normalize(ang.rotation + ang.value * Math.PI/180);
+                
+                const t1 = normalize(angToP1);
+                const t2 = normalize(angToP2);
+                const tol = 0.15; 
+
+                const match1 = (Math.abs(t1 - arm1) < tol || Math.abs(t1 - arm1) > Math.PI*2 - tol);
+                const match2 = (Math.abs(t2 - arm2) < tol || Math.abs(t2 - arm2) > Math.PI*2 - tol);
+                
+                const match3 = (Math.abs(t1 - arm2) < tol || Math.abs(t1 - arm2) > Math.PI*2 - tol);
+                const match4 = (Math.abs(t2 - arm1) < tol || Math.abs(t2 - arm1) > Math.PI*2 - tol);
+
+                return (match1 && match2) || (match3 && match4);
+            },
+
+            // Helper: Finds intersection of rays from two angles attached to base
+            findValidIntersection(ang1, p1, ang2, p2) {
+                const getConstructionRayAngle = (ang, start, end) => {
+                    const baseDir = Math.atan2(end.y - start.y, end.x - start.x);
+                    const normalize = (rad) => (rad + Math.PI*4) % (Math.PI*2);
+                    
+                    const arm1 = normalize(ang.rotation);
+                    const arm2 = normalize(ang.rotation + ang.value * Math.PI/180);
+                    const base = normalize(baseDir);
+                    
+                    const isAligned = (a, b) => {
+                        const diff = Math.abs(a - b);
+                        return diff < 0.2 || Math.abs(diff - Math.PI*2) < 0.2; 
+                    };
+
+                    if (isAligned(arm1, base)) return arm2;
+                    if (isAligned(arm2, base)) return arm1;
+                    return null;
+                };
+
+                const theta1 = getConstructionRayAngle(ang1, p1, p2);
+                const theta2 = getConstructionRayAngle(ang2, p2, p1);
+
+                if (theta1 === null || theta2 === null) return null;
+
+                const x1 = p1.x, y1 = p1.y;
+                const x2 = p1.x + Math.cos(theta1), y2 = p1.y + Math.sin(theta1);
+                const x3 = p2.x, y3 = p2.y;
+                const x4 = p2.x + Math.cos(theta2), y4 = p2.y + Math.sin(theta2);
+
+                const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+                if (Math.abs(denom) < 0.01) return null; 
+
+                const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+                
+                const intersectX = x1 + t * (x2 - x1);
+                const intersectY = y1 + t * (y2 - y1);
+                
+                const vecX = intersectX - p1.x;
+                const vecY = intersectY - p1.y;
+                const dot = vecX * Math.cos(theta1) + vecY * Math.sin(theta1);
+                
+                if (dot > 0) return { x: intersectX, y: intersectY };
+                return null;
+            },
+
+            completeRHS() {
+                const angle = this.components.find(c => c.type==='angle');
+                const leg = this.components.find(c => c.type==='segment' && c.length === 6);
+                const hyp = this.components.find(c => c.type==='segment' && c.length === 10);
+                
+                if(!angle || !leg || !hyp) return;
+
+                if(leg.p1.dist(angle.vertex) > 15 && leg.p2.dist(angle.vertex) > 15) {
+                    Sound.error();
+                    document.getElementById('feedbackMessage').innerText = "Attach the Leg (6u) to the Angle vertex.";
+                    return;
+                }
+                
+                const legEnd = (leg.p1.dist(angle.vertex) < 15) ? leg.p2 : leg.p1;
+                if(hyp.p1.dist(legEnd) > 15 && hyp.p2.dist(legEnd) > 15) {
+                    Sound.error();
+                    document.getElementById('feedbackMessage').innerText = "Attach Hypotenuse (10u) to the end of the Leg.";
+                    return;
+                }
+
+                const legAngle = Math.atan2(legEnd.y - angle.vertex.y, legEnd.x - angle.vertex.x);
+                const normalize = (a) => (a + Math.PI * 4) % (Math.PI * 2);
+                
+                const arm1 = angle.rotation;
+                const arm2 = angle.rotation + (angle.value * Math.PI/180);
+                
+                let diff1 = Math.abs(normalize(legAngle) - normalize(arm1));
+                let targetArmAngle = arm2;
+                if (diff1 > 0.5) targetArmAngle = arm1; 
+                
+                const hypEnd = (hyp.p1.dist(legEnd) < 15) ? hyp.p2 : hyp.p1;
+                
+                const A = -Math.sin(targetArmAngle);
+                const B = Math.cos(targetArmAngle);
+                const C = - (A * angle.vertex.x + B * angle.vertex.y);
+                const dist = Math.abs(A * hypEnd.x + B * hypEnd.y + C);
+                
+                if (dist < 25) {
+                    this.addFixedSeg(angle.vertex, hypEnd);
+                    Sound.success();
+                    document.getElementById('feedbackMessage').innerText = "RHS Triangle Completed!";
+                } else {
+                    Sound.error();
+                    document.getElementById('feedbackMessage').innerText = "Rotate the Hypotenuse so its end touches the other arm of the angle.";
+                }
+            },
+
+            addFixedSeg(p1, p2) {
+                const len = Math.hypot(p1.x-p2.x, p1.y-p2.y)/40;
+                const s = new Segment(len, '#8b5cf6', '?', p1.x, p1.y);
+                s.p2.x = p2.x; s.p2.y = p2.y;
+                s.isFixed = true;
+                this.components.push(s);
+            },
+
+            checkCongruence() {
+                Sound.success();
+                this.triggerConfetti();
+                document.getElementById('feedbackMessage').innerHTML = "Congruence Verified! Great job.<br><span class='font-bold text-indigo-600'>Please screenshot your triangle and post it to OneNote.</span>";
+            },
+
+            triggerConfetti() {
+                const cC = document.getElementById('confettiCanvas');
+                const ctx = cC.getContext('2d');
+                cC.width = this.canvas.width;
+                cC.height = this.canvas.height;
+                const particles = Array(100).fill().map(()=>({
+                    x: cC.width/2, y: cC.height/2,
+                    vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15,
+                    color: `hsl(${Math.random()*360}, 70%, 50%)`, life: 1
+                }));
+                const draw = () => {
+                    ctx.clearRect(0,0,cC.width,cC.height);
+                    let active=false;
+                    particles.forEach(p=>{
+                        if(p.life>0){
+                            p.x+=p.vx; p.y+=p.vy; p.vy+=0.5; p.life-=0.02;
+                            ctx.fillStyle=p.color; ctx.globalAlpha=p.life;
+                            ctx.fillRect(p.x,p.y,6,6); active=true;
+                        }
+                    });
+                    if(active) requestAnimationFrame(draw);
+                }
+                draw();
+            }
+        };
+
+        window.onload = () => app.init();
+    </script>
+</body>
+</html>

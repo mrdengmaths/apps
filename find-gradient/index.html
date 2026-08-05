@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gradient Guru</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Fira+Code:wght@600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        
+        .font-math {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Hide number input arrows */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        /* Animations */
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.9) translateY(20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-pop { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        /* Modal Overlay */
+        .modal-overlay {
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4 md:p-8 text-slate-800">
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Main Container -->
+    <div id="app" class="w-full max-w-5xl glass-panel rounded-3xl p-6 md:p-10 animate-pop relative overflow-hidden transition-all duration-500">
+        
+        <!-- Header -->
+        <header class="flex justify-between items-center border-b-2 border-slate-100 pb-4 mb-6">
+            <div class="flex items-center gap-3">
+                <span class="text-4xl">📈</span>
+                <h1 class="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+                    Gradient Guru
+                </h1>
+            </div>
+            <div id="gauntlet-hud" class="hidden flex items-center gap-6 font-bold">
+                <div class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl text-lg flex items-center gap-2">
+                    <span>⏱️</span> <span id="timer-display">30.0s</span>
+                </div>
+                <div class="bg-amber-100 text-amber-700 px-4 py-2 rounded-xl text-lg flex items-center gap-2">
+                    <span>🏆</span> <span id="score-display">0</span> pts
+                </div>
+            </div>
+            <button id="btn-home" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 px-4 rounded-xl transition-colors">
+                🏠 Main Menu
+            </button>
+        </header>
+
+        <!-- SCREEN: Main Menu -->
+        <div id="screen-menu" class="flex flex-col items-center py-8">
+            <p class="text-xl text-slate-600 mb-10 text-center max-w-2xl">
+                Master the slope! Choose a mode below to practice finding the gradient of a straight line. Remember: <strong class="text-blue-600">Gradient = Rise ÷ Run</strong>
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+                <!-- Mode 1 Card -->
+                <button onclick="startGame('visual')" class="group relative bg-white border-2 border-blue-100 hover:border-blue-400 p-8 rounded-2xl shadow-sm hover:shadow-xl transition-all text-left transform hover:-translate-y-2">
+                    <div class="text-5xl mb-4 animate-float">📐</div>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Mode 1: Visual Grid</h2>
+                    <p class="text-slate-500 text-sm">Find the gradient by counting the rise and run on a visual Cartesian plane.</p>
+                    <div class="absolute inset-x-0 bottom-0 h-1 bg-blue-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-b-2xl"></div>
+                </button>
+
+                <!-- Mode 2 Card -->
+                <button onclick="startGame('algebra')" class="group relative bg-white border-2 border-purple-100 hover:border-purple-400 p-8 rounded-2xl shadow-sm hover:shadow-xl transition-all text-left transform hover:-translate-y-2" style="animation-delay: 0.1s">
+                    <div class="text-5xl mb-4 animate-float" style="animation-delay: 0.5s">🧮</div>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Mode 2: Coordinate Algebra</h2>
+                    <p class="text-slate-500 text-sm">Use the mathematical formula m = (y₂ - y₁) / (x₂ - x₁) to calculate the exact slope.</p>
+                    <div class="absolute inset-x-0 bottom-0 h-1 bg-purple-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-b-2xl"></div>
+                </button>
+
+                <!-- Mode 3 Card -->
+                <button onclick="startGame('gauntlet')" class="group relative bg-gradient-to-br from-amber-400 to-orange-500 border-2 border-transparent hover:border-white p-8 rounded-2xl shadow-md hover:shadow-2xl transition-all text-left transform hover:-translate-y-2 text-white" style="animation-delay: 0.2s">
+                    <div class="text-5xl mb-4 animate-float" style="animation-delay: 1s">🔥</div>
+                    <h2 class="text-2xl font-bold mb-2">The Gradient Gauntlet</h2>
+                    <p class="text-amber-100 text-sm">8 fast-paced rounds mixing both modes. The faster you answer, the more points you get!</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- SCREEN: Game Area -->
+        <div id="screen-game" class="hidden flex flex-col lg:flex-row gap-8 min-h-[450px]">
+            
+            <!-- Left Side: Problem Display -->
+            <div class="flex-1 bg-slate-50 rounded-2xl border-2 border-slate-100 p-6 flex flex-col items-center justify-center relative shadow-inner">
+                
+                <h3 id="question-title" class="absolute top-4 left-6 text-lg font-bold text-slate-400 uppercase tracking-wider"></h3>
+                <div id="round-counter" class="hidden absolute top-4 right-6 text-lg font-bold text-amber-500 uppercase tracking-wider">Round 1/8</div>
+
+                <!-- Visual Mode Container -->
+                <div id="visual-container" class="hidden w-full h-full flex flex-col items-center justify-center mt-6">
+                    <canvas id="graphCanvas" width="400" height="400" class="max-w-full bg-white rounded-xl shadow-sm border border-slate-200"></canvas>
+                </div>
+
+                <!-- Algebra Mode Container -->
+                <div id="algebra-container" class="hidden w-full h-full flex flex-col items-center justify-center mt-6 space-y-8">
+                    <p class="text-xl font-semibold text-slate-700">Calculate the gradient of the line connecting:</p>
+                    <div class="flex gap-8 text-2xl font-math font-bold">
+                        <div class="bg-blue-100 text-blue-800 px-6 py-3 rounded-xl">P₁ (<span id="alg-x1"></span>, <span id="alg-y1"></span>)</div>
+                        <div class="bg-red-100 text-red-800 px-6 py-3 rounded-xl">P₂ (<span id="alg-x2"></span>, <span id="alg-y2"></span>)</div>
+                    </div>
+                    
+                    <!-- Beautiful Math Formula -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 text-2xl font-math">
+                        <span class="font-bold text-slate-700 italic">m</span>
+                        <span class="font-bold text-slate-700">=</span>
+                        <div class="flex flex-col items-center">
+                            <span class="text-blue-600 px-2 pb-1 border-b-[3px] border-slate-800">y₂ - y₁</span>
+                            <span class="text-red-600 px-2 pt-1">x₂ - x₁</span>
+                        </div>
+                        <span class="font-bold text-slate-700">=</span>
+                        <div class="flex flex-col items-center">
+                            <div class="text-blue-600 px-2 pb-1 border-b-[3px] border-slate-800 flex gap-1">
+                                <span id="f-y2"></span> <span class="text-slate-800">-</span> <span id="f-y1"></span>
+                            </div>
+                            <div class="text-red-600 px-2 pt-1 flex gap-1">
+                                <span id="f-x2"></span> <span class="text-slate-800">-</span> <span id="f-x1"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Side: Interactive Input -->
+            <div class="w-full lg:w-80 flex flex-col items-center justify-center bg-white rounded-2xl border-2 border-slate-100 p-6 shadow-sm">
+                
+                <p id="input-instructions" class="text-center text-sm font-semibold text-slate-500 mb-6">
+                    Type your answer as a whole number, or use the top and bottom boxes to build a fraction.
+                </p>
+
+                <!-- Custom Fraction UI -->
+                <div id="fraction-ui" class="relative flex flex-col items-center w-32 mx-auto mb-4">
+                    <input type="number" id="num-input" placeholder="Rise" class="w-full text-center text-3xl font-bold font-math text-blue-700 border-2 border-blue-200 bg-blue-50 rounded-t-xl focus:border-blue-500 focus:bg-white outline-none py-3 placeholder:text-blue-300 transition-all z-10 relative">
+                    <div id="fraction-line" class="w-full h-[4px] bg-slate-800 my-1 rounded-full z-20 relative shadow-sm"></div>
+                    <input type="number" id="den-input" placeholder="Run" class="w-full text-center text-3xl font-bold font-math text-red-700 border-2 border-red-200 bg-red-50 rounded-b-xl focus:border-red-500 focus:bg-white outline-none py-3 placeholder:text-red-300 transition-all z-10 relative">
+                </div>
+
+                <button id="toggle-input-btn" onclick="toggleInputMode()" class="mb-8 text-sm text-indigo-600 font-bold hover:text-indigo-800 hover:underline transition-colors flex items-center gap-1">
+                    <span>🔄</span> <span id="toggle-text">I just need a whole number</span>
+                </button>
+
+                <button onclick="checkAnswer()" class="w-full bg-gradient-to-r from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-white font-bold text-xl py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all active:scale-95">
+                    Check Answer
+                </button>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Educational Feedback Modal -->
+    <div id="feedback-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div id="feedback-card" class="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl transform scale-90 transition-transform duration-300 relative overflow-hidden">
+            <div id="feedback-accent" class="absolute top-0 left-0 w-full h-3 bg-blue-500"></div>
+            
+            <div class="flex items-center gap-4 mb-4 mt-2">
+                <div id="feedback-icon" class="text-5xl">🤔</div>
+                <h2 id="feedback-title" class="text-2xl font-extrabold text-slate-800">Let's check...</h2>
+            </div>
+            
+            <p id="feedback-message" class="text-lg text-slate-600 leading-relaxed mb-8">
+                Message goes here.
+            </p>
+
+            <button id="feedback-btn" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold text-lg py-4 rounded-xl shadow transition-colors active:scale-95">
+                Got it!
+            </button>
+        </div>
+    </div>
+
+    <!-- Gauntlet End Screen Modal -->
+    <div id="end-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl p-10 max-w-lg w-full mx-4 shadow-2xl text-center transform scale-90 transition-transform duration-300">
+            <div class="text-7xl mb-4">🏆</div>
+            <h2 class="text-4xl font-extrabold text-slate-800 mb-2">Gauntlet Complete!</h2>
+            <p class="text-xl text-slate-600 mb-6">You survived the Gradient Gauntlet.</p>
+            
+            <div class="bg-indigo-50 rounded-2xl p-6 mb-8">
+                <p class="text-sm font-bold text-indigo-400 uppercase tracking-wider mb-1">Final Score</p>
+                <p id="final-score" class="text-6xl font-extrabold text-indigo-600">0</p>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="returnToMenu()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-4 rounded-xl transition-colors">
+                    Main Menu
+                </button>
+                <button onclick="startGame('gauntlet')" class="flex-1 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold py-4 rounded-xl shadow-lg transition-colors">
+                    Play Again
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME STATE ---
+        const GameState = {
+            mode: null, // 'visual', 'algebra', 'gauntlet'
+            isFractionMode: true,
+            currentQuestion: {
+                type: null,
+                p1: { x: 0, y: 0 },
+                p2: { x: 0, y: 0 },
+                dx: 0,
+                dy: 0,
+                trueGradient: 0
+            },
+            gauntlet: {
+                round: 1,
+                maxRounds: 8,
+                totalScore: 0,
+                currentRoundPoints: 1000,
+                timerInterval: null,
+                isPaused: false
+            }
+        };
+
+        // --- UTILITY FUNCTIONS ---
+        function gcd(a, b) {
+            a = Math.abs(a);
+            b = Math.abs(b);
+            while (b) {
+                let t = b;
+                b = a % b;
+                a = t;
+            }
+            return a;
+        }
+
+        function randomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function formatFraction(num, den) {
+            if (den === 1) return `${num}`;
+            if (den === -1) return `${-num}`;
+            return `${num}/${den}`;
+        }
+
+        function wrapMath(str) {
+            return `<span class="font-math font-bold whitespace-nowrap bg-slate-100 px-1 rounded">${str}</span>`;
+        }
+
+        // --- DOM ELEMENTS ---
+        const els = {
+            app: document.getElementById('app'),
+            menu: document.getElementById('screen-menu'),
+            game: document.getElementById('screen-game'),
+            homeBtn: document.getElementById('btn-home'),
+            gauntletHud: document.getElementById('gauntlet-hud'),
+            scoreDisplay: document.getElementById('score-display'),
+            timerDisplay: document.getElementById('timer-display'),
+            roundCounter: document.getElementById('round-counter'),
+            
+            visualContainer: document.getElementById('visual-container'),
+            algebraContainer: document.getElementById('algebra-container'),
+            questionTitle: document.getElementById('question-title'),
+            
+            canvas: document.getElementById('graphCanvas'),
+            
+            numInput: document.getElementById('num-input'),
+            denInput: document.getElementById('den-input'),
+            fractionLine: document.getElementById('fraction-line'),
+            toggleBtnText: document.getElementById('toggle-text'),
+            
+            modal: document.getElementById('feedback-modal'),
+            modalCard: document.getElementById('feedback-card'),
+            modalAccent: document.getElementById('feedback-accent'),
+            modalIcon: document.getElementById('feedback-icon'),
+            modalTitle: document.getElementById('feedback-title'),
+            modalMessage: document.getElementById('feedback-message'),
+            modalBtn: document.getElementById('feedback-btn'),
+
+            endModal: document.getElementById('end-modal'),
+            finalScore: document.getElementById('final-score')
+        };
+
+        const ctx = els.canvas.getContext('2d');
+
+        // --- INITIALIZATION ---
+        els.homeBtn.addEventListener('click', returnToMenu);
+
+        function toggleInputMode() {
+            GameState.isFractionMode = !GameState.isFractionMode;
+            if (GameState.isFractionMode) {
+                els.denInput.style.display = 'block';
+                els.fractionLine.style.display = 'block';
+                els.numInput.classList.remove('rounded-xl');
+                els.numInput.classList.add('rounded-t-xl');
+                els.numInput.placeholder = "Rise";
+                els.toggleBtnText.innerText = "I just need a whole number";
+            } else {
+                els.denInput.style.display = 'none';
+                els.fractionLine.style.display = 'none';
+                els.numInput.classList.remove('rounded-t-xl');
+                els.numInput.classList.add('rounded-xl');
+                els.numInput.placeholder = "Answer";
+                els.toggleBtnText.innerText = "I need to enter a fraction";
+                els.denInput.value = ""; // Clear denominator
+            }
+        }
+
+        function returnToMenu() {
+            stopTimer();
+            els.game.classList.add('hidden');
+            els.menu.classList.remove('hidden');
+            els.homeBtn.classList.add('hidden');
+            els.gauntletHud.classList.add('hidden');
+            els.roundCounter.classList.add('hidden');
+            els.endModal.classList.add('hidden');
+            els.endModal.classList.remove('opacity-100');
+            resetInputs();
+        }
+
+        function startGame(mode) {
+            GameState.mode = mode;
+            els.menu.classList.add('hidden');
+            els.game.classList.remove('hidden');
+            els.homeBtn.classList.remove('hidden');
+            els.endModal.classList.add('hidden');
+            els.endModal.classList.remove('opacity-100');
+
+            if (mode === 'gauntlet') {
+                els.gauntletHud.classList.remove('hidden');
+                els.roundCounter.classList.remove('hidden');
+                GameState.gauntlet.round = 1;
+                GameState.gauntlet.totalScore = 0;
+                updateHUD();
+                startRound();
+            } else {
+                els.gauntletHud.classList.add('hidden');
+                els.roundCounter.classList.add('hidden');
+                generateQuestion(mode);
+            }
+        }
+
+        function startRound() {
+            GameState.gauntlet.currentRoundPoints = 1000;
+            GameState.gauntlet.isPaused = false;
+            els.roundCounter.innerText = `Round ${GameState.gauntlet.round}/${GameState.gauntlet.maxRounds}`;
+            updateHUD();
+            
+            // Randomly pick mode for this round
+            const type = Math.random() > 0.5 ? 'visual' : 'algebra';
+            generateQuestion(type);
+
+            stopTimer();
+            GameState.gauntlet.timerInterval = setInterval(() => {
+                if (!GameState.gauntlet.isPaused) {
+                    GameState.gauntlet.currentRoundPoints -= (1000 / 300); // 30 seconds = 300 ticks of 100ms
+                    if (GameState.gauntlet.currentRoundPoints <= 0) {
+                        GameState.gauntlet.currentRoundPoints = 0;
+                        updateHUD();
+                        stopTimer();
+                        showFeedback('error', "Time's Up!", "You ran out of time for this question. Let's move to the next one!", true);
+                    }
+                    updateHUD();
+                }
+            }, 100);
+        }
+
+        function stopTimer() {
+            if (GameState.gauntlet.timerInterval) {
+                clearInterval(GameState.gauntlet.timerInterval);
+                GameState.gauntlet.timerInterval = null;
+            }
+        }
+
+        function updateHUD() {
+            els.scoreDisplay.innerText = Math.floor(GameState.gauntlet.totalScore);
+            const seconds = Math.max(0, (GameState.gauntlet.currentRoundPoints / (1000/300)) * 0.1).toFixed(1);
+            els.timerDisplay.innerText = `${seconds}s`;
+            
+            // Color timer based on time left
+            if (seconds < 10) els.timerDisplay.parentElement.className = 'bg-red-100 text-red-700 px-4 py-2 rounded-xl text-lg flex items-center gap-2';
+            else els.timerDisplay.parentElement.className = 'bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl text-lg flex items-center gap-2';
+        }
+
+        // --- QUESTION GENERATION ---
+        function generateQuestion(type) {
+            resetInputs();
+            GameState.currentQuestion.type = type;
+
+            let x1, y1, x2, y2, dx, dy;
+            // Generate valid points (not vertical, reasonable values)
+            do {
+                x1 = randomInt(-8, 8);
+                y1 = randomInt(-8, 8);
+                x2 = randomInt(-8, 8);
+                y2 = randomInt(-8, 8);
+                dx = x2 - x1;
+                dy = y2 - y1;
+            } while (dx === 0 || (x1===x2 && y1===y2)); // Avoid dx=0 (undefined slope) and identical points
+
+            // Sometimes ensure it's a whole number for variety
+            if (Math.random() > 0.7 && dx !== 0) {
+                y2 = y1 + (dx * randomInt(-3, 3));
+                dy = y2 - y1;
+            }
+
+            // Ensure points fit nicely on a -10 to 10 grid
+            if (Math.abs(y2) > 10) y2 = (y2 > 0) ? 10 : -10; dy = y2 - y1;
+
+            GameState.currentQuestion.p1 = { x: x1, y: y1 };
+            GameState.currentQuestion.p2 = { x: x2, y: y2 };
+            GameState.currentQuestion.dx = dx;
+            GameState.currentQuestion.dy = dy;
+            GameState.currentQuestion.trueGradient = dy / dx;
+
+            if (type === 'visual') {
+                els.visualContainer.classList.remove('hidden');
+                els.algebraContainer.classList.add('hidden');
+                els.questionTitle.innerText = "Find the gradient from the graph";
+                drawGraph(x1, y1, x2, y2);
+            } else {
+                els.visualContainer.classList.add('hidden');
+                els.algebraContainer.classList.remove('hidden');
+                els.questionTitle.innerText = "Use the gradient formula";
+                renderAlgebra(x1, y1, x2, y2);
+            }
+        }
+
+        function resetInputs() {
+            els.numInput.value = '';
+            els.denInput.value = '';
+            if(!GameState.isFractionMode) toggleInputMode(); // Default to fraction mode per question
+        }
+
+        function renderAlgebra(x1, y1, x2, y2) {
+            document.getElementById('alg-x1').innerText = x1;
+            document.getElementById('alg-y1').innerText = y1;
+            document.getElementById('alg-x2').innerText = x2;
+            document.getElementById('alg-y2').innerText = y2;
+            
+            document.getElementById('f-y2').innerText = y2;
+            document.getElementById('f-y1').innerText = y1 < 0 ? `(${y1})` : y1;
+            document.getElementById('f-x2').innerText = x2;
+            document.getElementById('f-x1').innerText = x1 < 0 ? `(${x1})` : x1;
+        }
+
+        // --- CANVAS GRAPHING ---
+        function drawGraph(x1, y1, x2, y2) {
+            const width = els.canvas.width;
+            const height = els.canvas.height;
+            const gridMin = -10;
+            const gridMax = 10;
+            const range = gridMax - gridMin;
+            const scaleX = width / range;
+            const scaleY = height / range;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Coordinate to pixel helper
+            const toPx = (logX, logY) => {
+                return {
+                    x: (logX - gridMin) * scaleX,
+                    y: height - ((logY - gridMin) * scaleY)
+                };
+            };
+
+            // Draw Grid
+            ctx.lineWidth = 1;
+            for (let i = gridMin; i <= gridMax; i++) {
+                // Vertical lines
+                ctx.beginPath();
+                ctx.strokeStyle = (i === 0) ? '#1e293b' : '#e2e8f0';
+                ctx.lineWidth = (i === 0) ? 2 : 1;
+                let pStart = toPx(i, gridMin);
+                let pEnd = toPx(i, gridMax);
+                ctx.moveTo(pStart.x, pStart.y);
+                ctx.lineTo(pEnd.x, pEnd.y);
+                ctx.stroke();
+
+                // Horizontal lines
+                ctx.beginPath();
+                ctx.strokeStyle = (i === 0) ? '#1e293b' : '#e2e8f0';
+                ctx.lineWidth = (i === 0) ? 2 : 1;
+                pStart = toPx(gridMin, i);
+                pEnd = toPx(gridMax, i);
+                ctx.moveTo(pStart.x, pStart.y);
+                ctx.lineTo(pEnd.x, pEnd.y);
+                ctx.stroke();
+                
+                // Axis Labels
+                if (i !== 0 && i % 2 === 0) {
+                    ctx.fillStyle = '#64748b';
+                    ctx.font = '10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    let pxAxis = toPx(i, 0);
+                    ctx.fillText(i, pxAxis.x, pxAxis.y + 4);
+                    
+                    ctx.textAlign = 'right';
+                    ctx.textBaseline = 'middle';
+                    let pyAxis = toPx(0, i);
+                    ctx.fillText(i, pyAxis.x - 4, pyAxis.y);
+                }
+            }
+
+            // Draw Line (extend beyond points)
+            const m = (y2 - y1) / (x2 - x1);
+            const c = y1 - m * x1;
+            const extX1 = gridMin;
+            const extY1 = m * extX1 + c;
+            const extX2 = gridMax;
+            const extY2 = m * extX2 + c;
+
+            const pxLineStart = toPx(extX1, extY1);
+            const pxLineEnd = toPx(extX2, extY2);
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#3b82f6'; // Blue
+            ctx.lineWidth = 3;
+            ctx.moveTo(pxLineStart.x, pxLineStart.y);
+            ctx.lineTo(pxLineEnd.x, pxLineEnd.y);
+            ctx.stroke();
+
+            // Draw Points
+            const pxP1 = toPx(x1, y1);
+            const pxP2 = toPx(x2, y2);
+
+            [pxP1, pxP2].forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
+                ctx.fillStyle = '#ef4444'; // Red
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'white';
+                ctx.stroke();
+            });
+            
+            // Optional: Draw a faint right-triangle showing rise/run
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            const pxCorner = toPx(x2, y1);
+            ctx.moveTo(pxP1.x, pxP1.y);
+            ctx.lineTo(pxCorner.x, pxCorner.y);
+            ctx.lineTo(pxP2.x, pxP2.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // --- ANSWER CHECKING LOGIC ---
+        function checkAnswer() {
+            let uNumStr = els.numInput.value.trim();
+            let uDenStr = els.denInput.value.trim();
+
+            if (uNumStr === "") {
+                showFeedback('error', 'Missing Value!', 'Please enter a number for the rise (numerator).');
+                return;
+            }
+
+            let uNum = parseInt(uNumStr, 10);
+            let uDen = 1;
+
+            if (GameState.isFractionMode) {
+                if (uDenStr === "") {
+                    showFeedback('error', 'Missing Value!', 'Please enter a number for the run (denominator).');
+                    return;
+                }
+                uDen = parseInt(uDenStr, 10);
+            }
+
+            if (uDen === 0) {
+                showFeedback('error', 'Math Explosion! 💥', 'Denominator cannot be zero! Division by zero is undefined.');
+                return;
+            }
+
+            const q = GameState.currentQuestion;
+            const tNum = q.dy;
+            const tDen = q.dx;
+
+            // Simplify true values for comparison
+            const tGcd = gcd(tNum, tDen);
+            let stNum = tNum / tGcd;
+            let stDen = tDen / tGcd;
+            if (stDen < 0) { stNum *= -1; stDen *= -1; } // standardize negative
+
+            // User values parsing
+            let isNegativeUser = (uNum < 0) !== (uDen < 0);
+            let absUNum = Math.abs(uNum);
+            let absUDen = Math.abs(uDen);
+            let uGcd = gcd(absUNum, absUDen);
+            
+            let suNum = (absUNum / uGcd) * (isNegativeUser ? -1 : 1);
+            let suDen = absUDen / uGcd;
+
+            let trueValue = tNum / tDen;
+            let userValue = uNum / uDen;
+
+            // EPSILON for float comparison
+            const EPSILON = 0.0001;
+
+            // CHECK 1: Is it mathematically correct?
+            if (Math.abs(trueValue - userValue) < EPSILON) {
+                
+                // Educational Checks on form
+                if (GameState.isFractionMode && uGcd > 1) {
+                    deductPoints();
+                    showFeedback('warning', 'Almost there!', 
+                        `You found the correct rise and run! However, mathematicians always simplify their fractions. Both ${wrapMath(uNum)} and ${wrapMath(uDen)} can be divided by ${wrapMath(uGcd)}. Try simplifying it!`
+                    );
+                    return;
+                }
+
+                if (GameState.isFractionMode && stDen === 1 && uDen !== 1) {
+                    deductPoints();
+                    showFeedback('warning', 'Simplify to a whole number!', 
+                        `Wait! ${wrapMath(uNum)} divides perfectly by ${wrapMath(uDen)}. This can just be written as the whole number ${wrapMath(uNum / uDen)}! Switch to "Whole Number" mode or make the denominator 1.`
+                    );
+                    return;
+                }
+
+                // Perfect Match!
+                handleCorrectAnswer(stNum, stDen);
+                return;
+            }
+
+            // CHECK 2: Incorrect. Diagnose specific errors.
+            let invertedValue = tDen / tNum;
+            
+            // Inverted (Run over Rise)
+            if (Math.abs(invertedValue - userValue) < EPSILON) {
+                deductPoints();
+                showFeedback('error', 'Upside Down! 🙃', 
+                    `Oops! Remember, Gradient is <strong>RISE over RUN</strong>. You put the horizontal change (x) on top instead of the vertical change (y). Flip your fraction upside down!`
+                );
+                return;
+            }
+
+            // Sign Error
+            if (Math.abs(-trueValue - userValue) < EPSILON) {
+                deductPoints();
+                showFeedback('error', 'Sign Error! ➕➖', 
+                    `Careful! Look at the direction. If a line goes DOWN as you move from left to right, the gradient must be NEGATIVE. Check your positive/negative signs!`
+                );
+                return;
+            }
+
+            // Inverted AND Sign Error
+            if (Math.abs(-invertedValue - userValue) < EPSILON) {
+                deductPoints();
+                showFeedback('error', 'Double Trouble!', 
+                    `You flipped the fraction AND got the sign wrong. Remember: <strong>RISE over RUN</strong>, and check if the line goes up or down!`
+                );
+                return;
+            }
+
+            // Totally Wrong
+            deductPoints();
+            showFeedback('error', 'Not quite...', 
+                `That's not the correct gradient. Try calculating the rise (change in y) and run (change in x) carefully and try again!`
+            );
+        }
+
+        function deductPoints() {
+            if (GameState.mode === 'gauntlet') {
+                GameState.gauntlet.currentRoundPoints = Math.max(0, GameState.gauntlet.currentRoundPoints - 150);
+                updateHUD();
+                els.scoreDisplay.parentElement.classList.add('animate-pop');
+                setTimeout(() => els.scoreDisplay.parentElement.classList.remove('animate-pop'), 400);
+            }
+        }
+
+        function handleCorrectAnswer(stNum, stDen) {
+            if (GameState.mode === 'gauntlet') {
+                GameState.gauntlet.totalScore += Math.floor(GameState.gauntlet.currentRoundPoints);
+                updateHUD();
+            }
+            fireConfetti();
+            showFeedback('success', 'Gradient Guru! 🎓', 
+                `You perfectly calculated the gradient as ${wrapMath(formatFraction(stNum, stDen))}. Fantastic work!`, true
+            );
+        }
+
+        // --- FEEDBACK SYSTEM ---
+        function showFeedback(type, title, message, isCompletion = false) {
+            if (GameState.mode === 'gauntlet') GameState.gauntlet.isPaused = true;
+
+            els.modalTitle.innerHTML = title;
+            els.modalMessage.innerHTML = message;
+            
+            // Styling based on type
+            els.modalAccent.className = 'absolute top-0 left-0 w-full h-3 ';
+            els.modalBtn.className = 'w-full text-white font-bold text-lg py-4 rounded-xl shadow transition-colors active:scale-95 ';
+            
+            if (type === 'success') {
+                els.modalAccent.classList.add('bg-emerald-500');
+                els.modalIcon.innerText = '🌟';
+                els.modalBtn.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+                els.modalBtn.innerText = isCompletion && GameState.mode === 'gauntlet' ? 'Next Round ➡️' : 'Next Question ➡️';
+            } else if (type === 'warning') {
+                els.modalAccent.classList.add('bg-amber-500');
+                els.modalIcon.innerText = '🧐';
+                els.modalBtn.classList.add('bg-amber-500', 'hover:bg-amber-600');
+                els.modalBtn.innerText = 'Let me fix it';
+            } else {
+                els.modalAccent.classList.add('bg-red-500');
+                els.modalIcon.innerText = '❌';
+                els.modalBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+                els.modalBtn.innerText = 'Try Again';
+            }
+
+            els.modalBtn.onclick = () => closeFeedback(isCompletion);
+
+            els.modal.classList.remove('hidden');
+            setTimeout(() => {
+                els.modal.classList.add('opacity-100');
+                els.modalCard.classList.remove('scale-90');
+                els.modalCard.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeFeedback(isCompletion) {
+            els.modal.classList.remove('opacity-100');
+            els.modalCard.classList.remove('scale-100');
+            els.modalCard.classList.add('scale-90');
+            
+            setTimeout(() => {
+                els.modal.classList.add('hidden');
+                
+                if (isCompletion) {
+                    if (GameState.mode === 'gauntlet') {
+                        GameState.gauntlet.round++;
+                        if (GameState.gauntlet.round > GameState.gauntlet.maxRounds) {
+                            showGauntletEnd();
+                        } else {
+                            startRound();
+                        }
+                    } else {
+                        generateQuestion(GameState.mode);
+                    }
+                } else {
+                    if (GameState.mode === 'gauntlet') GameState.gauntlet.isPaused = false;
+                }
+            }, 300);
+        }
+
+        function showGauntletEnd() {
+            stopTimer();
+            els.finalScore.innerText = Math.floor(GameState.gauntlet.totalScore);
+            els.endModal.classList.remove('hidden');
+            setTimeout(() => {
+                els.endModal.classList.add('opacity-100');
+                els.endModal.firstElementChild.classList.remove('scale-90');
+                els.endModal.firstElementChild.classList.add('scale-100');
+            }, 10);
+            fireConfetti(true);
+        }
+
+        // --- CONFETTI SYSTEM (Vanilla JS) ---
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const cCtx = confettiCanvas.getContext('2d');
+        let particles = [];
+        let animationId = null;
+
+        function resizeConfetti() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeConfetti);
+        resizeConfetti();
+
+        function fireConfetti(intense = false) {
+            const count = intense ? 300 : 100;
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+            
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: confettiCanvas.width / 2,
+                    y: confettiCanvas.height / 2 + 100,
+                    r: randomInt(4, 10),
+                    dx: Math.random() * 20 - 10,
+                    dy: Math.random() * -20 - 5,
+                    color: colors[randomInt(0, colors.length - 1)],
+                    tilt: Math.random() * 10,
+                    tiltAngle: 0,
+                    tiltAngleInc: (Math.random() * 0.07) + 0.05
+                });
+            }
+
+            if (!animationId) animateConfetti();
+        }
+
+        function animateConfetti() {
+            animationId = requestAnimationFrame(animateConfetti);
+            cCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            
+            let active = false;
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                if (p.y < confettiCanvas.height) {
+                    active = true;
+                    p.tiltAngle += p.tiltAngleInc;
+                    p.y += (Math.cos(p.tiltAngle) + 1 + p.r / 2) / 2;
+                    p.x += Math.sin(p.tiltAngle) * 2;
+                    p.dy += 0.3; // gravity
+                    p.y += p.dy;
+                    p.x += p.dx;
+
+                    cCtx.beginPath();
+                    cCtx.lineWidth = p.r;
+                    cCtx.strokeStyle = p.color;
+                    cCtx.moveTo(p.x + p.tilt + p.r / 2, p.y);
+                    cCtx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 2);
+                    cCtx.stroke();
+                }
+            }
+
+            if (!active) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+                particles = [];
+            }
+        }
+
+    </script>
+</body>
+</html>

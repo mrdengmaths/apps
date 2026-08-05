@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factorising Fun App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the switch toggle */
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #10B981; /* emerald-500 */
+        }
+        .toggle-checkbox:checked ~ .dot {
+            transform: translateX(1.5rem);
+        }
+        /* Style for disabled switches */
+        .toggle-checkbox:disabled + .toggle-label {
+            background-color: #E5E7EB; /* gray-200 */
+            cursor: not-allowed;
+        }
+         .toggle-checkbox:disabled ~ .dot {
+            background-color: #9CA3AF; /* gray-400 */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+
+    <div class="min-h-screen flex flex-col items-center p-4">
+        <div class="w-full max-w-3xl mx-auto">
+            <header class="text-center mb-6">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-gray-800">Factorising Fun</h1>
+                <p class="text-lg text-gray-500 mt-2">Practice makes perfect!</p>
+            </header>
+
+            <!-- Settings Section -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg mb-6">
+                <div class="flex justify-between items-center mb-6 border-b pb-4">
+                     <h2 class="text-xl font-bold text-gray-700">Settings</h2>
+                     <div class="flex space-x-2">
+                        <button id="instructions-btn" class="flex items-center space-x-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors p-2 rounded-lg hover:bg-blue-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-4.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h4.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <span>Instructions</span>
+                        </button>
+                         <button id="help-btn" class="flex items-center space-x-2 text-sm font-medium text-orange-600 hover:text-orange-800 transition-colors p-2 rounded-lg hover:bg-orange-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                            <span>Help</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
+                    <!-- Switch for Basic Mode -->
+                    <label class="flex items-center cursor-pointer select-none">
+                        <div class="relative">
+                            <input type="checkbox" id="basic-switch" class="sr-only toggle-checkbox">
+                            <div class="toggle-label block w-14 h-8 rounded-full bg-gray-300 transition-all duration-300"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-300"></div>
+                        </div>
+                        <div class="ml-4 text-gray-700 font-medium">Basic</div>
+                    </label>
+                    <!-- Switch for Number of Terms -->
+                    <label class="flex items-center cursor-pointer select-none">
+                        <div class="relative">
+                            <input type="checkbox" id="num-terms-switch" class="sr-only toggle-checkbox">
+                            <div class="toggle-label block w-14 h-8 rounded-full bg-gray-300 transition-all duration-300"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-300"></div>
+                        </div>
+                        <div id="num-terms-label" class="ml-4 text-gray-700 font-medium">2 Terms</div>
+                    </label>
+                    <!-- Switch for Higher Orders -->
+                    <label class="flex items-center cursor-pointer select-none">
+                        <div class="relative">
+                            <input type="checkbox" id="higher-order-switch" class="sr-only toggle-checkbox">
+                            <div class="toggle-label block w-14 h-8 rounded-full bg-gray-300 transition-all duration-300"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-300"></div>
+                        </div>
+                        <div class="ml-4 text-gray-700 font-medium">Higher Orders</div>
+                    </label>
+                    <!-- Switch for Negative Factors -->
+                    <label class="flex items-center cursor-pointer select-none">
+                        <div class="relative">
+                            <input type="checkbox" id="negative-factor-switch" class="sr-only toggle-checkbox">
+                            <div class="toggle-label block w-14 h-8 rounded-full bg-gray-300 transition-all duration-300"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-300"></div>
+                        </div>
+                        <div class="ml-4 text-gray-700 font-medium">Negative Factors</div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Question & Answer Section -->
+            <div class="bg-white p-8 rounded-2xl shadow-lg text-center">
+                <p class="text-lg text-gray-500 mb-2">Factorise the following expression:</p>
+                <div class="bg-blue-50 p-6 rounded-xl mb-6 min-h-[80px] flex items-center justify-center">
+                   <p id="question-display" class="text-4xl font-mono font-bold text-blue-900 tracking-wider select-all"></p>
+                </div>
+                <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                    <input type="text" id="user-answer-input" placeholder="Type e.g. 2x^2(y+3z)" class="w-full sm:w-2/3 text-lg p-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" aria-label="Answer input">
+                    <div id="button-container" class="flex space-x-2 w-full sm:w-auto">
+                       <!-- Buttons will be injected here by JS -->
+                    </div>
+                </div>
+                <div id="feedback-box" class="mt-6 p-4 rounded-lg text-center font-medium transition-all duration-300 hidden"></div>
+            </div>
+
+            <!-- Score Section -->
+            <div class="flex justify-between items-center mt-6 text-xl font-bold text-gray-600">
+                <p>Score: <span id="score-display" class="text-emerald-500">0</span></p>
+                <p>Streak: <span id="streak-display" class="text-orange-500">🔥 0</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div id="instructions-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg m-4 transform transition-all duration-300 scale-100">
+            <div class="flex justify-between items-center p-5 border-b border-gray-200">
+                <h3 class="text-2xl font-bold text-gray-800">How to Use</h3>
+                <button class="modal-close-btn p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div class="p-6 text-gray-600 space-y-3">
+                <ol class="list-decimal list-inside space-y-3">
+                    <li><strong class="font-semibold text-gray-800">Choose Your Challenge:</strong> Use the switches to select between 2 or 3 terms, include higher powers, or include negative factors.</li>
+                    <li><strong class="font-semibold text-gray-800">Factorise:</strong> Look at the expression and type your factorised answer in the box. Use the `^` symbol for powers (e.g., `2x^2`).</li>
+                    <li><strong class="font-semibold text-gray-800">Check Your Work:</strong> Hit the 'Check' button or press Enter.</li>
+                    <li><strong class="font-semibold text-gray-800">Next Question:</strong> If you are correct, the 'Check' button becomes a 'Next' button. Click it or press Enter to continue.</li>
+                    <li><strong class="font-semibold text-gray-800">Learn and Improve:</strong> Read the specific feedback carefully! It will help you find your mistake. If you're still stuck, click the 'Help' button.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Help Modal -->
+    <div id="help-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg m-4 transform transition-all duration-300 scale-100">
+            <div class="flex justify-between items-center p-5 border-b border-gray-200">
+                <h3 class="text-2xl font-bold text-gray-800">Factorising Help</h3>
+                <button class="modal-close-btn p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div id="help-modal-content" class="p-6 text-gray-600 space-y-4">
+                <!-- Help content will be injected here -->
+            </div>
+        </div>
+    </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- STATE MANAGEMENT ---
+    let state = {
+        numTerms: 2,
+        isNegativeFactor: false,
+        isHigherOrder: false,
+        isBasic: false,
+        question: {
+            question: '',
+            answer: '',
+            structuredTerms: []
+        },
+        userAnswer: '',
+        feedback: {
+            message: '',
+            type: ''
+        },
+        score: 0,
+        streak: 0,
+        isCorrect: null,
+    };
+
+    // --- DOM ELEMENT REFERENCES ---
+    const basicSwitch = document.getElementById('basic-switch');
+    const numTermsSwitch = document.getElementById('num-terms-switch');
+    const numTermsLabel = document.getElementById('num-terms-label');
+    const higherOrderSwitch = document.getElementById('higher-order-switch');
+    const negativeFactorSwitch = document.getElementById('negative-factor-switch');
+    const questionDisplay = document.getElementById('question-display');
+    const userAnswerInput = document.getElementById('user-answer-input');
+    const buttonContainer = document.getElementById('button-container');
+    const feedbackBox = document.getElementById('feedback-box');
+    const scoreDisplay = document.getElementById('score-display');
+    const streakDisplay = document.getElementById('streak-display');
+    const instructionsBtn = document.getElementById('instructions-btn');
+    const helpBtn = document.getElementById('help-btn');
+    const instructionsModal = document.getElementById('instructions-modal');
+    const helpModal = document.getElementById('help-modal');
+    const modalCloseBtns = document.querySelectorAll('.modal-close-btn');
+
+    // --- HELPER FUNCTIONS (Parsing & Analysis) ---
+    const parseTerm = (termStr) => {
+        if (!termStr) return { coeff: 1, vars: {} };
+        const coeffMatch = termStr.match(/^-?\d+/);
+        const coeff = coeffMatch ? parseInt(coeffMatch[0], 10) : (termStr.startsWith('-') ? -1 : 1);
+        const vars = {};
+        const varMatches = [...termStr.matchAll(/([a-z])(\^\d+)?/g)];
+        for (const match of varMatches) {
+            const [, base, exp] = match;
+            vars[base] = exp ? parseInt(exp.substring(1), 10) : 1;
+        }
+        return { coeff, vars };
+    };
+
+    const parseAnswer = (answerStr) => {
+        try {
+            const match = answerStr.match(/^(.*?)\((.*)\)$/);
+            if (!match) return null;
+            const [, hcfStr, bracketContent] = match;
+            const hcf = parseTerm(hcfStr);
+            return { hcf, bracketContent };
+        } catch (e) {
+            return null;
+        }
+    };
+
+    const gcd = (a, b) => {
+        a = Math.abs(a);
+        b = Math.abs(b);
+        return b === 0 ? a : gcd(b, a % b);
+    };
+
+    const calculateHCF = (structuredTerms) => {
+        if (!structuredTerms || structuredTerms.length === 0) return { coeff: 1, vars: {} };
+        const hcfCoeff = structuredTerms.map(t => t.coeff).reduce(gcd);
+        const varCounts = {};
+        const commonVars = {};
+        structuredTerms.forEach(term => {
+            for (const v in term.vars) {
+                varCounts[v] = (varCounts[v] || 0) + 1;
+            }
+        });
+        for (const v in varCounts) {
+            if (varCounts[v] === structuredTerms.length) {
+                commonVars[v] = Math.min(...structuredTerms.map(t => t.vars[v] || 0));
+            }
+        }
+        return { coeff: hcfCoeff, vars: commonVars };
+    };
+    
+    const isObjectsEqual = (o1, o2) => {
+        if (!o1 || !o2) return false;
+        const o1Keys = Object.keys(o1).sort();
+        const o2Keys = Object.keys(o2).sort();
+        if (o1Keys.length !== o2Keys.length) return false;
+        return o1Keys.every((key, index) => {
+            const val1 = o1[key];
+            const val2 = o2[key];
+            return key === o2Keys[index] && val1 === val2;
+        });
+    };
+
+    // --- HELPER FUNCTIONS (Question Generation) ---
+    const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const randomVar = () => ['a', 'b', 'c', 'x', 'y', 'z', 'm', 'n', 'p'][randomInt(0, 8)];
+    const uniqueRandomVar = (existingVars) => {
+        let newVar;
+        do {
+            newVar = randomVar();
+        } while (existingVars.includes(newVar));
+        return newVar;
+    };
+
+    const generateExpressionTerm = (termObj) => {
+        if (!termObj || typeof termObj.coeff === 'undefined') return '';
+        const { coeff, vars } = termObj;
+        const coeffStr = Math.abs(coeff) === 1 && Object.keys(vars).length > 0 ? (coeff < 0 ? '-' : '') : coeff.toString();
+        const varsStr = Object.entries(vars)
+            .sort(([v1], [v2]) => v1.localeCompare(v2))
+            .map(([base, exp]) => exp > 0 ? `${base}${exp > 1 ? `^${exp}` : ''}` : '').join('');
+        return `${coeffStr}${varsStr}`;
+    };
+
+    const generateQuestion = (numTerms, isNegativeFactor, isHigherOrder, isBasic) => {
+        let commonFactorNum;
+        let commonFactorVars = {};
+        const localIsHigherOrder = isHigherOrder && !isBasic;
+        const localIsNegativeFactor = isNegativeFactor && !isBasic;
+
+        if (isBasic) {
+            commonFactorNum = randomInt(2, 9);
+            commonFactorVars = {};
+        } else if (localIsHigherOrder) {
+            commonFactorNum = randomInt(2, 6) * (randomInt(0, 1) === 0 ? 2 : 1);
+            const baseVar = randomVar();
+            commonFactorVars[baseVar] = randomInt(1, 2);
+        } else {
+            const hcfType = randomInt(1, 4);
+            switch (hcfType) {
+                case 1: // Number only HCF
+                    commonFactorNum = randomInt(2, 9);
+                    break;
+                case 2: // Variable only HCF
+                    commonFactorNum = 1;
+                    commonFactorVars[randomVar()] = 1;
+                    break;
+                case 3: // Number and two variables HCF
+                    commonFactorNum = randomInt(2, 9);
+                    const v1 = randomVar();
+                    const v2 = uniqueRandomVar([v1]);
+                    commonFactorVars[v1] = 1;
+                    commonFactorVars[v2] = 1;
+                    break;
+                default: // Number and one variable HCF
+                    commonFactorNum = randomInt(2, 9);
+                    commonFactorVars[randomVar()] = 1;
+                    break;
+            }
+        }
+
+        let localTerms = [];
+        let usedVars = Object.keys(commonFactorVars);
+
+        for (let i = 0; i < numTerms; i++) {
+            const coeff = (commonFactorNum === 1 && Object.keys(commonFactorVars).length > 0)
+                ? [3, 5, 7][i % 3] 
+                : randomInt(2, 7);
+
+            let termOnlyVars = {};
+            const newVar = uniqueRandomVar(usedVars);
+            usedVars.push(newVar);
+            termOnlyVars[newVar] = localIsHigherOrder ? randomInt(1,2) : 1;
+
+            const termCoeff = commonFactorNum * coeff;
+            const termVars = { ...commonFactorVars, ...termOnlyVars };
+            localTerms.push({ coeff: termCoeff, vars: termVars });
+        }
+        
+        for (let i = 1; i < localTerms.length; i++) {
+            if (Math.random() < 0.5) {
+                localTerms[i].coeff *= -1;
+            }
+        }
+        
+        if (localIsNegativeFactor) {
+            localTerms[0].coeff = -Math.abs(localTerms[0].coeff);
+        } else {
+             localTerms[0].coeff = Math.abs(localTerms[0].coeff);
+        }
+
+        const structuredTerms = localTerms;
+        
+        let question = generateExpressionTerm(structuredTerms[0]);
+        for(let i = 1; i < structuredTerms.length; i++){
+            const term = structuredTerms[i];
+            const termString = generateExpressionTerm({coeff: Math.abs(term.coeff), vars: term.vars});
+            const sign = term.coeff < 0 ? '-' : '+';
+            question += ` ${sign} ${termString}`;
+        }
+        
+        const hcf = calculateHCF(structuredTerms);
+        if (structuredTerms[0].coeff < 0 && localIsNegativeFactor) {
+            hcf.coeff *= -1;
+        }
+        const commonFactorString = generateExpressionTerm(hcf);
+
+        const finalAnswerParts = structuredTerms.map(term => {
+            const newCoeff = term.coeff / hcf.coeff;
+            let newVars = {};
+            Object.keys(term.vars).forEach(v => {
+                const newExp = (term.vars[v] || 0) - (hcf.vars[v] || 0);
+                if (newExp > 0) newVars[v] = newExp;
+            });
+            return generateExpressionTerm({coeff: newCoeff, vars: newVars});
+        });
+
+        let answer = `${commonFactorString}(${finalAnswerParts[0]}` + finalAnswerParts.slice(1).map((p) => {
+           return p.startsWith('-') ? ` - ${p.substring(1)}` : ` + ${p}`;
+        }).join('') + ')';
+
+        return { question, answer, structuredTerms };
+    };
+
+    // --- UI UPDATE FUNCTIONS ---
+    const renderQuestion = () => {
+        questionDisplay.innerHTML = state.question.question.replace(/(\w)\^(\d+)/g, '$1<sup>$2</sup>');
+    };
+
+    const renderFeedback = () => {
+        if (state.feedback.message) {
+            feedbackBox.innerHTML = state.feedback.message;
+            if (state.isCorrect) {
+                feedbackBox.innerHTML += `<span class="text-sm block mt-2 text-gray-500">(Press Enter for the next question)</span>`;
+            }
+            feedbackBox.className = `mt-6 p-4 rounded-lg text-center font-medium transition-all duration-300 ${state.feedback.type === 'correct' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+        } else {
+            feedbackBox.className = 'hidden';
+        }
+    };
+    
+    const renderScoreboard = () => {
+        scoreDisplay.textContent = state.score;
+        streakDisplay.textContent = `🔥 ${state.streak}`;
+    };
+
+    const renderButtons = () => {
+        let buttonHTML;
+        if (state.isCorrect) {
+            buttonHTML = `
+                <button id="next-btn" class="w-full sm:w-auto flex-grow justify-center flex items-center bg-blue-500 text-white font-bold py-4 px-6 rounded-lg hover:bg-blue-600 transition-all transform hover:scale-105 shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Next
+                </button>`;
+        } else {
+            buttonHTML = `
+                <button id="check-btn" class="w-full sm:w-auto flex-grow justify-center flex items-center bg-emerald-500 text-white font-bold py-4 px-6 rounded-lg hover:bg-emerald-600 transition-all transform hover:scale-105 shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><polyline points="20 6 9 17 4 12"></polyline></svg> Check
+                </button>`;
+        }
+        buttonContainer.innerHTML = buttonHTML;
+        // Re-attach listeners after innerHTML change
+        if (state.isCorrect) {
+            document.getElementById('next-btn').addEventListener('click', generateNewQuestion);
+        } else {
+            document.getElementById('check-btn').addEventListener('click', checkAnswer);
+        }
+    };
+    
+    const renderHelpContent = () => {
+        const helpContentEl = document.getElementById('help-modal-content');
+        const isHigher = state.isHigherOrder && !state.isBasic;
+        const example = isHigher ? '6x<sup>3</sup>y - 9x<sup>2</sup>z' : '8ax - 12ay';
+        const num1 = isHigher ? 6 : 8;
+        const num2 = isHigher ? 9 : 12;
+        const numHCF = isHigher ? 3 : 4;
+        const var1 = isHigher ? 'x<sup>3</sup>y' : 'ax';
+        const var2 = isHigher ? 'x<sup>2</sup>z' : 'ay';
+        const hcfVar = isHigher ? 'x<sup>2</sup>' : 'a';
+        const hcfFull = isHigher ? `3x<sup>2</sup>` : '4a';
+        const div1 = isHigher ? '2xy' : '2x';
+        const div2 = isHigher ? '3z' : '3y';
+        helpContentEl.innerHTML = `
+            <div>
+                <h4 class="font-bold text-lg mb-2 text-gray-800">Factorising with Highest Common Factors (HCF)</h4>
+                <p class="mb-2">The goal is to find the biggest number and/or variable that divides into <strong class="text-blue-600">all</strong> the terms.</p>
+                <p class="font-semibold">Example: Factorise ${example}</p>
+                <ol class="list-decimal list-inside space-y-2 mt-2 bg-gray-50 p-4 rounded-lg">
+                    <li><strong>Numbers:</strong> What's the biggest number that goes into ${num1} and ${num2}? It's <strong class="text-blue-600">${numHCF}</strong>.</li>
+                    <li><strong>Variables (with powers):</strong> For each variable, find the lowest power that appears in all terms.
+                     <ul class="list-disc list-inside ml-4 mt-1 text-sm">
+                            <li>In the example, the common variable is <strong class="text-blue-600">${hcfVar}</strong>.</li>
+                        </ul>
+                    </li>
+                    <li><strong>HCF:</strong> So the HCF is <strong class="text-blue-600">${hcfFull}</strong>.</li>
+                    <li><strong>Factor Out:</strong> Write the HCF outside a bracket: <strong class="text-blue-600">${hcfFull}( ? - ? )</strong></li>
+                    <li><strong>Divide:</strong> Divide each original term by the HCF.
+                        <ul class="list-disc list-inside ml-4 mt-1 text-sm">
+                            <li>${num1}${var1} ÷ ${hcfFull} = ${div1}</li>
+                            <li>${num2}${var2} ÷ ${hcfFull} = ${div2}</li>
+                        </ul>
+                    </li>
+                    <li><strong>Answer:</strong> <strong class="text-emerald-600 font-bold">${hcfFull}(${div1} - ${div2})</strong></li>
+                </ol>
+                <p class="mt-4 p-3 bg-orange-100 text-orange-800 rounded-lg"><strong>Negative Tip:</strong> If the first term is negative, pull the negative out with the HCF. All the signs inside the bracket will flip.</p>
+            </div>
+        `;
+    };
+
+    // --- CORE LOGIC ---
+    const generateNewQuestion = () => {
+        state.question = generateQuestion(state.numTerms, state.isNegativeFactor, state.isHigherOrder, state.isBasic);
+        state.userAnswer = '';
+        state.feedback = { message: '', type: '' };
+        state.isCorrect = null;
+        userAnswerInput.value = '';
+        userAnswerInput.readOnly = false;
+        renderAll();
+    };
+
+    const checkAnswer = () => {
+        state.userAnswer = userAnswerInput.value;
+        if (!state.userAnswer) return;
+        
+        const normalizeStr = (str) => str.replace(/\s+/g, '').replace(/\*/g, '').toLowerCase();
+
+        if (normalizeStr(state.userAnswer) === normalizeStr(state.question.answer)) {
+            state.feedback = { message: "Perfect! 🎉 You've completely mastered this one!", type: 'correct' };
+            state.score++;
+            state.streak++;
+            state.isCorrect = true;
+            userAnswerInput.readOnly = true;
+        } else {
+            state.streak = 0;
+            state.isCorrect = false;
+
+            const actualHCF = calculateHCF(state.question.structuredTerms);
+            if (state.question.structuredTerms[0].coeff < 0 && state.isNegativeFactor && !state.isBasic) {
+                actualHCF.coeff *= -1;
+            }
+            const userParsed = parseAnswer(state.userAnswer);
+
+            if (!userParsed) {
+                state.feedback = { message: "I think there might be a small typo. Remember to use the format: factor(term1+term2).", type: 'incorrect' };
+            } else {
+                const userHCF = userParsed.hcf;
+                if (isObjectsEqual(userHCF.vars, actualHCF.vars) && userHCF.coeff === actualHCF.coeff) {
+                    state.feedback = { message: "You've found the correct Highest Common Factor, that's the hardest part! Now, just double-check the terms inside the bracket.", type: 'incorrect' };
+                } else {
+                    const isCommonFactor = (userHCF.coeff !== 0 && actualHCF.coeff % userHCF.coeff === 0) &&
+                        Object.keys(userHCF.vars).every(v =>
+                            actualHCF.vars[v] && userHCF.vars[v] <= actualHCF.vars[v]
+                        );
+                    if (isCommonFactor) {
+                        state.feedback = { message: "Great start! You've found a common factor. Look closely... is there an even HIGHER factor you can take out?", type: 'incorrect' };
+                    } else {
+                        state.feedback = { message: "Not quite, but don't give up! Take a moment to look at the numbers and variables again. You can do it!", type: 'incorrect' };
+                    }
+                }
+            }
+        }
+        renderAll();
+    };
+    
+    const renderAll = () => {
+        renderQuestion();
+        renderFeedback();
+        renderScoreboard();
+        renderButtons();
+    };
+
+    // --- EVENT LISTENERS ---
+    basicSwitch.addEventListener('change', (e) => {
+        state.isBasic = e.target.checked;
+        higherOrderSwitch.disabled = state.isBasic;
+        negativeFactorSwitch.disabled = state.isBasic;
+        if (state.isBasic) {
+            higherOrderSwitch.checked = false;
+            negativeFactorSwitch.checked = false;
+            state.isHigherOrder = false;
+            state.isNegativeFactor = false;
+        }
+        generateNewQuestion();
+    });
+
+    numTermsSwitch.addEventListener('change', (e) => {
+        state.numTerms = e.target.checked ? 3 : 2;
+        numTermsLabel.textContent = e.target.checked ? '3 Terms' : '2 Terms';
+        generateNewQuestion();
+    });
+
+    higherOrderSwitch.addEventListener('change', (e) => {
+        state.isHigherOrder = e.target.checked;
+        generateNewQuestion();
+    });
+    
+    negativeFactorSwitch.addEventListener('change', (e) => {
+        state.isNegativeFactor = e.target.checked;
+        generateNewQuestion();
+    });
+
+    userAnswerInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') {
+            if (state.isCorrect) {
+                generateNewQuestion();
+            } else {
+                checkAnswer();
+            }
+        }
+    });
+    
+    // Modal Listeners
+    instructionsBtn.addEventListener('click', () => instructionsModal.classList.remove('hidden'));
+    helpBtn.addEventListener('click', () => {
+        renderHelpContent();
+        helpModal.classList.remove('hidden');
+    });
+    modalCloseBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            instructionsModal.classList.add('hidden');
+            helpModal.classList.add('hidden');
+        });
+    });
+
+    // --- INITIALIZATION ---
+    generateNewQuestion();
+});
+</script>
+
+</body>
+</html>

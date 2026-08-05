@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pirate Grid Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: #f3e5ab; /* Parchment color */
+            background-image: radial-gradient(#e0cda5 2px, transparent 2px);
+            background-size: 20px 20px;
+        }
+
+        h1, .pirate-font {
+            font-family: 'Cinzel', serif;
+        }
+
+        .grid-cell {
+            transition: all 0.3s ease;
+        }
+
+        .marked {
+            background-color: #2d3748; /* Dark slate */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fbbf24'%3E%3Cpath d='M11.602 13.7599L13.014 15.1719L21.4795 6.7063L22.8938 8.12051L13.014 18.0003L6.65 11.6363L8.06421 10.2221L10.189 12.3469L11.6025 13.7594L11.602 13.7599ZM11.6037 10.9322L16.5563 5.97949L17.9666 7.38977L13.014 12.3424L11.6037 10.9322ZM8.77698 16.5873L7.36396 18.0003L1 11.6363L2.41421 10.2221L3.82723 11.6352L3.82604 11.6363L8.77698 16.5873Z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 60%;
+            border-color: #1a202c;
+        }
+
+        /* The most recent target */
+        .latest {
+            background-color: #c53030 !important; /* Pirate Red */
+            border-color: #742a2a !important;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(197, 48, 48, 0.6);
+            z-index: 10;
+        }
+
+        /* Perspective effect for the map */
+        .map-container {
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.2);
+            border: 8px solid #5d4037;
+            border-radius: 8px;
+            background: #fffdf0;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-8 px-2 text-gray-800">
+
+    <!-- Header -->
+    <header class="text-center mb-6">
+        <h1 class="text-4xl md:text-5xl font-bold text-amber-900 pirate-font drop-shadow-sm">Pirate Grid</h1>
+        <p class="text-amber-800 mt-2 text-sm md:text-base">Target the coordinates to find the treasure!</p>
+    </header>
+
+    <!-- Main Game Area -->
+    <div class="w-full max-w-4xl flex flex-col lg:flex-row gap-8 items-center lg:items-start justify-center">
+        
+        <!-- Controls & Display Side -->
+        <div class="flex flex-col items-center gap-6 w-full max-w-xs order-2 lg:order-1">
+            
+            <!-- Display Box -->
+            <div class="relative w-full aspect-square max-h-64 bg-slate-800 rounded-xl shadow-xl flex items-center justify-center border-4 border-amber-500 overflow-hidden">
+                <div id="display-coordinate" class="pirate-font text-8xl text-amber-400 font-bold animate-pulse">
+                    --
+                </div>
+                <div class="absolute bottom-2 text-slate-400 text-xs uppercase tracking-widest">Target</div>
+            </div>
+
+            <!-- Stats -->
+            <div class="w-full flex justify-between px-4 py-2 bg-white/50 rounded-lg border border-amber-200">
+                <span class="font-bold text-amber-900">Remaining:</span>
+                <span id="count-remaining" class="font-bold text-slate-800 text-xl">36</span>
+            </div>
+
+            <!-- Buttons -->
+            <button onclick="generateCoordinate()" id="btn-generate" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-4 px-6 rounded-lg shadow-lg transform transition active:scale-95 pirate-font text-xl border-b-4 border-amber-800">
+                FIRE CANNON!
+            </button>
+
+            <!-- Manual Input -->
+            <div class="w-full flex gap-2">
+                <input type="text" id="manual-input" placeholder="e.g. B2" maxlength="2" 
+                       class="w-2/3 p-3 rounded text-center font-bold text-xl uppercase border-2 border-amber-600 bg-white text-slate-800 shadow-inner focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder-slate-300"
+                       onkeydown="if(event.key === 'Enter') manualFire()">
+                <button onclick="manualFire()" class="w-1/3 bg-slate-700 hover:bg-slate-800 text-white font-bold py-2 rounded shadow-lg border-b-4 border-slate-900 active:translate-y-1 transition-all pirate-font tracking-wide">
+                    AIM
+                </button>
+            </div>
+            
+            <button onclick="resetGame()" class="text-sm text-amber-800 underline hover:text-amber-600 mt-4">
+                Reset Map
+            </button>
+        </div>
+
+        <!-- The Grid Side -->
+        <div class="map-container p-2 md:p-6 bg-[#fff8e1] order-1 lg:order-2">
+            <div class="grid grid-cols-7 gap-1 md:gap-2">
+                <!-- Corner spacer -->
+                <div class="h-8 md:h-12 w-8 md:w-12"></div>
+                
+                <!-- Column Headers (A-F) -->
+                <div class="flex items-center justify-center font-bold text-amber-900 pirate-font text-lg md:text-xl">A</div>
+                <div class="flex items-center justify-center font-bold text-amber-900 pirate-font text-lg md:text-xl">B</div>
+                <div class="flex items-center justify-center font-bold text-amber-900 pirate-font text-lg md:text-xl">C</div>
+                <div class="flex items-center justify-center font-bold text-amber-900 pirate-font text-lg md:text-xl">D</div>
+                <div class="flex items-center justify-center font-bold text-amber-900 pirate-font text-lg md:text-xl">E</div>
+                <div class="flex items-center justify-center font-bold text-amber-900 pirate-font text-lg md:text-xl">F</div>
+
+                <!-- Row 1 -->
+                <div class="flex items-center justify-center font-bold text-amber-900 pirate-font text-lg md:text-xl h-10 md:h-14">1</div>
+                <div id="cell-A1" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-B1" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-C1" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-D1" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-E1" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-F1" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+
+                <!-- Row 2 -->
+                <div class="flex items-center justify-center font-bold text-amber-900 pirate-font text-lg md:text-xl h-10 md:h-14">2</div>
+                <div id="cell-A2" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-B2" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-C2" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-D2" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-E2" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-F2" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+
+                <!-- Row 3 -->
+                <div class="flex items-center justify-center font-bold text-amber-900 pirate-font text-lg md:text-xl h-10 md:h-14">3</div>
+                <div id="cell-A3" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-B3" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-C3" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-D3" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-E3" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-F3" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+
+                <!-- Row 4 -->
+                <div class="flex items-center justify-center font-bold text-amber-900 pirate-font text-lg md:text-xl h-10 md:h-14">4</div>
+                <div id="cell-A4" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-B4" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-C4" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-D4" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-E4" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-F4" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+
+                <!-- Row 5 -->
+                <div class="flex items-center justify-center font-bold text-amber-900 pirate-font text-lg md:text-xl h-10 md:h-14">5</div>
+                <div id="cell-A5" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-B5" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-C5" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-D5" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-E5" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-F5" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+
+                <!-- Row 6 -->
+                <div class="flex items-center justify-center font-bold text-amber-900 pirate-font text-lg md:text-xl h-10 md:h-14">6</div>
+                <div id="cell-A6" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-B6" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-C6" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-D6" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-E6" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+                <div id="cell-F6" class="grid-cell border-2 border-amber-200 bg-white rounded flex items-center justify-center h-10 md:h-14 w-10 md:w-14"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio for fun (optional, using browser Synth) -->
+    <script>
+        const cols = ['A', 'B', 'C', 'D', 'E', 'F'];
+        const rows = ['1', '2', '3', '4', '5', '6'];
+        let availableCoords = [];
+        let lastCoord = null;
+        
+        // Sound effects
+        const synth = window.speechSynthesis;
+
+        function initGame() {
+            availableCoords = [];
+            lastCoord = null;
+
+            // Generate all combinations
+            for (let c of cols) {
+                for (let r of rows) {
+                    availableCoords.push(c + r);
+                }
+            }
+            // Clear UI
+            document.querySelectorAll('.grid-cell').forEach(cell => {
+                cell.classList.remove('marked', 'latest');
+            });
+            document.getElementById('display-coordinate').innerText = '--';
+            document.getElementById('count-remaining').innerText = '36';
+            document.getElementById('btn-generate').disabled = false;
+            document.getElementById('btn-generate').innerText = "FIRE CANNON!";
+            document.getElementById('btn-generate').classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            // Clear input
+            const input = document.getElementById('manual-input');
+            if(input) input.value = '';
+        }
+
+        // Triggered by "FIRE CANNON!" button
+        function generateCoordinate() {
+            if (availableCoords.length === 0) return;
+
+            // Pick random index
+            const randomIndex = Math.floor(Math.random() * availableCoords.length);
+            const coord = availableCoords[randomIndex];
+
+            fireAtLocation(coord);
+        }
+
+        // Triggered by "AIM" button or Enter key
+        function manualFire() {
+            const input = document.getElementById('manual-input');
+            const rawVal = input.value.toUpperCase().trim();
+
+            // Validate format: Letter A-F followed by Number 1-6
+            if (!/^[A-F][1-6]$/.test(rawVal)) {
+                alert("Invalid coordinate! Please use a letter (A-F) and a number (1-6), e.g., 'B2'.");
+                return;
+            }
+
+            // Check if available
+            if (!availableCoords.includes(rawVal)) {
+                alert("Captain! That spot has already been blasted or doesn't exist!");
+                return;
+            }
+
+            fireAtLocation(rawVal);
+            input.value = ''; // Clear input
+            input.focus();
+        }
+
+        // Shared logic to update game state and UI
+        function fireAtLocation(coord) {
+            // Remove from array
+            const index = availableCoords.indexOf(coord);
+            if (index > -1) {
+                availableCoords.splice(index, 1);
+            }
+
+            // Update Big Display
+            const displayEl = document.getElementById('display-coordinate');
+            displayEl.style.transform = "scale(0.5)";
+            displayEl.style.opacity = "0";
+            
+            setTimeout(() => {
+                displayEl.innerText = coord;
+                displayEl.style.transform = "scale(1)";
+                displayEl.style.opacity = "1";
+            }, 100);
+
+            // Remove highlight from previous
+            if (lastCoord) {
+                const prevCell = document.getElementById(`cell-${lastCoord}`);
+                if (prevCell) {
+                    prevCell.classList.remove('latest');
+                }
+            }
+            lastCoord = coord;
+
+            // Mark Grid
+            const cell = document.getElementById(`cell-${coord}`);
+            if (cell) {
+                cell.classList.add('marked');
+                cell.classList.add('latest');
+            }
+
+            // Update Counter
+            document.getElementById('count-remaining').innerText = availableCoords.length;
+
+            // Check if game over
+            if (availableCoords.length === 0) {
+                document.getElementById('btn-generate').innerText = "All Clear!";
+                document.getElementById('btn-generate').disabled = true;
+                document.getElementById('btn-generate').classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function resetGame() {
+            if(confirm("Are you sure you want to clear the map?")) {
+                initGame();
+            }
+        }
+
+        // Initialize on load
+        initGame();
+
+    </script>
+</body>
+</html>

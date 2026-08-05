@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Clone Factory</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Russo+One&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #111827; /* gray-900 */
+            height: 100vh;
+            overflow-y: auto;
+        }
+        /* Custom font classes to match the React code's style injection */
+        .math-font { font-family: 'JetBrains Mono', monospace; }
+        .title-font { font-family: 'Russo One', sans-serif; }
+        .crt-scanline {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+        @keyframes slideIn {
+            0% { transform: translateX(-100%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        .slide-in {
+            animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- UTILITY FUNCTIONS ---
+
+        const shuffleArray = (array) => {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        };
+
+        const getRandomInt = (min, max) => {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        };
+
+        const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+        // --- COMPONENTS ---
+
+        const MathText = ({ text, className = "" }) => {
+            if (!text) return null;
+            const parts = text.toString().split('^');
+            return (
+                <span className={`inline-block ${className}`}>
+                    {parts.map((part, index) => {
+                        if (index === 0) return part;
+                        const match = part.match(/^([-0-9.]+|[a-z]+)/); 
+                        const exponent = match ? match[0] : '';
+                        const rest = part.slice(exponent.length);
+                        return (
+                            <span key={index}>
+                                <sup>{exponent}</sup>{rest}
+                            </span>
+                        );
+                    })}
+                </span>
+            );
+        };
+
+        // Restored Fireworks for Victory
+        const Fireworks = ({ onComplete }) => {
+            const canvasRef = useRef(null);
+            const [opacity, setOpacity] = useState(1);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                let particles = [];
+                let animationId;
+                let active = true;
+
+                const createParticle = (x, y) => {
+                    const hue = Math.random() * 360;
+                    const count = 40; 
+                    for (let i = 0; i < count; i++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const speed = Math.random() * 6 + 2;
+                        particles.push({
+                            x, y,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed,
+                            alpha: 1,
+                            color: `hsl(${hue}, 100%, 60%)`,
+                            decay: Math.random() * 0.02 + 0.015
+                        });
+                    }
+                };
+
+                const interval = setInterval(() => {
+                    if (active) {
+                        createParticle(
+                            Math.random() * canvas.width, 
+                            Math.random() * canvas.height
+                        );
+                    }
+                }, 500);
+
+                const stopTimeout = setTimeout(() => {
+                    active = false;
+                    setOpacity(0.2);
+                    if (onComplete) onComplete();
+                }, 6000);
+
+                const animate = () => {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; 
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    particles.forEach((p, index) => {
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.vy += 0.08; 
+                        p.alpha -= p.decay;
+                        
+                        ctx.globalAlpha = Math.max(0, p.alpha);
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        if (p.alpha <= 0) particles.splice(index, 1);
+                    });
+                    ctx.globalAlpha = 1;
+                    if (particles.length > 0 || active) {
+                        animationId = requestAnimationFrame(animate);
+                    }
+                };
+
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                animate();
+
+                return () => {
+                    clearInterval(interval);
+                    clearTimeout(stopTimeout);
+                    cancelAnimationFrame(animationId);
+                };
+            }, [onComplete]);
+
+            return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0 transition-opacity duration-1000" style={{opacity}} />;
+        };
+
+        const TriangleSVG = ({ sides, angle, labels, shapeType, color }) => {
+            let pathD = "";
+            let labelPos = {}; 
+            let anglePath = "";
+
+            if (shapeType === 'right') {
+                pathD = "M 15 85 L 85 85 L 15 15 Z";
+                anglePath = "M 15 75 L 25 75 L 25 85";
+                labelPos = { 
+                    bottom: {x: 50, y: 100},
+                    left: {x: -10, y: 50},
+                    right: {x: 65, y: 35},
+                    angle: {x: 40, y: 75}
+                }; 
+            } else if (shapeType === 'obtuse') {
+                pathD = "M 5 85 L 95 85 L 30 20 Z";
+                anglePath = "M 13 80 Q 20 75 27 85";
+                labelPos = { 
+                    bottom: {x: 50, y: 100}, 
+                    left: {x: -5, y: 45},
+                    right: {x: 85, y: 40},
+                    angle: {x: 30, y: 75}
+                };
+            } else { 
+                pathD = "M 10 85 L 90 85 L 50 10 Z";
+                anglePath = "M 18 80 Q 23 75 28 80"; 
+                labelPos = { 
+                    bottom: {x: 50, y: 100}, 
+                    left: {x: 5, y: 40},
+                    right: {x: 95, y: 40},
+                    angle: {x: 35, y: 72}
+                };
+            }
+
+            return (
+                <div className="relative w-full h-full mx-auto transition-all duration-500 flex items-center justify-center">
+                    <svg viewBox="-20 -20 140 140" className="w-full h-full drop-shadow-lg">
+                        <path 
+                            d={pathD} 
+                            fill="none" 
+                            stroke={color} 
+                            strokeWidth="2"
+                            strokeLinejoin="round"
+                            strokeLinecap="round"
+                        />
+                        {angle && <path d={anglePath} fill="none" stroke={color} strokeWidth="1" opacity="0.6" />}
+                        
+                        <foreignObject x={labelPos.bottom.x - 20} y={labelPos.bottom.y - 10} width="40" height="20">
+                            <div className={`text-center text-xs font-bold ${color === '#4ade80' ? 'text-green-400' : 'text-blue-300'}`}>
+                                <MathText text={labels.bottom} />
+                            </div>
+                        </foreignObject>
+                         <foreignObject x={labelPos.left.x - 15} y={labelPos.left.y - 10} width="40" height="20">
+                            <div className={`text-right text-xs font-bold ${color === '#4ade80' ? 'text-green-400' : 'text-blue-300'}`}>
+                                <MathText text={labels.left} />
+                            </div>
+                        </foreignObject>
+                         <foreignObject x={labelPos.right.x} y={labelPos.right.y - 10} width="40" height="20">
+                            <div className={`text-left text-xs font-bold ${color === '#4ade80' ? 'text-green-400' : 'text-blue-300'}`}>
+                                <MathText text={labels.right} />
+                            </div>
+                        </foreignObject>
+
+                        {angle && (
+                            <foreignObject x={labelPos.angle.x} y={labelPos.angle.y} width="30" height="20">
+                                 <div className="text-center text-[10px] text-yellow-500">{angle}</div>
+                            </foreignObject>
+                        )}
+                    </svg>
+                </div>
+            );
+        };
+
+        const RoundTransition = ({ round, cash, onNext }) => {
+            const [displayCash, setDisplayCash] = useState(0);
+
+            useEffect(() => {
+                let start = 0;
+                const duration = 1500;
+                const increment = cash / (duration / 16);
+                
+                const timer = setInterval(() => {
+                    start += increment;
+                    if (start >= cash) {
+                        setDisplayCash(cash);
+                        clearInterval(timer);
+                    } else {
+                        setDisplayCash(Math.floor(start));
+                    }
+                }, 16);
+                return () => clearInterval(timer);
+            }, [cash]);
+
+            return (
+                <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-900/95 backdrop-blur text-white">
+                    <div className="bg-gray-800 p-12 rounded-2xl border-4 border-green-500 shadow-[0_0_50px_rgba(34,197,94,0.3)] text-center slide-in">
+                        <h2 className="text-2xl text-green-400 font-bold tracking-widest mb-2">SEQUENCE COMPLETE</h2>
+                        <h1 className="text-6xl title-font mb-8">ROUND {round}</h1>
+                        
+                        <div className="mb-8">
+                            <div className="text-gray-400 text-sm uppercase tracking-widest mb-2">Total Earnings</div>
+                            <div className="text-5xl font-bold text-yellow-400 font-mono">
+                                ${displayCash}
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={onNext}
+                            className="px-10 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xl shadow-lg transition-all hover:scale-105 flex items-center gap-2 mx-auto"
+                        >
+                            <span>INITIALIZE ROUND {round + 1}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- DYNAMIC DATA GENERATION ---
+
+        const generateLevelData = (round) => {
+            const emojis = ["🤖", "🚀", "💎", "👾", "🛸", "🪐", "🌌", "⚙️"];
+            const randomEmoji = () => emojis[Math.floor(Math.random() * emojis.length)];
+            
+            let questions = [];
+
+            if (round === 1) {
+                // ROUND 1: Numbers Only
+                const triples = [[3,4,5], [5,12,13], [6,8,10], [8,15,17]];
+                const baseTriple = getRandomItem(triples);
+                const scale1 = getRandomInt(2, 4);
+                const q1Targets = baseTriple.map(n => n * scale1);
+                
+                const base2 = [getRandomInt(4,8), getRandomInt(4,8), getRandomInt(6,10)];
+                const scale2 = Math.random() > 0.5 ? 2 : 0.5;
+                const q2Targets = base2.map(n => n * scale2);
+                
+                const s3a = getRandomInt(5, 10);
+                const s3b = getRandomInt(6, 12);
+                const scale3 = getRandomInt(2, 3);
+                const angle3 = getRandomInt(3, 15) * 10; 
+
+                const baseRHS = getRandomItem([[5,13], [3,5], [8,17], [7,25], [20,29], [12,37]]);
+                const scale4 = getRandomInt(2, 5);
+
+                questions = [
+                    {
+                        test: "SSS",
+                        proto: { left: `${baseTriple[0]}`, right: `${baseTriple[1]}`, bottom: `${baseTriple[2]}`, angle: "" },
+                        scaleFactor: `Scale: ${scale1}`,
+                        target: { left: `${q1Targets[0]}`, right: `${q1Targets[1]}`, bottom: `${q1Targets[2]}` },
+                        inventory: [
+                            `${q1Targets[0]}`, `${q1Targets[1]}`, `${q1Targets[2]}`, 
+                            `${baseTriple[0]+scale1}`, `${baseTriple[1]+scale1}`,
+                            `${q1Targets[0]*2}`, `${q1Targets[1]-1}`
+                        ],
+                        slots: ['left', 'right', 'bottom'],
+                        shape: 'right'
+                    },
+                    {
+                        test: "SSS",
+                        proto: { left: `${base2[0]}`, right: `${base2[1]}`, bottom: `${base2[2]}`, angle: "" },
+                        scaleFactor: `Scale: ${scale2}`,
+                        target: { left: `${q2Targets[0]}`, right: `${q2Targets[1]}`, bottom: `${q2Targets[2]}` },
+                        inventory: [
+                            `${q2Targets[0]}`, `${q2Targets[1]}`, `${q2Targets[2]}`,
+                            `${base2[0] * (scale2 === 2 ? 3 : 2)}`, 
+                            `${base2[1] + 2}`, `${base2[2] - 1}`,
+                            `${scale2 === 0.5 ? base2[0]*2 : base2[0]/2}`
+                        ],
+                        slots: ['left', 'right', 'bottom'],
+                        shape: 'normal'
+                    },
+                    {
+                        test: "SAS",
+                        proto: { left: `${s3a}`, right: `${s3b}`, bottom: "", angle: `${angle3}°` },
+                        scaleFactor: `Scale: ${scale3}`,
+                        target: { left: `${s3a * scale3}`, right: `${s3b * scale3}`, angle: `${angle3}°` },
+                        inventory: [
+                            `${s3a * scale3}`, `${s3b * scale3}`, `${angle3}°`, 
+                            `${s3a + scale3}`, `${angle3 * scale3}°`,
+                            `${s3b * scale3 + 2}`, `${180 - angle3}°`
+                        ],
+                        slots: ['left', 'right', 'angle'],
+                        shape: 'obtuse'
+                    },
+                    {
+                        test: "RHS",
+                        proto: { left: `${baseRHS[0]}`, right: `${baseRHS[1]}`, bottom: "", angle: "90°" },
+                        scaleFactor: `Scale: ${scale4}`,
+                        target: { left: `${baseRHS[0] * scale4}`, right: `${baseRHS[1] * scale4}`, angle: "90°" },
+                        inventory: [
+                            `${baseRHS[0] * scale4}`, `${baseRHS[1] * scale4}`, "90°",
+                            `${baseRHS[0] + scale4}`, `${baseRHS[1] + scale4}`,
+                            "180°", `${scale4 * 10}`
+                        ],
+                        slots: ['left', 'right', 'angle'],
+                        shape: 'right'
+                    }
+                ];
+            } else if (round === 2) {
+                // ROUND 2: Algebra
+                const v = getRandomItem(['a', 'x', 'm', 'k', 'p']);
+                const scale1 = getRandomInt(2, 5);
+                
+                const v2 = getRandomItem(['b', 'y', 'n']);
+                const scale2 = getRandomInt(3, 6);
+                
+                const v3 = getRandomItem(['m', 't', 'h']);
+                const scale3 = getRandomInt(2, 4);
+                const angle3 = "x";
+
+                const v4 = "k";
+                const scale4 = getRandomInt(4, 8);
+
+                questions = [
+                    {
+                        test: "SSS",
+                        proto: { left: `${v}`, right: `2${v}`, bottom: `3${v}`, angle: "" },
+                        scaleFactor: `Scale: ${scale1}`,
+                        target: { left: `${scale1}${v}`, right: `${2*scale1}${v}`, bottom: `${3*scale1}${v}` },
+                        inventory: [
+                            `${scale1}${v}`, `${2*scale1}${v}`, `${3*scale1}${v}`,
+                            `${v}^${scale1}`, `${scale1+2}${v}`, `${v}+${scale1}`, `${scale1 * 10}${v}`
+                        ],
+                        slots: ['left', 'right', 'bottom'],
+                        shape: 'normal'
+                    },
+                    {
+                        test: "SSS",
+                        // Adjusted 2n, 3n, 5n to 2n, 3n, 4n for validity and fixed target calculation
+                        proto: { left: `2${v2}`, right: `3${v2}`, bottom: `4${v2}`, angle: "" },
+                        scaleFactor: `Scale: ${scale2}`,
+                        target: { left: `${2*scale2}${v2}`, right: `${3*scale2}${v2}`, bottom: `${4*scale2}${v2}`, angle: "" },
+                        inventory: [
+                            `${2*scale2}${v2}`, `${3*scale2}${v2}`, `${4*scale2}${v2}`,
+                            `${2}${v2}^${scale2}`, `${2+scale2}${v2}`, `${scale2}${v2}`, `10${v2}`
+                        ],
+                        slots: ['left', 'right', 'bottom'],
+                        shape: 'obtuse'
+                    },
+                    {
+                        test: "SAS",
+                        proto: { left: `4${v3}`, right: `5${v3}`, bottom: "", angle: `${angle3}°` },
+                        scaleFactor: `Scale: ${scale3}`,
+                        target: { left: `${4*scale3}${v3}`, right: `${5*scale3}${v3}`, angle: `${angle3}°` },
+                        inventory: [
+                            `${4*scale3}${v3}`, `${5*scale3}${v3}`, `${angle3}°`,
+                            `${4+scale3}${v3}`, `${scale3}${angle3}°`,
+                            `${4*scale3}${v3}^2`, `2${angle3}°`
+                        ],
+                        slots: ['left', 'right', 'angle'],
+                        shape: 'normal'
+                    },
+                    {
+                        test: "RHS",
+                        proto: { left: `3${v4}`, right: `5${v4}`, bottom: "", angle: "90°" },
+                        scaleFactor: `Scale: ${scale4}`,
+                        target: { left: `${3*scale4}${v4}`, right: `${5*scale4}${v4}`, angle: "90°" },
+                        inventory: [
+                            `${3*scale4}${v4}`, `${5*scale4}${v4}`, "90°",
+                            `${3}${v4}^${scale4}`, `${3+scale4}${v4}`, `450°`, `${scale4}${v4}`
+                        ],
+                        slots: ['left', 'right', 'angle'],
+                        shape: 'right'
+                    }
+                ];
+            } else {
+                // ROUND 3: Index Laws
+                const v = "x";
+                const baseExp1 = getRandomInt(2, 4);
+                const scaleExp1 = getRandomInt(2, 4);
+                
+                const v2 = "y";
+                const baseExp2 = getRandomInt(4, 8);
+                const scaleExp2 = -1 * getRandomInt(1, 3);
+
+                const v3 = "m";
+                const lenExp = getRandomInt(2, 4);
+                const scaleExp3 = getRandomInt(2, 4);
+
+                questions = [
+                    {
+                        test: "SSS",
+                        proto: { left: `${v}^${baseExp1}`, right: `${v}^${baseExp1+1}`, bottom: `${v}^${baseExp1+2}`, angle: "" },
+                        scaleFactor: `Scale: ${v}^${scaleExp1}`,
+                        target: { left: `${v}^${baseExp1+scaleExp1}`, right: `${v}^${baseExp1+1+scaleExp1}`, bottom: `${v}^${baseExp1+2+scaleExp1}` },
+                        inventory: [
+                            `${v}^${baseExp1+scaleExp1}`, `${v}^${baseExp1+1+scaleExp1}`, `${v}^${baseExp1+2+scaleExp1}`,
+                            `${v}^${baseExp1*scaleExp1}`, `${v}^${scaleExp1}`,
+                            `${scaleExp1}${v}^${baseExp1}`,
+                            `${v}^${baseExp1+scaleExp1+1}`
+                        ],
+                        slots: ['left', 'right', 'bottom'],
+                        shape: 'normal'
+                    },
+                    {
+                        test: "SSS",
+                        proto: { left: `${v2}^${baseExp2}`, right: `${v2}^${baseExp2+1}`, bottom: `${v2}^${baseExp2+2}`, angle: "" },
+                        scaleFactor: `Scale: ${v2}^${scaleExp2}`,
+                        target: { left: `${v2}^${baseExp2+scaleExp2}`, right: `${v2}^${baseExp2+1+scaleExp2}`, bottom: `${v2}^${baseExp2+2+scaleExp2}` },
+                        inventory: [
+                            `${v2}^${baseExp2+scaleExp2}`, `${v2}^${baseExp2+1+scaleExp2}`, `${v2}^${baseExp2+2+scaleExp2}`,
+                            `${v2}^${baseExp2 * Math.abs(scaleExp2)}`, 
+                            `${v2}^${baseExp2 - scaleExp2}`,
+                            `-${v2}^${baseExp2+scaleExp2}`
+                        ],
+                        slots: ['left', 'right', 'bottom'],
+                        shape: 'obtuse'
+                    },
+                    {
+                        test: "Area Scale",
+                        proto: { left: `${v3}^${lenExp}`, right: "Area=A", bottom: "", angle: "" },
+                        scaleFactor: `Scale: ${v3}^${scaleExp3}`,
+                        target: { left: `${v3}^${lenExp+scaleExp3}`, right: `${v3}^${scaleExp3*2}A` }, 
+                        inventory: [
+                            `${v3}^${lenExp+scaleExp3}`, `${v3}^${scaleExp3*2}A`,
+                            `${v3}^${scaleExp3}A`,
+                            `${v3}^${scaleExp3+2}A`,
+                            `${v3}^${lenExp*scaleExp3}`, `A^2`
+                        ],
+                        slots: ['left', 'right'],
+                        shape: 'right'
+                    }
+                ];
+            }
+
+            return questions.map(q => ({
+                ...q,
+                inventory: shuffleArray(q.inventory),
+                emoji: randomEmoji()
+            }));
+        };
+
+        // --- MAIN APP COMPONENT ---
+
+        function App() {
+            const [gameState, setGameState] = useState('intro'); // intro, playing, roundSummary, victory
+            const [currentRound, setCurrentRound] = useState(1);
+            const [roundData, setRoundData] = useState([]);
+            const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+            
+            const [selectedSlot, setSelectedSlot] = useState(null);
+            const [placedParts, setPlacedParts] = useState({});
+            const [feedback, setFeedback] = useState(null);
+            const [cash, setCash] = useState(0);
+            const [animateCash, setAnimateCash] = useState(false);
+            const [showVictoryCard, setShowVictoryCard] = useState(false);
+            const [isProcessing, setIsProcessing] = useState(false);
+
+            // Moved data generation out of useEffect to prevent race conditions/sync issues
+            // when switching rounds.
+
+            const currentLevel = roundData[currentQuestionIdx];
+
+            const handleSlotClick = (slot) => {
+                setFeedback(null);
+                setSelectedSlot(slot);
+            };
+
+            const handlePartClick = (part) => {
+                if (!selectedSlot) return;
+                setPlacedParts(prev => ({ ...prev, [selectedSlot]: part }));
+                setSelectedSlot(null);
+            };
+
+            const checkSimilarity = () => {
+                // Block multiple clicks if already processing or already success
+                if (isProcessing || feedback === 'success') return;
+
+                if (!currentLevel) return;
+
+                const requiredSlots = currentLevel.slots;
+                const isFilled = requiredSlots.every(slot => placedParts[slot]);
+                if (!isFilled) {
+                    setFeedback('incomplete');
+                    return;
+                }
+
+                let isCorrect = true;
+                requiredSlots.forEach(slot => {
+                    if (placedParts[slot] !== currentLevel.target[slot]) {
+                        isCorrect = false;
+                    }
+                });
+
+                if (isCorrect) {
+                    setIsProcessing(true); // Start blocking
+                    setFeedback('success');
+                    const cashReward = 150 * currentRound;
+                    setCash(prev => prev + cashReward);
+                    setAnimateCash(true);
+                    setTimeout(() => setAnimateCash(false), 1000);
+
+                    setTimeout(() => {
+                        if (currentQuestionIdx < roundData.length - 1) {
+                            setCurrentQuestionIdx(prev => prev + 1);
+                            setPlacedParts({});
+                            setFeedback(null);
+                            setIsProcessing(false); // Unblock for next question
+                        } else {
+                            if (currentRound < 3) {
+                                setGameState('roundSummary');
+                                setIsProcessing(false);
+                            } else {
+                                setGameState('victory');
+                                setIsProcessing(false);
+                            }
+                        }
+                    }, 1500);
+                } else {
+                    setFeedback('error');
+                    setCash(prev => Math.max(0, prev - 50));
+                }
+            };
+
+            const startRound = () => {
+                // Initialize Round 1 Data explicitly
+                const data = generateLevelData(1);
+                setRoundData(data);
+                setCurrentRound(1);
+                setCurrentQuestionIdx(0);
+                setPlacedParts({});
+                setFeedback(null);
+                setGameState('playing');
+            };
+
+            const nextRound = () => {
+                // Initialize Next Round Data explicitly before rendering 'playing'
+                const nextR = currentRound + 1;
+                const data = generateLevelData(nextR);
+                setRoundData(data);
+                setCurrentRound(nextR);
+                setCurrentQuestionIdx(0); 
+                setPlacedParts({});
+                setFeedback(null);
+                setGameState('playing');
+            };
+
+            const getRequiredSpecs = (level) => {
+                if (!level) return [];
+                const specs = [];
+                if (level.slots.some(s => ['left', 'right', 'bottom'].includes(s))) specs.push('SIDES');
+                if (level.slots.includes('angle')) specs.push('ANGLE');
+                if (level.test === 'Area Scale') specs.push('AREA');
+                return specs;
+            };
+
+            // --- RENDERERS ---
+
+            if (gameState === 'intro') {
+                return (
+                    <div className="min-h-screen flex items-center justify-center bg-gray-900 relative overflow-hidden p-4 font-mono text-white">
+                        
+                        <div className="crt-scanline absolute inset-0 z-50 opacity-20 pointer-events-none"></div>
+                        <div className="max-w-2xl w-full bg-gray-800 border-2 border-blue-500 p-8 rounded-lg shadow-2xl text-center relative z-10">
+                            <h1 className="text-5xl title-font text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-6">THE CLONE FACTORY</h1>
+                            <div className="space-y-4 text-gray-300 mb-8 text-lg">
+                                <p>Welcome, Engineer.</p>
+                                <p>Your mission: Fabricate 3 rounds of mathematically similar components.</p>
+                                <ul className="text-left w-fit mx-auto space-y-2 bg-gray-900/50 p-4 rounded border border-gray-700">
+                                    <li className="flex items-center gap-2"><span className="text-green-400">Round 1:</span> Numeric Calibration</li>
+                                    <li className="flex items-center gap-2"><span className="text-yellow-400">Round 2:</span> Algebraic Variables</li>
+                                    <li className="flex items-center gap-2"><span className="text-red-400">Round 3:</span> Index Law Protocols</li>
+                                </ul>
+                                <p className="text-sm text-gray-500 italic">Reward: Cash Bonuses & Promotion.</p>
+                            </div>
+                            <button 
+                                onClick={startRound}
+                                className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-xl transition-all shadow-[0_0_15px_rgba(37,99,235,0.5)] hover:scale-105"
+                            >
+                                START SHIFT
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (gameState === 'roundSummary') {
+                return (
+                    <RoundTransition 
+                        round={currentRound} 
+                        cash={cash} 
+                        onNext={nextRound} 
+                    />
+                );
+            }
+
+            if (gameState === 'victory') {
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center bg-black font-mono text-white relative overflow-hidden">
+                        <Fireworks onComplete={() => setShowVictoryCard(true)} />
+                        
+                        <div className={`z-10 text-center p-12 bg-gray-900/90 backdrop-blur rounded-2xl border-4 border-yellow-500 shadow-[0_0_100px_rgba(234,179,8,0.3)] transition-all duration-1000 ${showVictoryCard ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
+                            <h1 className="text-6xl title-font text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 mb-6">MASTER ENGINEER</h1>
+                            <p className="text-2xl mb-4 text-gray-300">All sectors stabilized.</p>
+                            <div className="text-5xl font-bold text-green-400 mb-8">${cash}</div>
+                            <button 
+                                onClick={() => window.location.reload()}
+                                className="px-8 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded border border-gray-500 transition-colors"
+                            >
+                                Accept New Contract
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (!currentLevel) return <div className="text-white">Loading...</div>;
+
+            return (
+                <div className="min-h-screen bg-gray-900 flex flex-col items-center p-2 relative font-mono text-white overflow-x-hidden">
+                    
+                    <div className="crt-scanline absolute inset-0 z-50 opacity-10 pointer-events-none"></div>
+                    
+                    {/* HUD - Compact */}
+                    <header className="w-full max-w-5xl flex justify-between items-end border-b border-gray-700 pb-2 mb-2 mt-2">
+                        <div>
+                            <div className="flex items-center gap-3">
+                                <span className={`px-2 py-1 rounded text-xs font-bold ${currentRound === 1 ? 'bg-green-900 text-green-300' : currentRound === 2 ? 'bg-yellow-900 text-yellow-300' : 'bg-red-900 text-red-300'}`}>
+                                    R{currentRound}
+                                </span>
+                                <span className="text-xs text-gray-500 uppercase tracking-widest">#{currentQuestionIdx + 1}/{roundData.length}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-6">
+                            <div className="text-right">
+                                <div className="text-xs text-gray-500">Protocol</div>
+                                <div className="text-lg font-bold text-blue-400">{currentLevel.test}</div>
+                            </div>
+                            <div className="text-right min-w-[100px]">
+                                <div className="text-xs text-gray-500">Earnings</div>
+                                <div className={`text-lg font-bold text-green-400 transition-transform ${animateCash ? 'scale-125 text-white' : ''}`}>
+                                    ${cash}
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Game Board - Compact Gap */}
+                    <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        
+                        {/* PROTOTYPE (Left) - Reduced padding and min-height */}
+                        <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700 relative group flex flex-col items-center justify-center min-h-[200px]">
+                            <div className="absolute top-2 left-4 text-xs text-gray-500 font-bold tracking-wider flex items-center gap-2">
+                                PROTOTYPE <span className="text-lg">{currentLevel.emoji}</span>
+                            </div>
+                            {/* Constrained wrapper for SVG */}
+                            <div className="h-48 w-48 flex items-center justify-center">
+                                <TriangleSVG 
+                                    sides={currentLevel.proto} 
+                                    angle={currentLevel.proto.angle}
+                                    labels={currentLevel.proto} 
+                                    shapeType={currentLevel.shape}
+                                    color="#60a5fa" 
+                                />
+                            </div>
+                            <div className="mt-2 text-center bg-black/30 px-6 py-2 rounded border border-blue-900/50 shadow-inner">
+                                <p className="text-blue-300 font-bold text-lg tracking-wide"><MathText text={currentLevel.scaleFactor} /></p>
+                            </div>
+                        </div>
+
+                        {/* FABRICATION (Right) - Reduced Padding and SVG size */}
+                        <div className="bg-gray-800 p-4 rounded-xl border-2 border-dashed border-gray-600 relative flex flex-col items-center justify-center min-h-[200px]">
+                            <div className="absolute top-2 left-4 w-full flex justify-between px-4">
+                                <span className="text-xs text-gray-400 font-bold tracking-wider">FABRICATION</span>
+                                <div className="flex gap-2">
+                                    {getRequiredSpecs(currentLevel).map(spec => (
+                                        <span key={spec} className={`text-[10px] font-bold px-2 py-0.5 rounded ${spec === 'ANGLE' ? 'bg-yellow-900 text-yellow-200' : spec === 'AREA' ? 'bg-purple-900 text-purple-200' : 'bg-blue-900 text-blue-200'}`}>
+                                            {spec}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* Reduced canvas size to w-64 h-64 (256px) */}
+                            <div className="relative w-64 h-64 mx-auto transition-all duration-500">
+                                {/* Interactive SVG Overlay - Expanded ViewBox and Size */}
+                                <svg viewBox="-20 -20 140 140" className="w-full h-full drop-shadow-lg">
+                                     {/* Background Shape (Ghost) */}
+                                    <path 
+                                        d={
+                                            currentLevel.shape === 'right' ? "M 15 85 L 85 85 L 15 15 Z" : 
+                                            currentLevel.shape === 'obtuse' ? "M 5 85 L 95 85 L 30 20 Z" : 
+                                            "M 10 85 L 90 85 L 50 10 Z"
+                                        } 
+                                        fill="none" 
+                                        stroke="#4ade80" 
+                                        strokeWidth="2" 
+                                        strokeDasharray="5,5"
+                                    />
+
+                                    {/* Helper to position buttons based on shape */}
+                                    {(() => {
+                                        const isRight = currentLevel.shape === 'right';
+                                        const isObtuse = currentLevel.shape === 'obtuse';
+                                        
+                                        // Updated Button Positions for new coordinates and smaller visual footprint
+                                        const pos = isRight 
+                                            ? { bottom: {x: 35, y: 90}, left: {x: -25, y: 45}, right: {x: 55, y: 45}, angle: {x: 20, y: 70} }
+                                            : isObtuse
+                                            ? { bottom: {x: 35, y: 90}, left: {x: -15, y: 45}, right: {x: 65, y: 40}, angle: {x: 20, y: 70} }
+                                            : { bottom: {x: 35, y: 90}, left: {x: -5, y: 45}, right: {x: 75, y: 45}, angle: {x: 35, y: 70} };
+
+                                        const getButtonClass = (slotName) => {
+                                            const isSelected = selectedSlot === slotName;
+                                            if (isSelected) return 'border-yellow-400 bg-yellow-400/20 text-yellow-200';
+                                            if (slotName === 'angle') {
+                                                return 'border-orange-500/50 bg-orange-900/20 text-orange-200 hover:bg-orange-500/20 hover:text-white';
+                                            }
+                                            return 'border-green-500/50 bg-black/60 text-gray-300 hover:bg-green-500/20 hover:text-white';
+                                        };
+
+                                        return (
+                                            <>
+                                                {/* Slot: Bottom */}
+                                                {currentLevel.slots.includes('bottom') && (
+                                                    <foreignObject x={pos.bottom.x} y={pos.bottom.y} width="60" height="30">
+                                                        <button 
+                                                            onClick={() => handleSlotClick('bottom')}
+                                                            className={`w-full h-full text-xs border rounded transition-colors font-bold ${getButtonClass('bottom')}`}
+                                                        >
+                                                            {placedParts.bottom ? <MathText text={placedParts.bottom} className="text-green-400"/> : "?"}
+                                                        </button>
+                                                    </foreignObject>
+                                                )}
+                                                {/* Slot: Left */}
+                                                {currentLevel.slots.includes('left') && (
+                                                    <foreignObject x={pos.left.x} y={pos.left.y} width="60" height="30">
+                                                        <button 
+                                                            onClick={() => handleSlotClick('left')}
+                                                            className={`w-full h-full text-xs border rounded transition-colors font-bold ${getButtonClass('left')}`}
+                                                        >
+                                                            {placedParts.left ? <MathText text={placedParts.left} className="text-green-400"/> : "?"}
+                                                        </button>
+                                                    </foreignObject>
+                                                )}
+                                                {/* Slot: Right */}
+                                                {currentLevel.slots.includes('right') && (
+                                                    <foreignObject x={pos.right.x} y={pos.right.y} width="60" height="30">
+                                                        <button 
+                                                            onClick={() => handleSlotClick('right')}
+                                                            className={`w-full h-full text-xs border rounded transition-colors font-bold ${getButtonClass('right')}`}
+                                                        >
+                                                            {placedParts.right ? <MathText text={placedParts.right} className="text-green-400"/> : "?"}
+                                                        </button>
+                                                    </foreignObject>
+                                                )}
+                                                {/* Slot: Angle */}
+                                                {currentLevel.slots.includes('angle') && (
+                                                    <foreignObject x={pos.angle.x} y={pos.angle.y} width="60" height="30">
+                                                        <button 
+                                                            onClick={() => handleSlotClick('angle')}
+                                                            className={`w-full h-full text-xs border rounded transition-colors font-bold ${getButtonClass('angle')}`}
+                                                        >
+                                                            {placedParts.angle ? <MathText text={placedParts.angle} className="text-orange-400"/> : "∠?"}
+                                                        </button>
+                                                    </foreignObject>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+                                </svg>
+                            </div>
+
+                            <div className="mt-2 flex gap-4 items-center">
+                                <button 
+                                    onClick={checkSimilarity}
+                                    disabled={feedback === 'success'}
+                                    className={`px-6 py-2 font-bold rounded shadow-lg transition-transform ${feedback === 'success' ? 'bg-gray-600 cursor-not-allowed opacity-50' : 'bg-green-600 hover:bg-green-500 text-white hover:scale-105'}`}
+                                >
+                                    {feedback === 'success' ? 'FABRICATED' : 'FABRICATE'}
+                                </button>
+                                <div className="h-8 flex items-center">
+                                    {feedback === 'error' && <span className="text-red-400 font-bold animate-bounce">⚠ MISMATCH ⚠</span>}
+                                    {feedback === 'success' && <span className="text-green-400 font-bold animate-pulse">✓ STABLE CLONE</span>}
+                                    {feedback === 'incomplete' && <span className="text-yellow-400 font-bold">INCOMPLETE</span>}
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    {/* Inventory - Compact */}
+                    <div className="w-full max-w-4xl mt-4 bg-gray-800/80 border-t-4 border-blue-500 p-3 rounded-xl">
+                        <h3 className="text-gray-400 text-xs font-bold mb-2 tracking-widest uppercase">Inventory</h3>
+                        <div className="flex flex-wrap gap-2 justify-center">
+                            {currentLevel.inventory.map((item, idx) => (
+                                <button 
+                                    key={idx}
+                                    onClick={() => handlePartClick(item)}
+                                    disabled={!selectedSlot}
+                                    className={`px-3 py-2 bg-gray-700 border border-gray-600 rounded hover:bg-gray-600 hover:border-blue-400 transition-all min-w-[60px] font-bold text-base shadow-md ${!selectedSlot ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-1'}`}
+                                >
+                                    <MathText text={item} />
+                                </button>
+                            ))}
+                        </div>
+                        {!selectedSlot && (
+                            <p className="text-center text-[10px] text-gray-500 mt-2 italic">Select a yellow slot above to enable parts.</p>
+                        )}
+                        {selectedSlot && (
+                            <p className="text-center text-[10px] text-yellow-400 mt-2 animate-pulse">Installing into slot: {selectedSlot.toUpperCase()}</p>
+                        )}
+                    </div>
+
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
