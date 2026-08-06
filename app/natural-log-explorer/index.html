@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Natural Log (ln) Explorer - Year 11 Adv Maths</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- KaTeX for Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            /* Subdued grid background for a "math" feel */
+            background-image: linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .tab-content {
+            display: none;
+            animation: slideFadeIn 0.4s ease-out forwards;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes slideFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cancellation Animation Styles */
+        .anim-step {
+            transition: all 0.5s ease-in-out;
+            opacity: 0.3;
+            transform: scale(0.95);
+        }
+        .anim-step.active-step {
+            opacity: 1;
+            transform: scale(1.05);
+            font-weight: bold;
+            color: #0f172a;
+        }
+        .strike {
+            position: relative;
+            display: inline-block;
+        }
+        .strike::after {
+            content: '';
+            position: absolute;
+            left: -5%;
+            top: 50%;
+            width: 0%;
+            height: 3px;
+            background-color: #ef4444; /* red-500 */
+            transition: width 0.4s ease-in-out;
+            border-radius: 2px;
+        }
+        .strike.struck::after {
+            width: 110%;
+        }
+        
+        /* Quiz Button Styles */
+        .quiz-btn {
+            transition: all 0.2s;
+        }
+        .quiz-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .quiz-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        .quiz-btn.correct {
+            background-color: #22c55e !important; /* green-500 */
+            color: white !important;
+            border-color: #16a34a !important;
+        }
+        .quiz-btn.wrong {
+            background-color: #ef4444 !important; /* red-500 */
+            color: white !important;
+            border-color: #dc2626 !important;
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .math-box {
+            font-size: 1.25rem;
+        }
+        
+        /* SVG Graph Styling */
+        #graph-svg {
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+            background-color: white;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 p-4 md:p-8 flex flex-col items-center">
+
+    <div class="w-full max-w-4xl bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white text-center">
+            <h1 class="text-3xl md:text-4xl font-bold mb-2"><i class="fa-solid fa-square-root-variable mr-3"></i>The Natural Log Explorer</h1>
+            <p class="text-blue-100 font-medium">Year 11 Advanced Mathematics</p>
+        </div>
+
+        <!-- Navigation -->
+        <div class="bg-slate-100 p-3 flex flex-wrap justify-center gap-2 border-b border-slate-200">
+            <button onclick="switchTab('learn')" id="nav-learn" class="nav-btn px-5 py-2.5 rounded-xl font-semibold bg-white text-blue-600 shadow-sm border border-slate-200 transition-colors">
+                <i class="fa-solid fa-book-open mr-2"></i> 1. Notation
+            </button>
+            <button onclick="switchTab('rules')" id="nav-rules" class="nav-btn px-5 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-white transition-colors">
+                <i class="fa-solid fa-list-check mr-2"></i> 2. Rules
+            </button>
+            <button onclick="switchTab('graphs')" id="nav-graphs" class="nav-btn px-5 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-white transition-colors">
+                <i class="fa-solid fa-chart-line mr-2"></i> 3. Graph Flipper
+            </button>
+            <button onclick="switchTab('practice')" id="nav-practice" class="nav-btn px-5 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-white transition-colors">
+                <i class="fa-solid fa-gamepad mr-2"></i> 4. Practice Game
+            </button>
+        </div>
+
+        <div class="p-6 md:p-10">
+            
+            <!-- TAB 1: Notation -->
+            <div id="tab-learn" class="tab-content active space-y-6">
+                <h2 class="text-2xl font-bold text-slate-800 border-b-2 border-blue-200 pb-2">What is the Natural Logarithm?</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                        <h3 class="font-bold text-blue-800 mb-3 text-lg">The Base $e$</h3>
+                        <p class="mb-4">Just like base 10 is common in science, higher mathematics loves the special number <strong>Euler's number ($e$)</strong>.</p>
+                        <div class="bg-white p-4 rounded-xl text-center shadow-sm math-box">
+                            $$ e \approx 2.71828... $$
+                        </div>
+                        <p class="mt-4 text-sm text-slate-600">It is the unique base where the derivative of the exponential function is itself!</p>
+                    </div>
+
+                    <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+                        <h3 class="font-bold text-indigo-800 mb-3 text-lg">The Notation: $\ln(x)$</h3>
+                        <p class="mb-4">A logarithm with base $e$ is so important it gets its own special notation. Instead of writing $\log_e(x)$, we write $\ln(x)$ (pronounced "ell-en of x").</p>
+                        <div class="bg-white p-4 rounded-xl text-center shadow-sm math-box text-indigo-700">
+                            $$ \ln(x) \equiv \log_e(x) $$
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 mt-6 flex items-center shadow-sm">
+                    <div class="text-3xl text-amber-500 mr-6"><i class="fa-solid fa-lightbulb"></i></div>
+                    <div>
+                        <h4 class="font-bold text-slate-700">Key Takeaway</h4>
+                        <p class="text-slate-600 mt-1">Whenever you see $\ln$, just remember it is exactly the same as any other log you've learned, it simply has a base of $e$.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: Rules -->
+            <div id="tab-rules" class="tab-content space-y-6">
+                <h2 class="text-2xl font-bold text-slate-800 border-b-2 border-purple-200 pb-2">Natural Log Rules</h2>
+                <p class="text-slate-600 mb-4">Because $\ln$ is simply $\log_e$, all your standard logarithm laws apply perfectly. Notice how $\ln$ and $\log_e$ are completely interchangeable!</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white border-2 border-slate-100 rounded-xl p-5 shadow-sm">
+                        <p class="text-sm font-semibold text-purple-600 mb-2 uppercase tracking-wide">Product Rule</p>
+                        <div class="math-box text-center mb-2">$$ \ln(ab) = \ln(a) + \ln(b) $$</div>
+                        <div class="text-center text-slate-400 text-sm">Same as: $$ \log_e(ab) = \log_e(a) + \log_e(b) $$</div>
+                    </div>
+                    <div class="bg-white border-2 border-slate-100 rounded-xl p-5 shadow-sm">
+                        <p class="text-sm font-semibold text-purple-600 mb-2 uppercase tracking-wide">Quotient Rule</p>
+                        <div class="math-box text-center mb-2">$$ \ln\left(\frac{a}{b}\right) = \ln(a) - \ln(b) $$</div>
+                        <div class="text-center text-slate-400 text-sm">Same as: $$ \log_e\left(\frac{a}{b}\right) = \log_e(a) - \log_e(b) $$</div>
+                    </div>
+                    <div class="bg-white border-2 border-slate-100 rounded-xl p-5 shadow-sm">
+                        <p class="text-sm font-semibold text-purple-600 mb-2 uppercase tracking-wide">Power Rule</p>
+                        <div class="math-box text-center mb-2">$$ \ln(a^n) = n\ln(a) $$</div>
+                        <div class="text-center text-slate-400 text-sm">Same as: $$ \log_e(a^n) = n\log_e(a) $$</div>
+                    </div>
+                    <div class="bg-white border-2 border-slate-100 rounded-xl p-5 shadow-sm">
+                        <p class="text-sm font-semibold text-purple-600 mb-2 uppercase tracking-wide">Special Values</p>
+                        <div class="math-box text-center mb-2">$$ \ln(1) = 0 \quad \text{and} \quad \ln(e) = 1 $$</div>
+                        <div class="text-center text-slate-400 text-sm">Same as: $$ \log_e(1) = 0 \quad \text{and} \quad \log_e(e) = 1 $$</div>
+                    </div>
+                    <div class="bg-purple-50 border-2 border-purple-200 rounded-xl p-5 shadow-sm md:col-span-2">
+                        <p class="text-sm font-semibold text-purple-700 mb-2 uppercase tracking-wide text-center">Cancellation Properties (Inverse)</p>
+                        <p class="text-sm text-purple-900 mb-3 text-center">Because exponential and log functions undo each other:</p>
+                        <div class="flex flex-col md:flex-row justify-around items-center gap-4">
+                            <div class="math-box text-center">$$ \ln(e^x) = x $$</div>
+                            <div class="math-box text-center">$$ e^{\ln(x)} = x $$</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Graph Flipper -->
+            <div id="tab-graphs" class="tab-content space-y-4">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end border-b-2 border-emerald-200 pb-2 mb-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Exponential & Log Graphs</h2>
+                        <p class="text-slate-600">The functions $y = e^x$ and $y = \ln(x)$ are <strong>inverse functions</strong>.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                    <div class="md:col-span-4 flex flex-col justify-center space-y-4">
+                        <div class="bg-emerald-50 p-5 rounded-xl border border-emerald-100">
+                            <h3 class="font-bold text-emerald-800 mb-2"><i class="fa-solid fa-circle-info mr-2"></i>Inverse Property</h3>
+                            <p class="text-sm text-slate-700 mb-2">Because they undo each other, their graphs are exact reflections across the diagonal line $y = x$.</p>
+                            <p class="text-sm text-slate-700">Every point $(a, b)$ on $y=e^x$ becomes $(b, a)$ on $y=\ln(x)$.</p>
+                        </div>
+                        
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full bg-blue-500"></div>
+                                <span class="font-semibold text-slate-700" id="graph-label">$y = e^x$</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="w-4 h-1 border-b-2 border-dashed border-slate-400"></div>
+                                <span class="text-slate-500 text-sm">$y = x$ (Mirror Line)</span>
+                            </div>
+                        </div>
+
+                        <button id="btn-flip" onclick="toggleGraphFlip()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md font-bold transition flex items-center justify-center text-lg mt-4">
+                            <i class="fa-solid fa-repeat mr-3"></i> Flip over y = x
+                        </button>
+                    </div>
+
+                    <!-- SVG Canvas Area -->
+                    <div class="md:col-span-8 flex justify-center">
+                        <div class="relative w-full max-w-[450px] aspect-square">
+                            <svg id="graph-svg" viewBox="0 0 400 400" class="w-full h-full">
+                                <!-- Grid Lines -->
+                                <g stroke="#e2e8f0" stroke-width="1">
+                                    <line x1="0" y1="50" x2="400" y2="50" />
+                                    <line x1="0" y1="100" x2="400" y2="100" />
+                                    <line x1="0" y1="150" x2="400" y2="150" />
+                                    <line x1="0" y1="250" x2="400" y2="250" />
+                                    <line x1="0" y1="300" x2="400" y2="300" />
+                                    <line x1="0" y1="350" x2="400" y2="350" />
+                                    
+                                    <line x1="50" y1="0" x2="50" y2="400" />
+                                    <line x1="100" y1="0" x2="100" y2="400" />
+                                    <line x1="150" y1="0" x2="150" y2="400" />
+                                    <line x1="250" y1="0" x2="250" y2="400" />
+                                    <line x1="300" y1="0" x2="300" y2="400" />
+                                    <line x1="350" y1="0" x2="350" y2="400" />
+                                </g>
+                                <!-- Axes -->
+                                <line x1="0" y1="200" x2="400" y2="200" stroke="#334155" stroke-width="2" /> <!-- X axis -->
+                                <line x1="200" y1="0" x2="200" y2="400" stroke="#334155" stroke-width="2" /> <!-- Y axis -->
+                                
+                                <!-- y = x line -->
+                                <line x1="0" y1="400" x2="400" y2="0" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8,8" />
+                                
+                                <!-- Ghost Path (Original Curve) -->
+                                <path id="ghost-path" d="" fill="none" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
+                                
+                                <!-- Ghost Points -->
+                                <circle id="ghost-trace-point" cx="0" cy="0" r="6" fill="#cbd5e1" opacity="0" />
+                                <text id="ghost-trace-text" x="0" y="0" fill="#94a3b8" font-size="12" font-weight="bold" font-family="sans-serif" opacity="0"></text>
+                                <circle id="ghost-knee-point" cx="0" cy="0" r="6" fill="#cbd5e1" opacity="0" />
+                                <text id="ghost-knee-text" x="0" y="0" fill="#94a3b8" font-size="12" font-weight="bold" font-family="sans-serif" opacity="0"></text>
+                                
+                                <!-- Dynamic Path -->
+                                <path id="anim-path" d="" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                                
+                                <!-- Traced Point -->
+                                <circle id="trace-point" cx="0" cy="0" r="6" fill="#ef4444" />
+                                <text id="trace-text" x="0" y="0" fill="#ef4444" font-size="12" font-weight="bold" font-family="sans-serif">(1, e)</text>
+                                
+                                <!-- Knee Point -->
+                                <circle id="knee-point" cx="0" cy="0" r="6" fill="#f59e0b" />
+                                <text id="knee-text" x="0" y="0" fill="#f59e0b" font-size="12" font-weight="bold" font-family="sans-serif">(0, 1)</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: Practice Game -->
+            <div id="tab-practice" class="tab-content">
+                
+                <!-- Game Main Menu -->
+                <div id="game-menu" class="text-center py-8">
+                    <h2 class="text-3xl font-bold text-slate-800 mb-2">Practice Arena</h2>
+                    <p class="text-slate-500 mb-8">Test your knowledge of Natural Logarithms.</p>
+                    
+                    <div class="flex flex-col md:flex-row justify-center gap-6 max-w-2xl mx-auto">
+                        <button onclick="startGame('easy')" class="flex-1 bg-white border-2 border-green-200 hover:border-green-500 hover:shadow-lg rounded-2xl p-6 transition group">
+                            <div class="text-4xl text-green-500 mb-3 group-hover:scale-110 transition"><i class="fa-solid fa-seedling"></i></div>
+                            <h3 class="text-xl font-bold text-slate-700">Warm Up</h3>
+                            <p class="text-sm text-slate-500 mt-2">Basic evaluations and notation.</p>
+                        </button>
+                        
+                        <button onclick="startGame('medium')" class="flex-1 bg-white border-2 border-orange-200 hover:border-orange-500 hover:shadow-lg rounded-2xl p-6 transition group">
+                            <div class="text-4xl text-orange-500 mb-3 group-hover:scale-110 transition"><i class="fa-solid fa-fire"></i></div>
+                            <h3 class="text-xl font-bold text-slate-700">Challenge</h3>
+                            <p class="text-sm text-slate-500 mt-2">Simplifying expressions and basic equations.</p>
+                        </button>
+
+                        <button onclick="startGame('hard')" class="flex-1 bg-white border-2 border-red-200 hover:border-red-500 hover:shadow-lg rounded-2xl p-6 transition group">
+                            <div class="text-4xl text-red-500 mb-3 group-hover:scale-110 transition"><i class="fa-solid fa-skull"></i></div>
+                            <h3 class="text-xl font-bold text-slate-700">Mastery</h3>
+                            <p class="text-sm text-slate-500 mt-2">Complex equations and log laws combined.</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Game Interface -->
+                <div id="game-active" class="hidden max-w-2xl mx-auto">
+                    <!-- Top Bar -->
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-2">
+                            <button onclick="exitGame()" class="text-slate-400 hover:text-slate-700 transition"><i class="fa-solid fa-arrow-left"></i> Exit</button>
+                            <span id="level-indicator" class="px-3 py-1 bg-green-100 text-green-800 text-xs font-bold uppercase rounded-full tracking-wide">EASY</span>
+                        </div>
+                        <div class="font-bold text-slate-500">
+                            Question <span id="q-current" class="text-blue-600 text-lg">1</span> / 5
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-slate-200 rounded-full h-2.5 mb-8 overflow-hidden">
+                        <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 20%"></div>
+                    </div>
+
+                    <!-- Question Container -->
+                    <div class="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm text-center min-h-[300px] flex flex-col justify-center relative">
+                        <!-- Hint Button -->
+                        <button onclick="showHint()" id="btn-hint" class="absolute top-4 right-4 text-slate-400 hover:text-amber-500 transition px-3 py-1 border border-transparent hover:border-amber-200 rounded-lg text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-lightbulb"></i> Hint
+                        </button>
+                        
+                        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-4">Evaluate / Solve</h3>
+                        <div id="question-text" class="text-3xl md:text-4xl mb-6 math-box min-h-[60px] flex items-center justify-center">
+                            $$ \ln(e^3) $$
+                        </div>
+
+                        <!-- Hint Text Box -->
+                        <div id="hint-box" class="hidden mb-6 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm font-medium">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <!-- Options Grid -->
+                        <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    
+                    <div id="feedback-msg" class="text-center mt-6 min-h-[3rem] flex flex-col justify-center items-center opacity-0 transition-opacity"></div>
+                </div>
+
+                <!-- Game Over Screen -->
+                <div id="game-over" class="hidden text-center py-10 max-w-md mx-auto">
+                    <div id="score-icon" class="text-6xl mb-4">🏆</div>
+                    <h2 class="text-3xl font-bold text-slate-800 mb-2">Round Complete!</h2>
+                    <p class="text-slate-600 mb-6">You scored <span id="final-score" class="font-bold text-blue-600 text-2xl">4/5</span></p>
+                    
+                    <div class="flex gap-4 justify-center">
+                        <button onclick="showGameMenu()" class="px-6 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition">Back to Menu</button>
+                        <button onclick="startGame(currentLevel)" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-md transition">Play Again</button>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Initialize Math Rendering on Load
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ],
+                throwOnError : false
+            });
+        });
+
+        // -- Tab Navigation Logic --
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            
+            // Update nav buttons styling
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-blue-600', 'shadow-sm', 'border');
+                btn.classList.add('text-slate-600');
+            });
+            let activeBtn = document.getElementById('nav-' + tabId);
+            activeBtn.classList.remove('text-slate-600');
+            activeBtn.classList.add('bg-white', 'text-blue-600', 'shadow-sm', 'border');
+
+            // Force re-render math if switching (fixes issues if hidden initially)
+            if(tabId !== 'practice') {
+                 renderMathInElement(document.getElementById('tab-' + tabId), {
+                    delimiters: [ {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false} ]
+                });
+            }
+        }
+
+        // -- Graph Flipper Animation --
+        const pathEl = document.getElementById('anim-path');
+        const ghostEl = document.getElementById('ghost-path');
+        const traceEl = document.getElementById('trace-point');
+        const traceText = document.getElementById('trace-text');
+        
+        let graphFlipped = false;
+        let graphAnimating = false;
+        let animProgress = 0; // 0 to 1
+        
+        // Generate baseline points for y = e^x
+        // We only care about domain where points stay roughly in view. 
+        // Screen bounds: x in [-4, 4], y in [-4, 4]. (Units)
+        const basePoints = [];
+        for (let x = -4; x <= 2.5; x += 0.05) {
+            let y = Math.exp(x);
+            // Cap y to avoid gigantic numbers messing up interpolation
+            if (y <= 5) {
+                basePoints.push({x: x, y: y});
+            }
+        }
+        
+        // Traced point base index (e.g., x=1, y=e)
+        let traceIndex = basePoints.findIndex(p => p.x >= 1.0);
+        // Knee point base index (x=0, y=1)
+        let kneeIndex = basePoints.findIndex(p => p.x >= 0.0);
+        
+        const kneeEl = document.getElementById('knee-point');
+        const kneeText = document.getElementById('knee-text');
+
+        function mapToScreen(mathX, mathY) {
+            // Origin is (200, 200). 1 unit = 50 pixels
+            return {
+                cx: 200 + mathX * 50,
+                cy: 200 - mathY * 50
+            };
+        }
+
+        function drawGraph(t) {
+            // t = 0 means y=e^x. t = 1 means y=ln(x)
+            let d = "";
+            let currentTrace = {x:0, y:0};
+            let currentKnee = {x:0, y:0};
+
+            for (let i = 0; i < basePoints.length; i++) {
+                let bp = basePoints[i];
+                // Linear interpolation between (x,y) and (y,x) based on t
+                let currentX = bp.x * (1 - t) + bp.y * t;
+                let currentY = bp.y * (1 - t) + bp.x * t;
+                
+                let sp = mapToScreen(currentX, currentY);
+                
+                if (i === 0) d += `M ${sp.cx},${sp.cy} `;
+                else d += `L ${sp.cx},${sp.cy} `;
+
+                if(i === traceIndex) {
+                    currentTrace = { x: currentX, y: currentY, cx: sp.cx, cy: sp.cy };
+                }
+                if(i === kneeIndex) {
+                    currentKnee = { x: currentX, y: currentY, cx: sp.cx, cy: sp.cy };
+                }
+            }
+            pathEl.setAttribute("d", d);
+            
+            // Update trace point
+            traceEl.setAttribute("cx", currentTrace.cx);
+            traceEl.setAttribute("cy", currentTrace.cy);
+            traceText.setAttribute("x", currentTrace.cx + 10);
+            traceText.setAttribute("y", currentTrace.cy + 15);
+            
+            let dx = currentTrace.x.toFixed(1);
+            let dy = currentTrace.y.toFixed(1);
+            if(t < 0.05) traceText.textContent = "(1, e)";
+            else if(t > 0.95) traceText.textContent = "(e, 1)";
+            else traceText.textContent = `(${dx}, ${dy})`;
+
+            // Update knee point
+            kneeEl.setAttribute("cx", currentKnee.cx);
+            kneeEl.setAttribute("cy", currentKnee.cy);
+            kneeText.setAttribute("x", currentKnee.cx + 10);
+            kneeText.setAttribute("y", currentKnee.cy - 10);
+            
+            let kx = currentKnee.x.toFixed(1);
+            let ky = currentKnee.y.toFixed(1);
+            if(t < 0.05) kneeText.textContent = "(0, 1)";
+            else if(t > 0.95) kneeText.textContent = "(1, 0)";
+            else kneeText.textContent = `(${kx}, ${ky})`;
+        }
+
+        // Draw initial state
+        drawGraph(0);
+
+        function toggleGraphFlip() {
+            if (graphAnimating) return;
+            graphAnimating = true;
+            let target = graphFlipped ? 0 : 1;
+            let start = graphFlipped ? 1 : 0;
+            let duration = 1500; // ms
+            let startTime = performance.now();
+
+            // Leave the current curve behind as a ghost
+            ghostEl.setAttribute('d', pathEl.getAttribute('d'));
+            ghostEl.setAttribute('opacity', '0.6');
+
+            // Leave the points behind as ghosts
+            document.getElementById('ghost-trace-point').setAttribute('cx', traceEl.getAttribute('cx'));
+            document.getElementById('ghost-trace-point').setAttribute('cy', traceEl.getAttribute('cy'));
+            document.getElementById('ghost-trace-point').setAttribute('opacity', '0.8');
+            
+            document.getElementById('ghost-trace-text').setAttribute('x', traceText.getAttribute('x'));
+            document.getElementById('ghost-trace-text').setAttribute('y', traceText.getAttribute('y'));
+            document.getElementById('ghost-trace-text').textContent = traceText.textContent;
+            document.getElementById('ghost-trace-text').setAttribute('opacity', '1');
+
+            document.getElementById('ghost-knee-point').setAttribute('cx', kneeEl.getAttribute('cx'));
+            document.getElementById('ghost-knee-point').setAttribute('cy', kneeEl.getAttribute('cy'));
+            document.getElementById('ghost-knee-point').setAttribute('opacity', '0.8');
+            
+            document.getElementById('ghost-knee-text').setAttribute('x', kneeText.getAttribute('x'));
+            document.getElementById('ghost-knee-text').setAttribute('y', kneeText.getAttribute('y'));
+            document.getElementById('ghost-knee-text').textContent = kneeText.textContent;
+            document.getElementById('ghost-knee-text').setAttribute('opacity', '1');
+
+            // Update Labels instantly for feel
+            const lbl = document.getElementById('graph-label');
+            const btn = document.getElementById('btn-flip');
+            let mathString = "";
+            if(target === 1) {
+                mathString = "y = \\ln(x)";
+                btn.innerHTML = '<i class="fa-solid fa-arrow-rotate-left mr-3"></i> Flip Back';
+                btn.classList.replace('bg-emerald-600', 'bg-blue-600');
+                btn.classList.replace('hover:bg-emerald-700', 'hover:bg-blue-700');
+                pathEl.setAttribute('stroke', '#10b981'); // change color slightly
+            } else {
+                mathString = "y = e^x";
+                btn.innerHTML = '<i class="fa-solid fa-repeat mr-3"></i> Flip over y = x';
+                btn.classList.replace('bg-blue-600', 'bg-emerald-600');
+                btn.classList.replace('hover:bg-blue-700', 'hover:bg-emerald-700');
+                pathEl.setAttribute('stroke', '#3b82f6');
+            }
+            // Pass the pure math string without the '$' delimiters
+            katex.render(mathString, lbl);
+
+            function animate(currentTime) {
+                let elapsed = currentTime - startTime;
+                let progress = Math.min(elapsed / duration, 1);
+                
+                // Ease in out cubic
+                let ease = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+                
+                let currentT = start + (target - start) * ease;
+                drawGraph(currentT);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    graphFlipped = !graphFlipped;
+                    graphAnimating = false;
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        // -- Practice Game Logic --
+        const gameData = {
+            easy: [
+                {q: "\\ln(e)", options: ["1", "0", "e", "-1"], ans: 0, hint: "Formula: \\ln(x) = \\log_e(x)", exp: "\\ln(e) \\text{ is } \\log_e(e) \\text{, which equals } 1."},
+                {q: "\\ln(1)", options: ["1", "0", "e", "\\text{undef}"], ans: 1, hint: "Formula: \\log_b(1) = 0", exp: "\\text{Any log of 1 is 0, because } e^0 = 1."},
+                {q: "\\ln(e^3)", options: ["1", "3", "e", "0"], ans: 1, hint: "Formula: \\ln(e^x) = x", exp: "\\text{The } \\ln \\text{ and } e \\text{ cancel out, leaving 3.}"},
+                {q: "e^{\\ln(5)}", options: ["e", "1", "5", "0"], ans: 2, hint: "Formula: e^{\\ln(x)} = x", exp: "e \\text{ and } \\ln \\text{ are inverse functions. They cancel out leaving 5.}"},
+                {q: "\\ln\\left(\\frac{1}{e}\\right)", options: ["1", "0", "-1", "e"], ans: 2, hint: "Formula: \\frac{1}{x} = x^{-1}", exp: "\\frac{1}{e} = e^{-1}. \\ln(e^{-1}) = -1."}
+            ],
+            medium: [
+                {q: "\\text{Simplify: } \\ln(x^3) - \\ln(x)", options: ["\\ln(x^2)", "\\ln(x^4)", "\\ln(x^3-x)", "3\\ln(x^2)"], ans: 0, hint: "Quotient Rule: \\ln(a) - \\ln(b) = \\ln\\left(\\frac{a}{b}\\right)", exp: "\\ln\\left(\\frac{x^3}{x}\\right) = \\ln(x^2)"},
+                {q: "\\text{Solve: } \\ln(x) = 2", options: ["x = 2e", "x = e^2", "x = 2^e", "x = \\ln(2)"], ans: 1, hint: "Convert to exponential form: \\log_b(x) = y \\implies x = b^y", exp: "\\text{The base is } e. \\text{ So } x = e^2."},
+                {q: "\\text{Simplify: } \\ln(2) + \\ln(3)", options: ["\\ln(5)", "\\ln(6)", "\\ln(2/3)", "\\ln(8)"], ans: 1, hint: "Product Rule: \\ln(a) + \\ln(b) = \\ln(a \\times b)", exp: "\\ln(2 \\times 3) = \\ln(6)."},
+                {q: "\\text{Solve: } e^x = 10", options: ["x = \\log(10)", "x = 10/e", "x = \\ln(10)", "x = 1"], ans: 2, hint: "Take \\ln() \\text{ of both sides.}", exp: "\\ln(e^x) = \\ln(10) \\implies x = \\ln(10)."},
+                {q: "\\text{Simplify: } 2\\ln(5)", options: ["\\ln(10)", "\\ln(25)", "\\ln(7)", "\\ln(3)"], ans: 1, hint: "Power Rule: n\\ln(a) = \\ln(a^n)", exp: "\\ln(5^2) = \\ln(25)."}
+            ],
+            hard: [
+                {q: "\\text{Solve: } e^{2x-1} = 5", options: ["x = \\frac{\\ln(5)+1}{2}", "x = \\ln(5) + \\frac{1}{2}", "x = \\frac{\\ln(6)}{2}", "x = \\frac{5}{2e}"], ans: 0, hint: "Take \\ln() \\text{ of both sides, then isolate } x.", exp: "2x-1 = \\ln(5) \\implies 2x = \\ln(5)+1 \\implies x = \\frac{\\ln(5)+1}{2}."},
+                {q: "\\text{Simplify: } \\frac{1}{2}\\ln(16) + \\ln(3)", options: ["\\ln(12)", "\\ln(24)", "\\ln(11)", "\\ln(8)"], ans: 0, hint: "Use Power Rule first, then Product Rule.", exp: "\\ln(16^{1/2}) + \\ln(3) = \\ln(4) + \\ln(3) = \\ln(12)."},
+                {q: "\\text{Solve: } \\ln(x+1) + \\ln(x-1) = 0", options: ["x = 0", "x = \\sqrt{2}", "x = \\pm\\sqrt{2}", "x = 2"], ans: 1, hint: "Product rule, then convert to exponential form.", exp: "\\ln(x^2-1) = 0 \\implies x^2-1 = e^0 = 1 \\implies x^2 = 2. \\text{ Domain requires } x>1, \\text{ so } x = \\sqrt{2}."}, 
+                {q: "\\text{Simplify: } \\ln(e^x \\cdot e^y)", options: ["x \\cdot y", "x + y", "e^{x+y}", "\\ln(xy)"], ans: 1, hint: "Index laws: e^x \\cdot e^y = e^{x+y}", exp: "\\ln(e^{x+y}) = x+y."},
+                {q: "\\text{Domain of } y = \\ln(x-2)", options: ["x > 0", "x \\ge 2", "x > 2", "x \\neq 2"], ans: 2, hint: "\\text{The argument of a log must be strictly positive (} > 0 \\text{).}", exp: "x - 2 > 0 \\implies x > 2."}
+            ]
+        };
+
+        let currentLevel = '';
+        let currentQuestions = [];
+        let questionIndex = 0;
+        let score = 0;
+        let canAnswer = true;
+
+        // Utility to shuffle array
+        function shuffle(array) {
+            let currentIndex = array.length,  randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function startGame(level) {
+            currentLevel = level;
+            // Clone and shuffle questions
+            currentQuestions = shuffle([...gameData[level]]).slice(0, 5); 
+            questionIndex = 0;
+            score = 0;
+            
+            document.getElementById('game-menu').classList.add('hidden');
+            document.getElementById('game-over').classList.add('hidden');
+            document.getElementById('game-active').classList.remove('hidden');
+            
+            const badge = document.getElementById('level-indicator');
+            badge.innerText = level.toUpperCase();
+            if(level === 'easy') badge.className = "px-3 py-1 bg-green-100 text-green-800 text-xs font-bold uppercase rounded-full tracking-wide";
+            if(level === 'medium') badge.className = "px-3 py-1 bg-orange-100 text-orange-800 text-xs font-bold uppercase rounded-full tracking-wide";
+            if(level === 'hard') badge.className = "px-3 py-1 bg-red-100 text-red-800 text-xs font-bold uppercase rounded-full tracking-wide";
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            canAnswer = true;
+            const q = currentQuestions[questionIndex];
+            
+            // Update Progress
+            document.getElementById('q-current').innerText = questionIndex + 1;
+            document.getElementById('progress-bar').style.width = `${(questionIndex / 5) * 100}%`;
+            
+            // Render Question Math
+            const qContainer = document.getElementById('question-text');
+            katex.render(q.q, qContainer, {displayMode: true, throwOnError: false});
+
+            // Reset Hint
+            document.getElementById('hint-box').classList.add('hidden');
+            document.getElementById('btn-hint').disabled = false;
+            document.getElementById('btn-hint').classList.remove('opacity-50', 'cursor-not-allowed');
+
+            // Clear feedback
+            const feedback = document.getElementById('feedback-msg');
+            feedback.style.opacity = '0';
+            feedback.innerHTML = '';
+            feedback.className = "text-center mt-6 min-h-[3rem] flex flex-col justify-center items-center opacity-0 transition-opacity";
+
+            // Render Options
+            const optContainer = document.getElementById('options-container');
+            optContainer.innerHTML = '';
+            
+            // Create array of indices to shuffle options mapping
+            let indices = [0, 1, 2, 3];
+
+            q.options.forEach((optText, i) => {
+                let btn = document.createElement('button');
+                btn.className = "quiz-btn bg-slate-50 border-2 border-slate-200 hover:bg-slate-100 text-slate-700 font-medium py-4 px-6 rounded-xl text-lg w-full";
+                btn.onclick = () => checkAnswer(i, btn);
+                
+                // Use KaTeX for options
+                katex.render(optText, btn, {displayMode: false, throwOnError: false});
+                
+                optContainer.appendChild(btn);
+            });
+        }
+
+        function showHint() {
+            if(!canAnswer) return;
+            const hintBox = document.getElementById('hint-box');
+            const q = currentQuestions[questionIndex];
+            
+            katex.render(q.hint, hintBox, {displayMode: false, throwOnError: false});
+            
+            hintBox.classList.remove('hidden');
+            document.getElementById('btn-hint').disabled = true;
+            document.getElementById('btn-hint').classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        function checkAnswer(selectedIndex, btnElement) {
+            if(!canAnswer) return;
+            canAnswer = false; // Lock out
+
+            const q = currentQuestions[questionIndex];
+            const isCorrect = (selectedIndex === q.ans);
+            const feedback = document.getElementById('feedback-msg');
+
+            // Disable all buttons
+            const allBtns = document.getElementById('options-container').querySelectorAll('button');
+            allBtns.forEach((b, idx) => {
+                b.disabled = true;
+                b.classList.add('cursor-not-allowed', 'opacity-70');
+                if(idx === q.ans) {
+                    b.classList.remove('bg-slate-50', 'border-slate-200', 'opacity-70');
+                    b.classList.add('correct'); // Highlight correct answer
+                }
+            });
+
+            feedback.style.opacity = '1';
+            
+            if(isCorrect) {
+                score++;
+                feedback.innerHTML = '<span class="text-green-600 font-bold text-lg mb-1">Correct! Great job.</span>';
+                
+                setTimeout(() => {
+                    questionIndex++;
+                    if(questionIndex < 5) loadQuestion();
+                    else endGame();
+                }, 1800);
+            } else {
+                btnElement.classList.remove('bg-slate-50', 'border-slate-200');
+                btnElement.classList.add('wrong');
+                
+                // Show explanation
+                feedback.innerHTML = `
+                    <span class="text-red-500 font-bold text-lg mb-1">Incorrect!</span>
+                    <span class="text-slate-600 text-sm font-medium border border-red-200 bg-red-50 px-4 py-2 rounded-lg" id="exp-text"></span>
+                `;
+                katex.render(q.exp, document.getElementById('exp-text'), {displayMode: false, throwOnError: false});
+
+                // Wait longer for mistakes
+                setTimeout(() => {
+                    questionIndex++;
+                    if(questionIndex < 5) loadQuestion();
+                    else endGame();
+                }, 4000);
+            }
+        }
+
+        function endGame() {
+            document.getElementById('game-active').classList.add('hidden');
+            document.getElementById('game-over').classList.remove('hidden');
+            
+            document.getElementById('final-score').innerText = `${score}/5`;
+            
+            let icon = '🏆';
+            if(score === 5) icon = '🌟 Perfect!';
+            else if(score >= 3) icon = '👍 Good Job!';
+            else icon = '📚 Keep Practicing';
+            
+            document.getElementById('score-icon').innerText = icon;
+            document.getElementById('progress-bar').style.width = '100%';
+        }
+
+        function showGameMenu() {
+            document.getElementById('game-active').classList.add('hidden');
+            document.getElementById('game-over').classList.add('hidden');
+            document.getElementById('game-menu').classList.remove('hidden');
+        }
+
+        function exitGame() {
+            showGameMenu();
+        }
+
+    </script>
+</body>
+</html>
