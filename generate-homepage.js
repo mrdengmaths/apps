@@ -109,10 +109,6 @@ const items = appDirs
                         <div class="app-text">
                             <span class="title">${safeTitle}</span>
                             <span class="app-description">${safeDescription}</span>
-                            <div class="app-rating">
-                                <div class="stars"></div>
-                                <span class="rating-text"></span>
-                            </div>
                             <span class="visually-hidden">${safeKeywords}</span>
                         </div>
                     </div>
@@ -129,3 +125,4 @@ const updatedHtml = html.replace(
 
 fs.writeFileSync(indexPath, updatedHtml);
 console.log(`Updated homepage with ${appDirs.length} apps.`);
+
