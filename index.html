@@ -205,11 +205,67 @@
         }
 
         .search-feedback {
-            margin: 1rem auto 2rem auto;
+            margin: 1rem auto 0.5rem auto;
             max-width: 960px;
             color: #334155;
             font-size: 0.98rem;
             text-align: left;
+        }
+
+        .sort-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            max-width: 960px;
+            margin: 0.5rem auto 2rem auto;
+            text-align: right;
+        }
+
+        .sort-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #334155;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        #ratingSort {
+            min-width: 200px;
+            border: 1px solid #cbd5e1;
+            border-radius: 999px;
+            padding: 0.55rem 1rem;
+            background: #ffffff;
+            color: #0f172a;
+            font-size: 0.95rem;
+        }
+
+        .app-rating {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.35rem;
+            font-size: 0.95rem;
+            color: #334155;
+        }
+
+        .app-rating .stars {
+            display: inline-flex;
+            gap: 0.1rem;
+            color: #f59e0b;
+            font-size: 1rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .app-rating .stars .star:hover,
+        .app-rating .stars .star:focus {
+            transform: scale(1.1);
+        }
+
+        .rating-text {
+            font-weight: 600;
+            color: #0f172a;
         }
     </style>
 </head>
@@ -224,6 +280,15 @@
         <h1>Mr Deng Maths 🚀</h1>
         <p>A collaborative collection of interactive apps from the Barker College Maths Department to help you master key concepts.</p>
         <div id="searchFeedback" class="search-feedback">Search instantly as you type to find the right app.</div>
+        <div class="sort-bar">
+            <label class="sort-label" for="ratingSort">Sort apps by:</label>
+            <select id="ratingSort">
+                <option value="default">Default order</option>
+                <option value="ratingDesc">Rating: high to low</option>
+                <option value="ratingAsc">Rating: low to high</option>
+                <option value="titleAsc">Title: A → Z</option>
+            </select>
+        </div>
         <ul id="appList" class="app-list">
             <!-- APP_LIST_START -->
             <li class="app-item">
@@ -882,6 +947,7 @@
     <script>
         const searchInput = document.getElementById('appSearch');
         const searchFeedback = document.getElementById('searchFeedback');
+        const sortSelect = document.getElementById('ratingSort');
         const appList = document.getElementById('appList');
         const appItems = Array.from(document.querySelectorAll('.app-item'));
 
@@ -903,14 +969,52 @@
             };
         });
 
+        function getRatingValue(item) {
+            return parseInt(item.dataset.rating || '0', 10) || 0;
+        }
+
+        function compareItems(a, b) {
+            const order = sortSelect.value;
+            if (order === 'ratingDesc' || order === 'ratingAsc') {
+                const ratingDiff = getRatingValue(b.item || b) - getRatingValue(a.item || a);
+                if (ratingDiff !== 0) {
+                    return order === 'ratingDesc' ? ratingDiff : -ratingDiff;
+                }
+            }
+
+            if (order === 'titleAsc') {
+                return a.titleLower.localeCompare(b.titleLower);
+            }
+
+            return a.titleLower.localeCompare(b.titleLower);
+        }
+
+        function sortItems(items) {
+            if (sortSelect.value === 'default') {
+                return items;
+            }
+            return [...items].sort(compareItems);
+        }
+
+        function renderAppList(items, defaultMessage) {
+            if (items.length === 0) {
+                searchFeedback.textContent = defaultMessage;
+                itemData.forEach(({ item }) => item.style.display = 'none');
+                return;
+            }
+
+            searchFeedback.textContent = defaultMessage;
+            itemData.forEach(({ item }) => item.style.display = 'none');
+            sortItems(items).forEach(({ item }) => {
+                item.style.display = '';
+                appList.appendChild(item);
+            });
+        }
+
         function updateSearch() {
             const query = searchInput.value.trim().toLowerCase();
             if (!query) {
-                searchFeedback.textContent = 'Search instantly as you type to find the right app.';
-                itemData.forEach(({ item }) => {
-                    item.style.display = '';
-                    appList.appendChild(item);
-                });
+                renderAppList(itemData, 'Search instantly as you type to find the right app.');
                 return;
             }
 
@@ -938,15 +1042,13 @@
                 return;
             }
 
-            searchFeedback.textContent = `Found ${matches.length} related app${matches.length === 1 ? '' : 's'} for “${searchInput.value.trim()}”.`;
-            itemData.forEach(({ item }) => item.style.display = 'none');
-            matches.forEach(({ item }) => {
-                item.style.display = '';
-                appList.appendChild(item);
-            });
+            const message = `Found ${matches.length} related app${matches.length === 1 ? '' : 's'} for “${searchInput.value.trim()}”.`;
+            renderAppList(matches, message);
         }
 
         searchInput.addEventListener('input', updateSearch);
+        sortSelect.addEventListener('change', updateSearch);
+        document.addEventListener('ratingUpdated', updateSearch);
     </script>
     <script src="app/rating.js" defer></script>
 </body>

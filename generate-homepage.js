@@ -109,6 +109,10 @@ const items = appDirs
                         <div class="app-text">
                             <span class="title">${safeTitle}</span>
                             <span class="app-description">${safeDescription}</span>
+                            <div class="app-rating" aria-label="Rate ${safeTitle} from one to five stars">
+                                <div class="stars"></div>
+                                <span class="rating-text">No rating</span>
+                            </div>
                             <span class="visually-hidden">${safeKeywords}</span>
                         </div>
                     </div>
