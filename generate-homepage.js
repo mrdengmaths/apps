@@ -38,6 +38,13 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function renderStars(rating) {
+  const normalized = Math.max(0, Math.min(5, Number(rating) || 0));
+  const fullStars = Math.round(normalized);
+  const emptyStars = 5 - fullStars;
+  return `${'★'.repeat(fullStars)}${'☆'.repeat(emptyStars)}`;
+}
+
 function toTitle(name) {
   return name
     .replace(/[-_]+/g, ' ')
@@ -54,7 +61,14 @@ function getAppInfo(name) {
   const meta = appMeta[key];
 
   if (meta) {
-    return { title, icon: meta.icon, description: meta.description, keywords: meta.keywords };
+    return {
+      title,
+      icon: meta.icon,
+      description: meta.description,
+      keywords: meta.keywords,
+      rating: meta.rating ?? 4.5,
+      ratingCount: meta.ratingCount ?? 8
+    };
   }
 
   const fallbackIcons = ['🧠', '📐', '🎯', '📊', '✨', '🔢', '🧪', '📈'];
@@ -65,7 +79,9 @@ function getAppInfo(name) {
     title,
     icon: fallbackIcons[index],
     description: fallbackDescription,
-    keywords: `${title.toLowerCase()} ${fallbackDescription.toLowerCase()}`
+    keywords: `${title.toLowerCase()} ${fallbackDescription.toLowerCase()}`,
+    rating: 4.5,
+    ratingCount: 8
   };
 }
 
@@ -105,6 +121,8 @@ const items = appDirs
     const safeTitle = escapeHtml(app.title);
     const safeDescription = escapeHtml(app.description);
     const safeKeywords = escapeHtml(app.keywords);
+    const safeRating = escapeHtml(app.rating.toFixed(1));
+    const safeRatingCount = escapeHtml(String(app.ratingCount));
     const encodedName = encodeURIComponent(name);
 
     return `            <li class="app-item">
@@ -114,6 +132,11 @@ const items = appDirs
                         <div class="app-text">
                             <span class="title">${safeTitle}</span>
                             <span class="app-description">${safeDescription}</span>
+                            <div class="app-rating" aria-label="Rated ${safeRating} out of 5">
+                                <span class="stars" aria-hidden="true">${renderStars(app.rating)}</span>
+                                <span class="rating-text">${safeRating}/5</span>
+                                <span class="rating-count">(${safeRatingCount} reviews)</span>
+                            </div>
                             <span class="visually-hidden">${safeKeywords}</span>
                         </div>
                     </div>
