@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Geometry Unfolding</title>
+    <title>Right Prisms Unfolding</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { margin: 0; overflow: hidden; background-color: #111; color: white; font-family: 'Inter', sans-serif; }
@@ -68,13 +68,20 @@
             </div>
             <button id="btn-reset-view" class="btn mt-2">Reset Perspective</button>
             <button id="toggle-perimeter" class="btn">Toggle Edge Highlights</button>
+            <button id="toggle-cross-section" class="btn border-green-500 text-green-400 hover:bg-green-500 hover:text-white">Show Cross-Section</button>
         </div>
     </div>
 
     <div class="panel right-slider">
         <label class="text-xs text-gray-400 font-bold uppercase tracking-wider">Height</label>
         <input type="range" id="height-slider" class="vertical" min="0" max="8" step="0.1" value="4">
-        <button id="btn-anim-height" class="btn px-2 py-1 text-xs mt-2">Anim</button>
+        <button id="btn-anim-height" class="btn px-2 py-1 text-xs mt-2 mb-2">Anim</button>
+        
+        <div id="cs-controls" style="display: none; flex-direction: column; align-items: center; gap: 12px; width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
+            <label class="text-xs text-green-400 font-bold uppercase tracking-wider text-center">C-Sec<br>Drag</label>
+            <input type="range" id="cs-slider" class="vertical" min="0" max="1" step="0.01" value="0.5">
+            <button id="btn-anim-cs" class="btn px-2 py-1 text-xs mt-2 mb-2">Anim</button>
+        </div>
     </div>
 
     <div class="panel bottom-center">
@@ -107,6 +114,16 @@
         let currentUnfoldProgress = 0;
         let highlightPerimeter = false;
         
+        // Feature State
+        let previousShapeType = '';
+        let showCrossSection = false;
+        let crossSectionRelativeHeight = 0.5;
+        let crossSectionHinge = null;
+        let csMeshGlobal = null;
+        let isDraggingCS = false;
+        let startMouseY = 0;
+        let startCSHeight = 0;
+
         // Interaction State
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
@@ -124,6 +141,8 @@
         let unfoldAnimTarget = 0;
         let heightAnimActive = false;
         let heightAnimDir = 1;
+        let csAnimActive = false;
+        let csAnimDir = 1;
         let isResettingView = false;
 
         // 2. Theme Configuration
@@ -279,6 +298,13 @@
         }
 
         function generateShape(type) {
+            let savedHighlights = [];
+            // Preserve highlights state if we are just modifying the height
+            if (previousShapeType === type) {
+                savedHighlights = clickableMeshes.map(m => m.userData.isHighlighted);
+            }
+            previousShapeType = type;
+
             disposeGroup(shapeContainer);
             faces = [];
             thickEdgesGroups = [];
@@ -291,6 +317,13 @@
 
             updateFoldState(currentUnfoldProgress);
             updatePerimeterHighlight();
+
+            // Re-apply preserved highlights securely
+            if (savedHighlights.length === clickableMeshes.length) {
+                for (let i = 0; i < clickableMeshes.length; i++) {
+                    setHighlightState(clickableMeshes[i], savedHighlights[i]);
+                }
+            }
         }
 
         function createMaterials(t, type) {
@@ -303,9 +336,9 @@
                 latMat = new THREE.MeshStandardMaterial({ ...latMatOpts, metalness: 0.9, roughness: 0.1 });
             } else {
                 baseMatOpts.emissive = t.glow ? t.base : 0x000000;
-                baseMatOpts.emissiveIntensity = currentTheme === 'neon' ? 0.4 : (t.glow ? 0.3 : 0);
+                baseMatOpts.emissiveIntensity = currentTheme === 'neon' ? 0.2 : (t.glow ? 0.3 : 0);
                 latMatOpts.emissive = t.glow ? t.lat : 0x000000;
-                latMatOpts.emissiveIntensity = currentTheme === 'neon' ? 0.2 : (t.glow ? 0.1 : 0);
+                latMatOpts.emissiveIntensity = currentTheme === 'neon' ? 0.1 : (t.glow ? 0.1 : 0);
                 baseMat = new THREE.MeshLambertMaterial(baseMatOpts);
                 latMat = new THREE.MeshLambertMaterial(latMatOpts);
             }
@@ -518,6 +551,23 @@
                     topHinge.add(topBase);
                     faceContainer.add(topHinge);
                     faces.push({ mesh: topHinge, type: 'base', targetFoldAngle: -Math.PI / 2, targetUnfoldAngle: 0 });
+
+                    // --- Cross Section Plane ---
+                    const csBaseGeom = cleanBaseGeom.clone();
+                    const csMat = new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+                    csMeshGlobal = new THREE.Mesh(csBaseGeom, csMat);
+                    csMeshGlobal.userData = { type: 'cross-section' };
+                    
+                    const csEdges = new THREE.EdgesGeometry(csBaseGeom);
+                    const csLine = new THREE.LineSegments(csEdges, new THREE.LineBasicMaterial({ color: 0x34d399, linewidth: 2 }));
+                    csMeshGlobal.add(csLine);
+
+                    crossSectionHinge = new THREE.Group();
+                    crossSectionHinge.position.set(0, (crossSectionRelativeHeight - 0.5) * currentHeight, 0);
+                    crossSectionHinge.add(csMeshGlobal);
+                    crossSectionHinge.visible = showCrossSection;
+                    faceContainer.add(crossSectionHinge);
+                    faces.push({ mesh: crossSectionHinge, type: 'cross-section', targetFoldAngle: -Math.PI / 2, targetUnfoldAngle: 0 });
                 }
             }
 
@@ -525,51 +575,51 @@
             shapeContainer.position.set(-totalWidth / 4, 0, 0);
         }
 
-        function toggleHighlight(obj) {
-            const isHighlighted = !obj.userData.isHighlighted;
+        function setHighlightState(obj, state) {
+            if (obj.userData.isHighlighted === state) return;
+            obj.userData.isHighlighted = state;
             
+            if (obj.userData.type === 'face') {
+                if (state) {
+                    let intensity = 0.8;
+                    if (currentTheme === 'neon' || currentTheme === 'matrix') intensity = 0.35;
+                    obj.material.emissive.setHex(themes[currentTheme].highlight);
+                    obj.material.emissiveIntensity = intensity;
+                } else {
+                    obj.material.emissive.setHex(themes[currentTheme].glow ? themes[currentTheme].lat : 0x000000);
+                    obj.material.emissiveIntensity = themes[currentTheme].glow ? (currentTheme === 'neon' ? 0.2 : 0.1) : 0;
+                }
+                
+                obj.children.forEach(c => {
+                    if (c.isLineSegments) {
+                        if (!c.userData.originalMat) c.userData.originalMat = c.material;
+                        if (state) {
+                            let thickness = 4;
+                            if (currentTheme === 'neon' || currentTheme === 'matrix') thickness = 2;
+                            c.material = c.userData.originalMat.clone();
+                            c.material.color.setHex(0xffffff);
+                            c.material.linewidth = thickness;
+                        } else {
+                            c.material = c.userData.originalMat;
+                        }
+                    }
+                });
+            } else if (obj.userData.type === 'edge') {
+                obj.userData.highlightMesh.visible = state;
+                if (state && (currentTheme === 'neon' || currentTheme === 'matrix')) {
+                     obj.userData.highlightMesh.material.opacity = 0.5;
+                     obj.userData.highlightMesh.material.transparent = true;
+                }
+            }
+        }
+
+        function toggleHighlight(obj) {
+            const newState = !obj.userData.isHighlighted;
             let objectsToToggle = [obj];
             if (obj.userData.groupId) {
                 objectsToToggle = clickableMeshes.filter(m => m.userData.groupId === obj.userData.groupId);
             }
-
-            objectsToToggle.forEach(o => {
-                o.userData.isHighlighted = isHighlighted;
-                if (o.userData.type === 'face') {
-                    if (isHighlighted) {
-                        let intensity = 0.8;
-                        if (currentTheme === 'neon' || currentTheme === 'matrix') intensity = 0.35;
-                        o.material.emissive.setHex(themes[currentTheme].highlight);
-                        o.material.emissiveIntensity = intensity;
-                    } else {
-                        o.material.emissive.setHex(themes[currentTheme].glow ? themes[currentTheme].lat : 0x000000);
-                        o.material.emissiveIntensity = themes[currentTheme].glow ? (currentTheme === 'neon' ? 0.2 : 0.1) : 0;
-                    }
-                    
-                    // Explicitly make thin edges white and thick when face is highlighted
-                    o.children.forEach(c => {
-                        if (c.isLineSegments) {
-                            if (!c.userData.originalMat) c.userData.originalMat = c.material;
-                            
-                            if (isHighlighted) {
-                                let thickness = 4;
-                                if (currentTheme === 'neon' || currentTheme === 'matrix') thickness = 2;
-                                c.material = c.userData.originalMat.clone();
-                                c.material.color.setHex(0xffffff);
-                                c.material.linewidth = thickness;
-                            } else {
-                                c.material = c.userData.originalMat;
-                            }
-                        }
-                    });
-                } else if (o.userData.type === 'edge') {
-                    o.userData.highlightMesh.visible = isHighlighted;
-                    if (isHighlighted && (currentTheme === 'neon' || currentTheme === 'matrix')) {
-                         o.userData.highlightMesh.material.opacity = 0.5;
-                         o.userData.highlightMesh.material.transparent = true;
-                    }
-                }
-            });
+            objectsToToggle.forEach(o => setHighlightState(o, newState));
         }
 
         function setupInteraction() {
@@ -577,18 +627,48 @@
 
             const startDrag = (e) => {
                 if(e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
-                isDragging = true;
+                
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                // Cross-section vertical drag check
+                if (showCrossSection && csMeshGlobal) {
+                    mouse.x = (clientX / window.innerWidth) * 2 - 1;
+                    mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+                    raycaster.setFromCamera(mouse, camera);
+                    const intersects = raycaster.intersectObject(csMeshGlobal, false);
+                    if (intersects.length > 0) {
+                        isDraggingCS = true;
+                        startMouseY = clientY;
+                        startCSHeight = crossSectionRelativeHeight;
+                        return; // Prevent rotating the shape while dragging CS
+                    }
+                }
+
+                isDragging = true;
                 previousMousePosition = { x: clientX, y: clientY };
                 startClickPos = { x: clientX, y: clientY };
                 startClickTime = Date.now();
             };
 
             const drag = (e) => {
-                if (!isDragging) return;
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                // Handle 3D Dragging of the Cross Section
+                if (isDraggingCS) {
+                    const deltaY = clientY - startMouseY;
+                    let newH = startCSHeight - (deltaY / 300); // 300px visual drag range
+                    newH = Math.max(0, Math.min(1, newH));
+                    crossSectionRelativeHeight = newH;
+                    document.getElementById('cs-slider').value = newH;
+                    if (crossSectionHinge) {
+                        crossSectionHinge.position.y = (newH - 0.5) * currentHeight;
+                    }
+                    return;
+                }
+
+                if (!isDragging) return;
                 const deltaX = clientX - previousMousePosition.x;
                 const deltaY = clientY - previousMousePosition.y;
                 targetRotationY += deltaX * 0.01;
@@ -597,6 +677,10 @@
             };
 
             const stopDrag = (e) => {
+                if (isDraggingCS) {
+                    isDraggingCS = false;
+                    return; // Prevent triggering a shape click immediately after drag
+                }
                 if (!isDragging) return;
                 isDragging = false;
                 const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
@@ -644,7 +728,7 @@
                 } else {
                     scene.background = new THREE.Color(themes[currentTheme].bg);
                     if (themes[currentTheme].glow) {
-                        bloomPass.strength = currentTheme === 'neon' ? 0.8 : 0.6;
+                        bloomPass.strength = currentTheme === 'neon' ? 0.4 : 0.6;
                     } else {
                         bloomPass.strength = 0;
                     }
@@ -684,14 +768,49 @@
                 btnPerimeter.classList.toggle('active');
                 updatePerimeterHighlight();
             });
+
+            // UI Listeners for the Cross-Section
+            const toggleCSBtn = document.getElementById('toggle-cross-section');
+            toggleCSBtn.addEventListener('click', (e) => {
+                showCrossSection = !showCrossSection;
+                if (showCrossSection) {
+                    e.target.classList.add('bg-green-500', 'text-white');
+                } else {
+                    e.target.classList.remove('bg-green-500', 'text-white');
+                }
+                document.getElementById('cs-controls').style.display = showCrossSection ? 'flex' : 'none';
+                if (crossSectionHinge) crossSectionHinge.visible = showCrossSection && currentUnfoldProgress === 0;
+            });
+
+            const csSlider = document.getElementById('cs-slider');
+            csSlider.addEventListener('input', (e) => {
+                csAnimActive = false;
+                document.getElementById('btn-anim-cs').classList.remove('active');
+                crossSectionRelativeHeight = parseFloat(e.target.value);
+                if (crossSectionHinge) {
+                    crossSectionHinge.position.y = (crossSectionRelativeHeight - 0.5) * currentHeight;
+                }
+            });
+
+            const btnAnimCS = document.getElementById('btn-anim-cs');
+            if (btnAnimCS) {
+                btnAnimCS.addEventListener('click', () => {
+                    csAnimActive = !csAnimActive;
+                    btnAnimCS.classList.toggle('active');
+                });
+            }
         }
 
         function updateFoldState(progress) {
+            if (crossSectionHinge) {
+                crossSectionHinge.visible = showCrossSection && progress === 0;
+            }
+
             faces.forEach(face => {
                 if (face.type === 'lateral') {
                     const currentAngle = THREE.MathUtils.lerp(face.targetFoldAngle, face.targetUnfoldAngle, progress);
                     face.mesh.rotation.y = currentAngle;
-                } else if (face.type === 'base') {
+                } else if (face.type === 'base' || face.type === 'cross-section') {
                     const currentAngle = THREE.MathUtils.lerp(face.targetFoldAngle, face.targetUnfoldAngle, progress);
                     face.mesh.rotation.x = currentAngle;
                 }
@@ -735,6 +854,15 @@
                 generateShape(document.getElementById('shape-select').value);
             }
 
+            // Cross Section Animation
+            if (csAnimActive && crossSectionHinge && showCrossSection && currentUnfoldProgress === 0) {
+                crossSectionRelativeHeight += csAnimDir * 0.01;
+                if (crossSectionRelativeHeight >= 1) { crossSectionRelativeHeight = 1; csAnimDir = -1; }
+                else if (crossSectionRelativeHeight <= 0) { crossSectionRelativeHeight = 0; csAnimDir = 1; }
+                document.getElementById('cs-slider').value = crossSectionRelativeHeight;
+                crossSectionHinge.position.y = (crossSectionRelativeHeight - 0.5) * currentHeight;
+            }
+
             // Reset View Animation
             if (isResettingView) {
                 targetRotationX = 0.5; targetRotationY = 0.5;
@@ -750,7 +878,7 @@
             // Neon Pulsating Effect
             if (currentTheme === 'neon') {
                 const time = Date.now() * 0.003;
-                bloomPass.strength = 1.0 + Math.sin(time) * 0.3; // Pulsate intensity
+                bloomPass.strength = 0.4 + Math.sin(time) * 0.15; // Pulsate intensity
             }
 
             // Matrix BG Update
