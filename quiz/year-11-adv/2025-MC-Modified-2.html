@@ -109,8 +109,12 @@
             margin-top: 12px;
             background-color: #2e7d32;
         }
-        #download-wrong-pdf:hover {
+        #download-wrong-pdf:hover:not(:disabled) {
             background-color: #1b5e20;
+        }
+        #download-wrong-pdf:disabled {
+            cursor: not-allowed;
+            opacity: 0.75;
         }
         #results {
             margin-top: 20px;
@@ -552,6 +556,16 @@
         };
     }
 
+    function setPdfButtonState(isGenerating) {
+        const pdfButton = document.getElementById('download-wrong-pdf');
+        if (!pdfButton) {
+            return;
+        }
+
+        pdfButton.disabled = isGenerating;
+        pdfButton.textContent = isGenerating ? 'PDF generating...' : 'Download Wrong Questions PDF';
+    }
+
     async function downloadWrongQuestionsPdf() {
         if (wrongQuestionData.length === 0) {
             return;
@@ -724,7 +738,19 @@
         const pdfButton = document.getElementById('download-wrong-pdf');
         if (wrongQuestionData.length > 0) {
             pdfButton.style.display = 'block';
-            pdfButton.onclick = downloadWrongQuestionsPdf;
+            pdfButton.disabled = false;
+            pdfButton.textContent = 'Download Wrong Questions PDF';
+            pdfButton.onclick = async () => {
+                if (pdfButton.disabled) {
+                    return;
+                }
+                setPdfButtonState(true);
+                try {
+                    await downloadWrongQuestionsPdf();
+                } finally {
+                    setPdfButtonState(false);
+                }
+            };
         }
 
         const backToFeedbackButton = document.getElementById('back-to-feedback-btn');

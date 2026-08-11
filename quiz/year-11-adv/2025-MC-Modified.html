@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025 MC Modified 1</title>
+    <title>2025 MC Modified</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -211,7 +211,7 @@
 <body>
 
 <div class="quiz-container">
-    <h1>2025 MC Modified 1</h1>
+    <h1>2025 MC Modified</h1>
     <form id="quiz-form">
 
         <!-- Question 1: Linear Inequality -->
@@ -686,7 +686,7 @@
 
         try {
             doc.setFontSize(14);
-            doc.text('2025 MC Modified 1 - Wrong Questions for Reattempt', leftMargin, y);
+            doc.text('2025 MC Modified - Wrong Questions for Reattempt', leftMargin, y);
             y += 7;
 
             doc.setFontSize(10);
@@ -757,7 +757,7 @@
                 y += (wrapped.length * 5) + 2;
             }
 
-            doc.save(`2025-MC-Modified-1-wrong-questions-${timestamp.fileSafe}.pdf`);
+            doc.save(`2025-MC-Modified-wrong-questions-${timestamp.fileSafe}.pdf`);
         } finally {
             document.body.removeChild(stagingRoot);
         }
