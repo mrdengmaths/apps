@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -192,6 +192,13 @@
             font-size: 1.05rem;
             max-width: 44rem;
             color: #41566a;
+        }
+
+        .hero-note {
+            margin-top: 0.9rem;
+            font-size: 0.85rem;
+            color: #64748b;
+            max-width: 40rem;
         }
 
         .hero-actions {
@@ -431,30 +438,12 @@
             font-weight: 800;
         }
 
-        .helpers {
-            margin-top: 1.25rem;
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 1rem;
-        }
-
-        .helper-card {
-            padding: 1rem 1.1rem;
-            border-radius: 22px;
-            background: rgba(255,255,255,0.8);
-            border: 1px solid rgba(16, 36, 58, 0.08);
-            box-shadow: 0 12px 30px rgba(16, 36, 58, 0.08);
-        }
-
-        .helper-card strong {
-            display: block;
-            margin-bottom: 0.35rem;
-            font-size: 1.02rem;
-        }
-
-        .helper-card span {
-            color: var(--muted);
-            font-size: 0.92rem;
+        .mini-footer {
+            margin-top: 1.1rem;
+            font-size: 0.82rem;
+            color: #5b6b7d;
+            text-align: center;
+            letter-spacing: 0.01em;
             line-height: 1.45;
         }
 
@@ -487,14 +476,14 @@
         }
 
         @media (max-width: 1024px) {
-            .hero-grid, .featured-grid, .helpers { grid-template-columns: 1fr 1fr; }
+            .hero-grid, .featured-grid { grid-template-columns: 1fr 1fr; }
             .featured-card { min-height: 220px; }
         }
 
         @media (max-width: 720px) {
             .shell { width: min(100% - 1rem, 100%); }
             .topbar { border-radius: 24px; }
-            .hero-grid, .featured-grid, .helpers { grid-template-columns: 1fr; }
+            .hero-grid, .featured-grid { grid-template-columns: 1fr; }
             .topbar-inner { justify-content: center; }
             .brand { width: 100%; justify-content: center; text-align: center; }
             .nav-links { justify-content: center; }
@@ -526,11 +515,9 @@
                 <div class="hero-grid">
                     <div>
                         <span class="eyebrow">Interactive maths hub</span>
-                        <h2 id="hero-title">Learn fast, practise often, and jump straight into the best tools.</h2>
-                        <p>
-                            Start with the featured apps below, then head to the full apps page for every activity and puzzle game.
-                            A live clock and date-based quote keep the page feeling fresh each day.
-                        </p>
+                        <h2 id="hero-title">Loading quote of the day...</h2>
+                        <p id="hero-subtitle">A daily maths quote appears here and changes with the date.</p>
+                        <div class="hero-note">Browse the featured apps below or open the full apps catalogue for every activity and puzzle game.</div>
                         <div class="hero-actions">
                             <a class="button primary" href="./app/">Browse all apps</a>
                             <a class="button secondary" href="#featured-apps">Jump to featured apps</a>
@@ -567,7 +554,7 @@
                 <div class="section-header">
                     <div>
                         <div class="section-label">Featured apps</div>
-                        <h3 id="featured-title">Four strong starters</h3>
+                        <h3 id="featured-title">Featured apps</h3>
                     </div>
                     <p><a class="section-link" href="./app/">See the full app library</a></p>
                 </div>
@@ -611,20 +598,7 @@
                 </div>
             </section>
 
-            <section class="helpers" aria-label="Helpful links">
-                <div class="helper-card">
-                    <strong>Need the full catalogue?</strong>
-                    <span>Use the apps page to search every activity in one place, including the puzzle game collection.</span>
-                </div>
-                <div class="helper-card">
-                    <strong>Want a fast quiz?</strong>
-                    <span>Open the quiz page for a more guided practice experience with focused checks.</span>
-                </div>
-                <div class="helper-card">
-                    <strong>Best on phone too</strong>
-                    <span>The layout reshapes for mobile, with the clock floating to keep the page useful on smaller screens.</span>
-                </div>
-            </section>
+            <p class="mini-footer">Classroom-tested maths tools · apps · quizzes · revision · games · quick links</p>
         </main>
     </div>
 
@@ -695,13 +669,18 @@
             const quote = quotes[seededIndex(now)];
             const quoteElement = document.getElementById('mathQuote');
             const authorElement = document.getElementById('mathQuoteAuthor');
+            const heroTitle = document.getElementById('hero-title');
+            const heroSubtitle = document.getElementById('hero-subtitle');
             if (quoteElement) quoteElement.textContent = quote.text;
             if (authorElement) authorElement.textContent = `— ${quote.author}`;
+            if (heroTitle) heroTitle.textContent = `“${quote.text}”`;
+            if (heroSubtitle) heroSubtitle.textContent = `— ${quote.author} · quote of the day for ${now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}`;
         }
 
         updateClock();
         updateQuote();
         setInterval(updateClock, 1000);
     </script>
+    <script src='./site-nav.js'></script>
 </body>
 </html>
