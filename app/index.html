@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mr Deng Maths Apps</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Roboto+Slab:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #005b94;
+            --background-color: #f0f4f8;
+            --text-color: #333;
+            --header-color: #002d4a;
+            --card-bg: #ffffff;
+            --border-radius: 10px;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+            padding-top: 140px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 2rem auto;
+            background-color: var(--card-bg);
+            padding: 2rem 3rem 3rem 3rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        h1 {
+            font-family: 'Roboto Slab', serif;
+            color: var(--header-color);
+            font-size: 2.8em;
+            margin-bottom: 0.5em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+        }
+
+        p {
+            font-size: 1.15em;
+            color: #555;
+            margin-bottom: 2.5em;
+        }
+
+        .app-list {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .app-item {
+            background-color: var(--card-bg);
+            border: 1px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-align: left;
+        }
+
+        .app-item:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+        }
+
+        .app-link {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-start;
+            height: 100%;
+            padding: 1.25rem 1.5rem;
+            text-decoration: none;
+            color: var(--text-color);
+            font-size: 1.1em;
+            font-weight: 500;
+            box-sizing: border-box;
+            gap: 0.75rem;
+        }
+
+        .app-card-top {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+            width: 100%;
+        }
+
+        .app-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.4rem;
+            height: 2.4rem;
+            border-radius: 50%;
+            background: rgba(0, 91, 148, 0.1);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .app-text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .app-link .title {
+            display: block;
+            color: var(--primary-color);
+            font-size: 1.25em;
+            font-weight: 600;
+        }
+
+        .app-description {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .app-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.6rem 1rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, var(--primary-color), #1c8dcb);
+            color: #ffffff;
+            font-size: 0.95em;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(0, 91, 148, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .app-link:hover .app-button {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 91, 148, 0.25);
+        }
+
+        .topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            z-index: 1000;
+            padding: 0.9rem 1rem;
+        }
+
+        .topbar-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .topbar-title {
+            font-family: 'Roboto Slab', serif;
+            font-size: 1.25rem;
+            color: var(--header-color);
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .topbar-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .topbar-link {
+            text-decoration: none;
+            color: #334155;
+            font-weight: 600;
+            padding: 0.45rem 0.8rem;
+            border-radius: 999px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .topbar-link:hover,
+        .topbar-link.active {
+            background-color: var(--primary-color);
+            color: #ffffff;
+        }
+
+        .search-input {
+            width: 100%;
+            max-width: 520px;
+            border: 1px solid #d1d5db;
+            border-radius: 999px;
+            padding: 0.9rem 1.2rem;
+            font-size: 1rem;
+            color: #1f2937;
+            background: #f8fafc;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            background-color: #ffffff;
+        }
+
+        .search-feedback {
+            margin: 1rem auto 0.5rem auto;
+            max-width: 960px;
+            color: #334155;
+            font-size: 0.98rem;
+            text-align: left;
+        }
+
+        .sort-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            max-width: 960px;
+            margin: 0.5rem auto 2rem auto;
+            text-align: right;
+        }
+
+        .sort-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #334155;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        #ratingSort {
+            min-width: 200px;
+            border: 1px solid #cbd5e1;
+            border-radius: 999px;
+            padding: 0.55rem 1rem;
+            background: #ffffff;
+            color: #0f172a;
+            font-size: 0.95rem;
+        }
+
+        .app-rating {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.35rem;
+            font-size: 0.95rem;
+            color: #334155;
+        }
+
+        .app-rating .stars {
+            display: inline-flex;
+            gap: 0.1rem;
+            color: #f59e0b;
+            font-size: 1rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .app-rating .stars .star:hover,
+        .app-rating .stars .star:focus {
+            transform: scale(1.1);
+        }
+
+        .rating-text {
+            font-weight: 600;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="topbar-brand">
+                <h1 class="topbar-title">Mr Deng Maths Apps</h1>
+                <nav class="topbar-nav" aria-label="Primary navigation">
+                    <a href="../" class="topbar-link">Home</a>
+                    <a href="./" class="topbar-link active">Apps</a>
+                    <a href="../quiz/" class="topbar-link">Quiz</a>
+                </nav>
+            </div>
+            <input id="appSearch" class="search-input" type="search" placeholder="Search apps, games, or topics..." aria-label="Search apps">
+        </div>
+    </header>
+    <div class="container">
+        <h1>Mr Deng Maths 🚀</h1>
+        <p>A collaborative collection of interactive apps from the Barker College Maths Department to help you master key concepts.</p>
+        <div id="searchFeedback" class="search-feedback">Search instantly as you type to find the right app.</div>
+        <div class="sort-bar">
+            <label class="sort-label" for="ratingSort">Sort apps by:</label>
+            <select id="ratingSort">
+                <option value="default">Default order</option>
+                <option value="ratingDesc">Rating: high to low</option>
+                <option value="ratingAsc">Rating: low to high</option>
+                <option value="titleAsc">Title: A → Z</option>
+            </select>
+        </div>
+        <ul id="appList" class="app-list">
+            <!-- APP_LIST_START -->
+            <li class="app-item">
+                <a href="./Calculus%20Cricket/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🏏</span>
+                        <div class="app-text">
+                            <span class="title">Calculus Cricket</span>
+                            <span class="app-description">Explore calculus through a game.</span>
+                            <span class="visually-hidden">calculus derivative integration limits area motion graph rate change antiderivative function curve</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./Collecting%20like%20terms/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">➕</span>
+                        <div class="app-text">
+                            <span class="title">Collecting Like Terms</span>
+                            <span class="app-description">Simplify expressions by collecting like terms.</span>
+                            <span class="visually-hidden">like terms simplify algebra expressions combine collect polynomial term expand contract</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./Congruency%20Crunch/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🔺</span>
+                        <div class="app-text">
+                            <span class="title">Congruency Crunch</span>
+                            <span class="app-description">Test triangle congruence with quick problems.</span>
+                            <span class="visually-hidden">congruence triangles congruent sides angles sss sas asa aas rhs geometry proof</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./Distance%20vs%20Time%20graph/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📈</span>
+                        <div class="app-text">
+                            <span class="title">Distance Vs Time Graph</span>
+                            <span class="app-description">Interpret motion graphs and speed.</span>
+                            <span class="visually-hidden">distance time graph speed velocity acceleration gradient rate motion linear</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./Integration%20Practice/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">∫</span>
+                        <div class="app-text">
+                            <span class="title">Integration Practice</span>
+                            <span class="app-description">Practise integration with guided questions.</span>
+                            <span class="visually-hidden">integration calculus antiderivative definite integral area region function</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./Mixed%20Graphing%202/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📊</span>
+                        <div class="app-text">
+                            <span class="title">Mixed Graphing 2</span>
+                            <span class="app-description">Plot and interpret mixed graphs.</span>
+                            <span class="visually-hidden">graphing functions coordinates plot lines curves intercepts</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./Set%20notation%20in%20Venn%20Diagram/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📚</span>
+                        <div class="app-text">
+                            <span class="title">Set Notation In Venn Diagram</span>
+                            <span class="app-description">Learn set notation visually with Venn diagrams.</span>
+                            <span class="visually-hidden">set notation venn diagram union intersection complement subset elements logic</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./Simplify%20Fractions/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">✂️</span>
+                        <div class="app-text">
+                            <span class="title">Simplify Fractions</span>
+                            <span class="app-description">Simplify fractions quickly and confidently.</span>
+                            <span class="visually-hidden">simplify reduce fractions numerator denominator gcd lowest terms fraction</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./algebra-app/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🧮</span>
+                        <div class="app-text">
+                            <span class="title">Algebra App</span>
+                            <span class="app-description">Practice algebra with interactive questions.</span>
+                            <span class="visually-hidden">algebra equations expressions variables simplify linear quadratic solving factor expand substitute evaluate polynomial constant coefficient</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./astc-with-a-given-trig-equation/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🧪</span>
+                        <div class="app-text">
+                            <span class="title">Astc With A Given Trig Equation</span>
+                            <span class="app-description">Interactive astc with a given trig equation activity.</span>
+                            <span class="visually-hidden">astc with a given trig equation interactive astc with a given trig equation activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./bearings/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📊</span>
+                        <div class="app-text">
+                            <span class="title">Bearings</span>
+                            <span class="app-description">Interactive bearings activity.</span>
+                            <span class="visually-hidden">bearings interactive bearings activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./big-red-button/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📊</span>
+                        <div class="app-text">
+                            <span class="title">Big Red Button</span>
+                            <span class="app-description">Interactive big red button activity.</span>
+                            <span class="visually-hidden">big red button interactive big red button activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./cancel-the-denominator/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📐</span>
+                        <div class="app-text">
+                            <span class="title">Cancel The Denominator</span>
+                            <span class="app-description">Interactive cancel the denominator activity.</span>
+                            <span class="visually-hidden">cancel the denominator interactive cancel the denominator activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./coefficient-quest-1/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">✨</span>
+                        <div class="app-text">
+                            <span class="title">Coefficient Quest 1</span>
+                            <span class="app-description">Interactive coefficient quest 1 activity.</span>
+                            <span class="visually-hidden">coefficient quest 1 interactive coefficient quest 1 activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./coefficient-quest-3/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🧪</span>
+                        <div class="app-text">
+                            <span class="title">Coefficient Quest 3</span>
+                            <span class="app-description">Interactive coefficient quest 3 activity.</span>
+                            <span class="visually-hidden">coefficient quest 3 interactive coefficient quest 3 activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./congruent-shapes/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🧪</span>
+                        <div class="app-text">
+                            <span class="title">Congruent Shapes</span>
+                            <span class="app-description">Interactive congruent shapes activity.</span>
+                            <span class="visually-hidden">congruent shapes interactive congruent shapes activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./congruent-triangle-tests/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🧠</span>
+                        <div class="app-text">
+                            <span class="title">Congruent Triangle Tests</span>
+                            <span class="app-description">Interactive congruent triangle tests activity.</span>
+                            <span class="visually-hidden">congruent triangle tests interactive congruent triangle tests activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./divisibility-dash/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🔢</span>
+                        <div class="app-text">
+                            <span class="title">Divisibility Dash</span>
+                            <span class="app-description">Race through divisibility rules.</span>
+                            <span class="visually-hidden">divisibility factors multiples prime composite remainder divisible integer</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./equivalent-fraction-quest/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🍕</span>
+                        <div class="app-text">
+                            <span class="title">Equivalent Fraction Quest</span>
+                            <span class="app-description">Explore equivalent fractions with visual models.</span>
+                            <span class="visually-hidden">equivalent fractions simplify numerator denominator ratio proportion reduce</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./expanding-brackets/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🎯</span>
+                        <div class="app-text">
+                            <span class="title">Expanding Brackets</span>
+                            <span class="app-description">Interactive expanding brackets activity.</span>
+                            <span class="visually-hidden">expanding brackets interactive expanding brackets activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./factorise-fun/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🧪</span>
+                        <div class="app-text">
+                            <span class="title">Factorise Fun</span>
+                            <span class="app-description">Interactive factorise fun activity.</span>
+                            <span class="visually-hidden">factorise fun interactive factorise fun activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./feature-of-parabola-from-graph/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🔢</span>
+                        <div class="app-text">
+                            <span class="title">Feature Of Parabola From Graph</span>
+                            <span class="app-description">Interactive feature of parabola from graph activity.</span>
+                            <span class="visually-hidden">feature of parabola from graph interactive feature of parabola from graph activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./find-gradient/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">✨</span>
+                        <div class="app-text">
+                            <span class="title">Find Gradient</span>
+                            <span class="app-description">Interactive find gradient activity.</span>
+                            <span class="visually-hidden">find gradient interactive find gradient activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./fraction-pizza-party/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🍕</span>
+                        <div class="app-text">
+                            <span class="title">Fraction Pizza Party</span>
+                            <span class="app-description">Compare fraction slices in a fun party setting.</span>
+                            <span class="visually-hidden">fractions pizza equivalent partition parts sharing numerator denominator portion</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./general-angle-sniper/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🧠</span>
+                        <div class="app-text">
+                            <span class="title">General Angle Sniper</span>
+                            <span class="app-description">Interactive general angle sniper activity.</span>
+                            <span class="visually-hidden">general angle sniper interactive general angle sniper activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./horizontal-and-vertical-lines/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📐</span>
+                        <div class="app-text">
+                            <span class="title">Horizontal And Vertical Lines</span>
+                            <span class="app-description">Interactive horizontal and vertical lines activity.</span>
+                            <span class="visually-hidden">horizontal and vertical lines interactive horizontal and vertical lines activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./like-term-balloon/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🧪</span>
+                        <div class="app-text">
+                            <span class="title">Like Term Balloon</span>
+                            <span class="app-description">Interactive like term balloon activity.</span>
+                            <span class="visually-hidden">like term balloon interactive like term balloon activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./mixed-numeral-conversion/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🔄</span>
+                        <div class="app-text">
+                            <span class="title">Mixed Numeral Conversion</span>
+                            <span class="app-description">Convert between mixed numerals and improper fractions.</span>
+                            <span class="visually-hidden">mixed numbers improper fraction convert decimal fraction ratio percent</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./natural-log-explorer/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">✨</span>
+                        <div class="app-text">
+                            <span class="title">Natural Log Explorer</span>
+                            <span class="app-description">Interactive natural log explorer activity.</span>
+                            <span class="visually-hidden">natural log explorer interactive natural log explorer activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./odd-even-checker/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">✨</span>
+                        <div class="app-text">
+                            <span class="title">Odd Even Checker</span>
+                            <span class="app-description">Interactive odd even checker activity.</span>
+                            <span class="visually-hidden">odd even checker interactive odd even checker activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./parabola-challenge/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🎯</span>
+                        <div class="app-text">
+                            <span class="title">Parabola Challenge</span>
+                            <span class="app-description">Interactive parabola challenge activity.</span>
+                            <span class="visually-hidden">parabola challenge interactive parabola challenge activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./parabola-sketcher/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📐</span>
+                        <div class="app-text">
+                            <span class="title">Parabola Sketcher</span>
+                            <span class="app-description">Sketch parabolas and explore transformations.</span>
+                            <span class="visually-hidden">parabola sketch graph quadratic vertex axis curve functions graphing symmetry</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./pirate-game/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">✨</span>
+                        <div class="app-text">
+                            <span class="title">Pirate Game</span>
+                            <span class="app-description">Interactive pirate game activity.</span>
+                            <span class="visually-hidden">pirate game interactive pirate game activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./puzzle-game-collection/breaklock-puzzle-game/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🔐</span>
+                        <div class="app-text">
+                            <span class="title">BreakLock Puzzle Game</span>
+                            <span class="app-description">New puzzle game from the puzzle collection.</span>
+                            <span class="visually-hidden">breaklock puzzle game logic puzzle collection lock challenge</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./similar-master/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🎯</span>
+                        <div class="app-text">
+                            <span class="title">Similar Master</span>
+                            <span class="app-description">Interactive similar master activity.</span>
+                            <span class="visually-hidden">similar master interactive similar master activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./similar-triangle-factory/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📐</span>
+                        <div class="app-text">
+                            <span class="title">Similar Triangle Factory</span>
+                            <span class="app-description">Interactive similar triangle factory activity.</span>
+                            <span class="visually-hidden">similar triangle factory interactive similar triangle factory activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./simplify-proper-fractions/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">✂️</span>
+                        <div class="app-text">
+                            <span class="title">Simplify Proper Fractions</span>
+                            <span class="app-description">Simplify proper fractions with confidence.</span>
+                            <span class="visually-hidden">proper fractions simplify reduce numerator denominator mixed number improper</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./soh-cah-toa-challenge/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📐</span>
+                        <div class="app-text">
+                            <span class="title">Soh Cah Toa Challenge</span>
+                            <span class="app-description">Solve right-triangle problems using trigonometry.</span>
+                            <span class="visually-hidden">soh cah toa sine cosine tangent right triangle trigonometry ratio</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./table-to-y%3Dmx%2Bb/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🔢</span>
+                        <div class="app-text">
+                            <span class="title">Table To Y=Mx+B</span>
+                            <span class="app-description">Interactive table to y=mx+b activity.</span>
+                            <span class="visually-hidden">table to y=mx+b interactive table to y=mx+b activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./tangent-and-normal/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📈</span>
+                        <div class="app-text">
+                            <span class="title">Tangent And Normal</span>
+                            <span class="app-description">Interactive tangent and normal activity.</span>
+                            <span class="visually-hidden">tangent and normal interactive tangent and normal activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./thermal-directed-number-lab/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🌡️</span>
+                        <div class="app-text">
+                            <span class="title">Thermal Directed Number Lab</span>
+                            <span class="app-description">Explore directed numbers with a temperature lab.</span>
+                            <span class="visually-hidden">directed numbers positive negative integers temperature thermal opposites absolute value</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./transformation-explorer/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🔄</span>
+                        <div class="app-text">
+                            <span class="title">Transformation Explorer</span>
+                            <span class="app-description">Explore transformations in geometry.</span>
+                            <span class="visually-hidden">transformation functions translation rotation reflect scale curve graph mapping shift</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./transformation-with-dilation/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">🔄</span>
+                        <div class="app-text">
+                            <span class="title">Transformation With Dilation</span>
+                            <span class="app-description">Explore reflections and dilations with an interactive graph sandbox and visual feedback.</span>
+                            <span class="visually-hidden">transformation with dilation graph sandbox reflections dilations visual feedback</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./translation-vector-game/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📐</span>
+                        <div class="app-text">
+                            <span class="title">Translation Vector Game</span>
+                            <span class="app-description">Interactive translation vector game activity.</span>
+                            <span class="visually-hidden">translation vector game interactive translation vector game activity.</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./trig-equation-builder/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📐</span>
+                        <div class="app-text">
+                            <span class="title">Trig Equation Builder</span>
+                            <span class="app-description">Build and solve trigonometric equations.</span>
+                            <span class="visually-hidden">trig equations sine cosine tangent identities solve radians degrees periodic</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <li class="app-item">
+                <a href="./trig-side-master/" class="app-link">
+                    <div class="app-card-top">
+                        <span class="app-icon" aria-hidden="true">📐</span>
+                        <div class="app-text">
+                            <span class="title">Trig Side Master</span>
+                            <span class="app-description">Master trigonometric side-length problems.</span>
+                            <span class="visually-hidden">trig sides sine rule cosine rule triangle lengths opposite adjacent hypotenuse</span>
+                        </div>
+                    </div>
+                    <span class="app-button">Open app</span>
+                </a>
+            </li>
+            <!-- APP_LIST_END -->
+        </ul>
+    </div>
+</body>
+</html>

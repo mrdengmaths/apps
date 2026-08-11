@@ -73,9 +73,24 @@ function initMathInputs() {
 
     const MQ = window.MathQuill.getInterface(2);
     document.querySelectorAll('input.student-input, textarea.student-textarea').forEach((el) => {
+        if (!el.name || mqFields[el.name]) {
+            return;
+        }
+
+        const hasMathField = !!window.quizConfig
+            && !!window.quizConfig.questions
+            && !!window.quizConfig.questions[el.name]
+            && window.quizConfig.questions[el.name].type === 'text';
+
+        if (!hasMathField) {
+            el.style.display = '';
+            return;
+        }
+
         const host = document.createElement('div');
         host.className = 'mathquill-host';
         el.insertAdjacentElement('afterend', host);
+        el.classList.add('mq-source-input');
 
         const field = MQ.MathField(host, {
             handlers: {
@@ -90,6 +105,11 @@ function initMathInputs() {
         }
         mqFields[el.name] = field;
         mqKeyboards[el.name] = createMathKeyboard(field, el.name);
+    });
+
+    // Keep any untouched text inputs visible as plain fallback.
+    document.querySelectorAll('input.student-input:not(.mq-source-input), textarea.student-textarea:not(.mq-source-input)').forEach((el) => {
+        el.style.display = '';
     });
 }
 

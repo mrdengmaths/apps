@@ -159,8 +159,8 @@ input[type="radio"] {
     box-sizing: border-box;
 }
 
-.student-input,
-.student-textarea {
+.student-input.mq-source-input,
+.student-textarea.mq-source-input {
     display: none;
 }
 
