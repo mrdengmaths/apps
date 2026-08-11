@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2024 MC Modified</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .quiz-container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .question-block {
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .question-block:last-child {
+            border-bottom: none;
+        }
+        .question-text {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: baseline;
+        }
+        .question-number {
+            margin-right: 15px;
+            font-size: 1.2em;
+        }
+        .options {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .option {
+            margin-bottom: 10px;
+        }
+        label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        label:hover {
+            background-color: #f0f8ff;
+        }
+        input[type="radio"] {
+            margin-right: 15px;
+        }
+        .math-expr {
+            font-style: italic;
+        }
+        .venn-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-top: 15px;
+            justify-items: center;
+        }
+        .venn-option {
+            text-align: center;
+        }
+
+        svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        button {
+            display: block;
+            width: 200px;
+            margin: 30px auto;
+            padding: 10px;
+            font-size: 1.1em;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #download-wrong-pdf {
+            display: none;
+            margin-top: 12px;
+            background-color: #2e7d32;
+        }
+        #download-wrong-pdf:hover {
+            background-color: #1b5e20;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #e8f5e9;
+            border-left: 5px solid #4caf50;
+            display: none;
+        }
+        #feedback-summary {
+            font-weight: bold;
+            color: #1b5e20;
+        }
+        #strengths-list,
+        #improvement-list {
+            margin: 8px 0 0 20px;
+            padding: 0;
+        }
+        #improvement-list li {
+            margin-bottom: 6px;
+        }
+        #improvement-list a {
+            color: #0d47a1;
+            text-decoration: underline;
+        }
+        #back-to-feedback-btn {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            z-index: 1200;
+            width: auto;
+            margin: 0;
+            padding: 10px 14px;
+            font-size: 0.95em;
+            background-color: #1565c0;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+            display: none;
+        }
+        #back-to-feedback-btn:hover {
+            background-color: #0d47a1;
+        }
+        .correct-answer-display {
+            color: #d32f2f;
+            font-weight: bold;
+            margin-top: 10px;
+            display: none;
+        }
+        .rationale {
+            color: #555;
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<div class="quiz-container">
+    <h1>2024 MC Modified</h1>
+    <form id="quiz-form">
+
+        <div class="question-block">
+            <div class="question-text">
+                <span class="question-number">1.</span>
+                <div>Determine the gradient of the line perpendicular to \(y = \frac{x}{2} - 3\).</div>
+            </div>
+            <ul class="options">
+                <li><label><input type="radio" name="q1" value="a"> A. &nbsp;&nbsp; \(2\)</label></li>
+                <li><label><input type="radio" name="q1" value="b"> B. &nbsp;&nbsp; \(-\frac{1}{2}\)</label></li>
+                <li><label><input type="radio" name="q1" value="c"> C. &nbsp;&nbsp; \(-2\)</label></li>
+                <li><label><input type="radio" name="q1" value="d"> D. &nbsp;&nbsp; \(\frac{1}{2}\)</label></li>
+            </ul>
+            <div class="correct-answer-display" id="ans-q1">Correct Answer: C</div>
+            <div class="rationale" id="rat-q1">The given line has gradient \(m = \frac{1}{2}\). A perpendicular line has gradient equal to the negative reciprocal, so \(m_\perp = -2\).</div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">
+                <span class="question-number">2.</span>
+                <div>What is the value of \(\log_{31}(586)\), correct to three significant figures?</div>
+            </div>
+            <ul class="options">
+                <li><label><input type="radio" name="q2" value="a"> A. &nbsp;&nbsp; \(2.77\)</label></li>
+                <li><label><input type="radio" name="q2" value="b"> B. &nbsp;&nbsp; \(1.86\)</label></li>
+                <li><label><input type="radio" name="q2" value="c"> C. &nbsp;&nbsp; \(2.768\)</label></li>
+                <li><label><input type="radio" name="q2" value="d"> D. &nbsp;&nbsp; \(1.856\)</label></li>
+            </ul>
+            <div class="correct-answer-display" id="ans-q2">Correct Answer: B</div>
+            <div class="rationale" id="rat-q2">Using change of base: \(\log_{31}(586)=\frac{\ln 586}{\ln 31}\approx1.8555\ldots\). To three significant figures this is \(1.86\).</div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">
+                <span class="question-number">3.</span>
+                <div>Given that \(\log_a 4 = 0.420\) and \(\log_a 5 = 0.488\), find \(\log_a 100\).</div>
+            </div>
+            <ul class="options">
+                <li><label><input type="radio" name="q3" value="a"> A. &nbsp;&nbsp; \(0.664\)</label></li>
+                <li><label><input type="radio" name="q3" value="b"> B. &nbsp;&nbsp; \(2.908\)</label></li>
+                <li><label><input type="radio" name="q3" value="c"> C. &nbsp;&nbsp; \(1.396\)</label></li>
+                <li><label><input type="radio" name="q3" value="d"> D. &nbsp;&nbsp; \(0.410\)</label></li>
+            </ul>
+            <div class="correct-answer-display" id="ans-q3">Correct Answer: C</div>
+            <div class="rationale" id="rat-q3">Write \(100 = 4\times25\). Then \(\log_a100 = \log_a4 + 2\log_a5 = 0.420 + 2(0.488) = 1.396\).</div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">
+                <span class="question-number">4.</span>
+                <div>The graph of the gradient function, \(f'(x)\), is shown. For what value(s) of \(x\) does \(f(x)\) have stationary points?</div>
+            </div>
+            <div style="text-align: center; margin: 16px 0 12px 0;">
+                <svg width="360" height="260" viewBox="0 0 360 260" style="border: 1px solid #ddd; border-radius: 4px; background: white;">
+                    <defs>
+                        <pattern id="grid4" width="16" height="16" patternUnits="userSpaceOnUse">
+                            <path d="M 16 0 L 0 0 0 16" fill="none" stroke="#e6e6e6" stroke-width="1"/>
+                        </pattern>
+                        <marker id="arrowBlue4" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
+                            <path d="M0,0 L6,3 L0,6 Z" fill="#1f3bff"/>
+                        </marker>
+                    </defs>
+
+                    <rect x="40" y="20" width="280" height="200" fill="url(#grid4)"/>
+
+                    <line x1="40" y1="140" x2="320" y2="140" stroke="black" stroke-width="1.2"/>
+                    <line x1="180" y1="220" x2="180" y2="20" stroke="black" stroke-width="1.2"/>
+
+                    <text x="324" y="144" font-family="serif" font-style="italic" font-size="12">x</text>
+                    <text x="184" y="16" font-family="serif" font-style="italic" font-size="12">f'(x)</text>
+
+                    <text x="34" y="144" font-size="11">-10</text>
+                    <text x="104" y="144" font-size="11">-5</text>
+                    <text x="176" y="154" font-size="11">0</text>
+                    <text x="248" y="144" font-size="11">5</text>
+                    <text x="314" y="144" font-size="11">10</text>
+
+                    <text x="168" y="220" font-size="11">-5</text>
+                    <text x="168" y="184" font-size="11">0</text>
+                    <text x="166" y="146" font-size="11">5</text>
+                    <text x="160" y="106" font-size="11">10</text>
+                    <text x="160" y="66" font-size="11">15</text>
+
+                    <path d="M 130 230 C 132 185, 142 85, 156 55 C 168 35, 181 58, 186 78 C 196 121, 204 150, 212 152 C 220 154, 230 132, 236 112 C 243 83, 248 28, 250 6"
+                          fill="none" stroke="#1f3bff" stroke-width="2"
+                          marker-start="url(#arrowBlue4)" marker-end="url(#arrowBlue4)"/>
+                </svg>
+            </div>
+            <ul class="options">
+                <li><label><input type="radio" name="q4" value="a"> A. &nbsp;&nbsp; \(x = -1.5\) and \(x = 1.5\)</label></li>
+                <li><label><input type="radio" name="q4" value="b"> B. &nbsp;&nbsp; \(x = 1.5\) only</label></li>
+                <li><label><input type="radio" name="q4" value="c"> C. &nbsp;&nbsp; \(x = -3,\, x = -1.5,\, x = 1,\, x = 1.5,\, x = 2\)</label></li>
+                <li><label><input type="radio" name="q4" value="d"> D. &nbsp;&nbsp; \(x = -3,\, x = 1\) and \(x = 2\)</label></li>
+            </ul>
+            <div class="correct-answer-display" id="ans-q4">Correct Answer: D</div>
+            <div class="rationale" id="rat-q4">Stationary points of \(f(x)\) occur where \(f'(x)=0\), so we read the \(x\)-intercepts of the gradient graph. The curve crosses the \(x\)-axis at \(x=-3\), \(x=1\), and \(x=2\).</div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">
+                <span class="question-number">5.</span>
+                <div>Determine the set notation represented by the shaded area in the Venn diagram.</div>
+            </div>
+            <div class="venn-grid">
+                <div class="venn-option">
+                    <svg width="260" height="170" viewBox="0 0 260 170" style="border: 0;">
+                        <rect x="18" y="16" width="224" height="130" fill="#8fb4d9" stroke="#1237b8" stroke-width="5"/>
+                        <circle cx="95" cy="80" r="42" fill="white" stroke="#1237b8" stroke-width="5"/>
+                        <circle cx="155" cy="80" r="42" fill="none" stroke="#1237b8" stroke-width="5"/>
+                        <text x="33" y="53" font-family="Arial" font-size="34" fill="#1237b8" font-weight="700">A</text>
+                        <text x="202" y="53" font-family="Arial" font-size="34" fill="#1237b8" font-weight="700">B</text>
+                    </svg>
+                </div>
+            </div>
+            <ul class="options">
+                <li><label><input type="radio" name="q5" value="a"> A. &nbsp;&nbsp; \(A' \cap B\)</label></li>
+                <li><label><input type="radio" name="q5" value="b"> B. &nbsp;&nbsp; \(B'\)</label></li>
+                <li><label><input type="radio" name="q5" value="c"> C. &nbsp;&nbsp; \(A'\)</label></li>
+                <li><label><input type="radio" name="q5" value="d"> D. &nbsp;&nbsp; \(B \cup (A'\cap B')\)</label></li>
+            </ul>
+            <div class="correct-answer-display" id="ans-q5">Correct Answer: C</div>
+            <div class="rationale" id="rat-q5">All of set \(A\) (including the overlap) is unshaded, while everything outside \(A\) is shaded. That region is the complement of \(A\), i.e. \(A'\).</div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">
+                <span class="question-number">6.</span>
+                <div>Determine the value(s) of \(k\) for which \(|2k - 1| = k\).</div>
+            </div>
+            <ul class="options">
+                <li><label><input type="radio" name="q6" value="a"> A. &nbsp;&nbsp; \(-1\) or \(-\frac{1}{3}\)</label></li>
+                <li><label><input type="radio" name="q6" value="b"> B. &nbsp;&nbsp; \(1\) only</label></li>
+                <li><label><input type="radio" name="q6" value="c"> C. &nbsp;&nbsp; \(-\frac{1}{3}\) only</label></li>
+                <li><label><input type="radio" name="q6" value="d"> D. &nbsp;&nbsp; \(1\) or \(\frac{1}{3}\)</label></li>
+            </ul>
+            <div class="correct-answer-display" id="ans-q6">Correct Answer: D</div>
+            <div class="rationale" id="rat-q6">Since \(|2k-1|\ge0\), we need \(k\ge0\). Solve both cases: \(2k-1=k\Rightarrow k=1\), and \(-(2k-1)=k\Rightarrow 1=3k\Rightarrow k=\frac13\). Both satisfy the equation.</div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">
+                <span class="question-number">7.</span>
+                <div>Determine the value of \(p\) so that \(\frac{a^2a^{-3}}{\sqrt{a}} = a^p\).</div>
+            </div>
+            <ul class="options">
+                <li><label><input type="radio" name="q7" value="a"> A. &nbsp;&nbsp; \(-\frac{3}{2}\)</label></li>
+                <li><label><input type="radio" name="q7" value="b"> B. &nbsp;&nbsp; \(-3\)</label></li>
+                <li><label><input type="radio" name="q7" value="c"> C. &nbsp;&nbsp; \(12\)</label></li>
+                <li><label><input type="radio" name="q7" value="d"> D. &nbsp;&nbsp; \(-\frac{1}{2}\)</label></li>
+            </ul>
+            <div class="correct-answer-display" id="ans-q7">Correct Answer: A</div>
+            <div class="rationale" id="rat-q7">Combine powers in the numerator: \(a^2a^{-3}=a^{-1}\). Also, \(\sqrt{a}=a^{1/2}\). So \(\frac{a^{-1}}{a^{1/2}}=a^{-1-1/2}=a^{-3/2}\), hence \(p=-\frac{3}{2}\).</div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">
+                <span class="question-number">8.</span>
+                <div>The graph of a function \(y=f(x)\) is shown below. It has a horizontal asymptote at \(y=-2.5\). Which statement correctly describes its domain and range?</div>
+            </div>
+            <div style="text-align: center; margin: 16px 0 12px 0;">
+                <svg width="470" height="280" viewBox="0 0 470 280" style="border: 1px solid #ddd; border-radius: 4px; background: white; max-width: 100%;">
+                    <defs>
+                        <marker id="arrowBlack8" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                            <path d="M0,0 L6,3 L0,6 Z" fill="black"/>
+                        </marker>
+                    </defs>
+
+                    <line x1="40" y1="140" x2="450" y2="140" stroke="black" stroke-width="1.5" marker-start="url(#arrowBlack8)" marker-end="url(#arrowBlack8)"/>
+                    <line x1="80" y1="255" x2="80" y2="20" stroke="black" stroke-width="1.5" marker-end="url(#arrowBlack8)"/>
+
+                    <text x="456" y="146" font-family="serif" font-style="italic" font-size="14">x</text>
+                    <text x="70" y="22" font-family="serif" font-style="italic" font-size="14">y</text>
+
+                    <line x1="40" y1="184" x2="450" y2="184" stroke="black" stroke-width="1.2" stroke-dasharray="6,5"/>
+                    <text x="248" y="198" font-family="serif" font-style="italic" font-size="14">y = -2.5</text>
+
+                    <circle cx="182" cy="206" r="4" fill="white" stroke="black" stroke-width="1.3"/>
+                    <text x="168" y="224" font-size="13">(2, -3)</text>
+
+                    <circle cx="220" cy="118" r="4" fill="black"/>
+                    <text x="208" y="110" font-size="13">(3, -1)</text>
+
+                    <path d="M 182 206 C 186 160, 195 130, 220 118" fill="none" stroke="black" stroke-width="2"/>
+                    <path d="M 220 118 C 262 132, 335 166, 446 181" fill="none" stroke="black" stroke-width="2" marker-end="url(#arrowBlack8)"/>
+                </svg>
+            </div>
+            <ul class="options">
+                <li><label><input type="radio" name="q8" value="a"> A. &nbsp;&nbsp; Domain: \((2,\infty)\); Range: \((-2.5,-1]\)</label></li>
+                <li><label><input type="radio" name="q8" value="b"> B. &nbsp;&nbsp; Domain: \([2,\infty)\); Range: \([-3,-1)\)</label></li>
+                <li><label><input type="radio" name="q8" value="c"> C. &nbsp;&nbsp; Domain: \((2,\infty)\); Range: \([-2.5,-1]\)</label></li>
+                <li><label><input type="radio" name="q8" value="d"> D. &nbsp;&nbsp; Domain: \((-3,-1]\); Range: \((2,\infty)\)</label></li>
+            </ul>
+            <div class="correct-answer-display" id="ans-q8">Correct Answer: A</div>
+            <div class="rationale" id="rat-q8">The graph starts just to the right of \(x=2\) with an open circle at \((2,-3)\), so \(x=2\) is excluded and domain is \((2,\infty)\). The highest value is \(-1\) at the filled point \((3,-1)\), and the curve approaches \(y=-2.5\) from above without touching it, so range is \((-2.5,-1]\).</div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">
+                <span class="question-number">9.</span>
+                <div>What is the area, in \(cm^2\), of a sector with radius \(9\,cm\) and arc length \(18\pi\,cm\)?</div>
+            </div>
+            <ul class="options">
+                <li><label><input type="radio" name="q9" value="a"> A. &nbsp;&nbsp; \(162\pi\)</label></li>
+                <li><label><input type="radio" name="q9" value="b"> B. &nbsp;&nbsp; \(81\pi\)</label></li>
+                <li><label><input type="radio" name="q9" value="c"> C. &nbsp;&nbsp; \(162\)</label></li>
+                <li><label><input type="radio" name="q9" value="d"> D. &nbsp;&nbsp; \(18\pi\)</label></li>
+            </ul>
+            <div class="correct-answer-display" id="ans-q9">Correct Answer: B</div>
+            <div class="rationale" id="rat-q9">For a sector, \(A=\frac12 rL\), where \(L\) is arc length. So \(A=\frac12\times9\times18\pi=81\pi\,cm^2\).</div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">
+                <span class="question-number">10.</span>
+                <div>Given that \(f(x)=3x\) and \(g(x+1)=2x-4\), which expression is \(f(g(x))\)?</div>
+            </div>
+            <ul class="options">
+                <li><label><input type="radio" name="q10" value="a"> A. &nbsp;&nbsp; \(6x-18\)</label></li>
+                <li><label><input type="radio" name="q10" value="b"> B. &nbsp;&nbsp; \(6x-15\)</label></li>
+                <li><label><input type="radio" name="q10" value="c"> C. &nbsp;&nbsp; \(6x-3\)</label></li>
+                <li><label><input type="radio" name="q10" value="d"> D. &nbsp;&nbsp; \(6x+3\)</label></li>
+            </ul>
+            <div class="correct-answer-display" id="ans-q10">Correct Answer: A</div>
+            <div class="rationale" id="rat-q10">Let \(u=x+1\), so \(g(u)=2(u-1)-4=2u-6\), hence \(g(x)=2x-6\). Then \(f(g(x))=3(2x-6)=6x-18\).</div>
+        </div>
+
+        <button type="button" onclick="submitQuiz()">Submit Quiz</button>
+
+    </form>
+
+    <div id="results">
+        <h2>Your Results</h2>
+        <p id="score-display">You scored <span id="score">0</span> out of 10.</p>
+        <p id="feedback-summary"></p>
+        <p><strong>Topics you did well in:</strong></p>
+        <ul id="strengths-list"></ul>
+        <p><strong>Topics to revise from missed questions:</strong></p>
+        <ul id="improvement-list"></ul>
+        <p>Review the highlighted answers above.</p>
+        <button type="button" id="download-wrong-pdf">Download Wrong Questions PDF</button>
+    </div>
+</div>
+
+<button type="button" id="back-to-feedback-btn">Back to Feedback</button>
+
+<script>
+    let quizSubmitted = false;
+    let wrongQuestionData = [];
+
+    const correctAnswers = {
+        q1: 'c',
+        q2: 'b',
+        q3: 'c',
+        q4: 'd',
+        q5: 'c',
+        q6: 'd',
+        q7: 'a',
+        q8: 'a',
+        q9: 'b',
+        q10: 'a'
+    };
+
+    const questionMeta = {
+        q1: { number: 1, topic: 'Perpendicular gradients', text: 'Find the gradient of a line perpendicular to y = x/2 - 3.' },
+        q2: { number: 2, topic: 'Logarithms and approximation', text: 'Evaluate log base 31 of 586 to 3 significant figures.' },
+        q3: { number: 3, topic: 'Logarithm laws', text: 'Use given log values to find log_a(100).' },
+        q4: { number: 4, topic: 'Stationary points from derivative graph', text: 'Use f\'(x) graph to find x-values where f has stationary points.' },
+        q5: { number: 5, topic: 'Venn diagrams and set notation', text: 'Identify set notation from a shaded Venn diagram.' },
+        q6: { number: 6, topic: 'Absolute value equations', text: 'Solve |2k - 1| = k.' },
+        q7: { number: 7, topic: 'Index laws', text: 'Find p so that (a^2 a^-3) / sqrt(a) = a^p.' },
+        q8: { number: 8, topic: 'Domain and range from graph', text: 'Determine domain and range from a graph with asymptote y = -2.5.' },
+        q9: { number: 9, topic: 'Sector area from arc length', text: 'Find sector area given radius and arc length.' },
+        q10: { number: 10, topic: 'Composite functions', text: 'Find f(g(x)) from definitions of f and g.' }
+    };
+
+    function getFeedbackMessage(score, total) {
+        const percent = (score / total) * 100;
+
+        if (percent === 100) {
+            return 'Outstanding work. Perfect score and excellent consistency across all topics.';
+        }
+        if (percent >= 80) {
+            return 'Excellent effort. You showed strong understanding in most areas.';
+        }
+        if (percent >= 60) {
+            return 'Great effort. You have a solid base and are close to mastering these questions.';
+        }
+        if (percent >= 40) {
+            return 'Good persistence. Keep going and focus on the revision topics listed below.';
+        }
+        return 'Well done for completing the quiz. Review the revision topics and try again for a stronger result.';
+    }
+
+    function populateTopicList(listId, topics, emptyMessage) {
+        const list = document.getElementById(listId);
+        list.innerHTML = '';
+
+        if (topics.length === 0) {
+            const li = document.createElement('li');
+            li.textContent = emptyMessage;
+            list.appendChild(li);
+            return;
+        }
+
+        topics.forEach(topic => {
+            const li = document.createElement('li');
+            li.textContent = topic;
+            list.appendChild(li);
+        });
+    }
+
+    function populateMissedQuestionList(items) {
+        const list = document.getElementById('improvement-list');
+        list.innerHTML = '';
+
+        if (items.length === 0) {
+            const li = document.createElement('li');
+            li.textContent = 'Excellent. No missed topics to revise.';
+            list.appendChild(li);
+            return;
+        }
+
+        items.forEach(item => {
+            const li = document.createElement('li');
+            const link = document.createElement('a');
+            link.href = `#question-${item.key}`;
+            link.textContent = `Q${item.number} - ${item.topic}`;
+            li.appendChild(link);
+            list.appendChild(li);
+        });
+    }
+
+    function scrollToFeedback() {
+        const results = document.getElementById('results');
+        results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function getCorrectOptionText(questionKey, optionValue) {
+        const optionInput = document.querySelector(`input[name="${questionKey}"][value="${optionValue}"]`);
+        if (!optionInput || !optionInput.parentElement) {
+            return optionValue.toUpperCase();
+        }
+
+        return optionInput.parentElement.innerText.replace(/\s+/g, ' ').trim();
+    }
+
+    function formatTimestamp(date) {
+        const pad = (n) => String(n).padStart(2, '0');
+        const year = date.getFullYear();
+        const month = pad(date.getMonth() + 1);
+        const day = pad(date.getDate());
+        const hour = pad(date.getHours());
+        const minute = pad(date.getMinutes());
+        const second = pad(date.getSeconds());
+
+        return {
+            display: `${day}/${month}/${year} ${hour}:${minute}:${second}`,
+            fileSafe: `${year}${month}${day}-${hour}${minute}${second}`
+        };
+    }
+
+    async function downloadWrongQuestionsPdf() {
+        if (wrongQuestionData.length === 0) {
+            return;
+        }
+
+        const jsPdfGlobal = window.jspdf;
+        if (!jsPdfGlobal || !jsPdfGlobal.jsPDF || typeof window.html2canvas !== 'function') {
+            alert('PDF generator failed to load. Please refresh and try again.');
+            return;
+        }
+
+        const { jsPDF } = jsPdfGlobal;
+        const doc = new jsPDF();
+        const pageHeight = doc.internal.pageSize.height;
+        const leftMargin = 10;
+        const maxImageWidth = 190;
+        let y = 12;
+        const createdAt = new Date();
+        const timestamp = formatTimestamp(createdAt);
+
+        const stagingRoot = document.createElement('div');
+        stagingRoot.style.position = 'fixed';
+        stagingRoot.style.left = '-10000px';
+        stagingRoot.style.top = '0';
+        stagingRoot.style.width = '820px';
+        stagingRoot.style.padding = '10px';
+        stagingRoot.style.background = '#ffffff';
+        document.body.appendChild(stagingRoot);
+
+        const form = document.getElementById('quiz-form');
+
+        try {
+            doc.setFontSize(14);
+            doc.text('2024 MC Modified - Wrong Questions for Reattempt', leftMargin, y);
+            y += 7;
+
+            doc.setFontSize(10);
+            doc.text(`Created: ${timestamp.display}`, leftMargin, y);
+            y += 7;
+            doc.text(`Total questions: ${wrongQuestionData.length}`, leftMargin, y);
+            y += 5;
+
+            for (const item of wrongQuestionData) {
+                const originalBlock = form.querySelector(`input[name="${item.key}"]`)?.closest('.question-block');
+                if (!originalBlock) {
+                    continue;
+                }
+
+                const cloneBlock = originalBlock.cloneNode(true);
+
+                cloneBlock.querySelectorAll('.correct-answer-display, .rationale').forEach(el => el.remove());
+                cloneBlock.querySelectorAll('input[type="radio"]').forEach(input => {
+                    input.checked = false;
+                    input.disabled = false;
+                });
+
+                stagingRoot.appendChild(cloneBlock);
+                cloneBlock.querySelectorAll('mjx-assistive-mml').forEach(el => el.remove());
+
+                const canvas = await window.html2canvas(cloneBlock, {
+                    backgroundColor: '#ffffff',
+                    scale: 2,
+                    useCORS: true
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = maxImageWidth;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                if (y + imgHeight > pageHeight - 10) {
+                    doc.addPage();
+                    y = 12;
+                }
+
+                doc.addImage(imgData, 'PNG', leftMargin, y, imgWidth, imgHeight);
+                y += imgHeight + 5;
+                stagingRoot.removeChild(cloneBlock);
+            }
+
+            doc.addPage();
+            y = 14;
+            doc.setFontSize(14);
+            doc.text('Correct Answers for Selected Questions', leftMargin, y);
+            y += 8;
+            doc.setFontSize(10);
+            doc.text(`Created: ${timestamp.display}`, leftMargin, y);
+            y += 8;
+
+            for (const item of wrongQuestionData) {
+                const line = `Q${item.number}: ${item.correctAnswer}`;
+                const wrapped = doc.splitTextToSize(line, 186);
+
+                if (y + (wrapped.length * 5) > pageHeight - 10) {
+                    doc.addPage();
+                    y = 14;
+                }
+
+                doc.text(wrapped, leftMargin, y);
+                y += (wrapped.length * 5) + 2;
+            }
+
+            doc.save(`2024-MC-Modified-wrong-questions-${timestamp.fileSafe}.pdf`);
+        } finally {
+            document.body.removeChild(stagingRoot);
+        }
+    }
+
+    function submitQuiz() {
+        if (quizSubmitted) {
+            return;
+        }
+
+        let score = 0;
+        const form = document.getElementById('quiz-form');
+        const totalQuestions = Object.keys(correctAnswers).length;
+        const strengthsSet = new Set();
+        wrongQuestionData = [];
+        quizSubmitted = true;
+
+        const inputs = form.querySelectorAll('input[type="radio"]');
+        inputs.forEach(input => input.disabled = true);
+
+        for (let q in correctAnswers) {
+            const selected = form.querySelector(`input[name="${q}"]:checked`);
+            const answerDisplay = document.getElementById(`ans-${q}`);
+            const rationaleDisplay = document.getElementById(`rat-${q}`);
+            const questionBlock = form.querySelector(`input[name="${q}"]`)?.closest('.question-block');
+
+            if (questionBlock) {
+                questionBlock.id = `question-${q}`;
+            }
+
+            answerDisplay.style.display = 'block';
+            rationaleDisplay.style.display = 'block';
+
+            if (selected) {
+                if (selected.value === correctAnswers[q]) {
+                    score++;
+                    strengthsSet.add(questionMeta[q].topic);
+                    answerDisplay.style.color = '#388e3c';
+                    answerDisplay.innerHTML = '✓ ' + answerDisplay.innerHTML;
+                } else {
+                    wrongQuestionData.push({
+                        key: q,
+                        number: questionMeta[q].number,
+                        topic: questionMeta[q].topic,
+                        text: questionMeta[q].text,
+                        correctAnswer: correctAnswers[q].toUpperCase(),
+                        correctAnswerText: getCorrectOptionText(q, correctAnswers[q])
+                    });
+                    answerDisplay.style.color = '#d32f2f';
+                    answerDisplay.innerHTML = '✗ ' + answerDisplay.innerHTML + ` (You chose ${selected.value.toUpperCase()})`;
+                }
+            } else {
+                wrongQuestionData.push({
+                    key: q,
+                    number: questionMeta[q].number,
+                    topic: questionMeta[q].topic,
+                    text: questionMeta[q].text,
+                    correctAnswer: correctAnswers[q].toUpperCase(),
+                    correctAnswerText: getCorrectOptionText(q, correctAnswers[q])
+                });
+                answerDisplay.style.color = '#f57c00';
+                answerDisplay.innerHTML = '⚠ Unanswered. ' + answerDisplay.innerHTML;
+            }
+        }
+
+        document.getElementById('score').innerText = score;
+        document.getElementById('feedback-summary').innerText = getFeedbackMessage(score, totalQuestions);
+
+        populateTopicList(
+            'strengths-list',
+            Array.from(strengthsSet),
+            'No fully-correct topics this time. Keep practising and try another attempt.'
+        );
+        populateMissedQuestionList(wrongQuestionData);
+
+        const pdfButton = document.getElementById('download-wrong-pdf');
+        if (wrongQuestionData.length > 0) {
+            pdfButton.style.display = 'block';
+            pdfButton.onclick = downloadWrongQuestionsPdf;
+        }
+
+        const backToFeedbackButton = document.getElementById('back-to-feedback-btn');
+        backToFeedbackButton.style.display = 'block';
+        backToFeedbackButton.onclick = scrollToFeedback;
+
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        document.querySelector('button[onclick="submitQuiz()"]').style.display = 'none';
+    }
+</script>
+
+</body>
+</html>
