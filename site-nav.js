@@ -3,6 +3,8 @@
     const navClass = 'mr-deng-global-nav';
     const navLinkClass = 'mr-deng-global-nav__link';
     const navLinkActiveClass = 'mr-deng-global-nav__link--active';
+    const navBrandClass = 'mr-deng-global-nav__brand';
+    const navBrandLinkClass = 'mr-deng-global-nav__brand-link';
 
     if (document.getElementById(styleId)) {
         return;
@@ -48,7 +50,6 @@
 
     const existingNav = document.querySelector('.topbar-nav, .nav-links, nav[aria-label="Primary navigation"]');
     const links = [
-        { href: prefixes.home, label: 'Home', key: 'home' },
         { href: prefixes.apps, label: 'Apps', key: 'apps' },
         { href: prefixes.quiz, label: 'Quiz', key: 'quiz' }
     ];
@@ -87,6 +88,15 @@
             color: #002d4a;
             font-weight: 700;
             white-space: nowrap;
+        }
+
+        .${navBrandLinkClass} {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .${navBrandLinkClass}:hover {
+            text-decoration: underline;
         }
 
         .${navClass}__brand-mark {
@@ -181,6 +191,11 @@
         .join('');
 
     if (existingNav) {
+        const existingHeader = existingNav.closest('header') || existingNav.parentElement;
+        const brandTarget = existingHeader && existingHeader.querySelector('.topbar-title, .brand-copy h1, h1');
+        if (brandTarget) {
+            brandTarget.outerHTML = `<a href="${prefixes.home}" class="${navBrandLinkClass}">${brandTarget.textContent || 'Mr Deng Maths'}</a>`;
+        }
         existingNav.innerHTML = linkMarkup;
         return;
     }
@@ -192,7 +207,7 @@
         <div class="${navClass}__inner">
             <div class="${navClass}__brand">
                 <div class="${navClass}__brand-mark" aria-hidden="true">∑</div>
-                <span>Mr Deng Maths</span>
+                <a href="${prefixes.home}" class="${navBrandLinkClass}">Mr Deng Maths</a>
             </div>
             <nav class="${navClass}__links--fallback" aria-label="Primary navigation">
                 ${linkMarkup}
