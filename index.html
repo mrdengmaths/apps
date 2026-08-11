@@ -176,6 +176,14 @@
             align-items: center;
             justify-content: space-between;
             gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
         .topbar-title {
@@ -184,6 +192,27 @@
             color: var(--header-color);
             margin: 0;
             white-space: nowrap;
+        }
+
+        .topbar-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .topbar-link {
+            text-decoration: none;
+            color: #334155;
+            font-weight: 600;
+            padding: 0.45rem 0.8rem;
+            border-radius: 999px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .topbar-link:hover,
+        .topbar-link.active {
+            background-color: var(--primary-color);
+            color: #ffffff;
         }
 
         .search-input {
@@ -272,7 +301,13 @@
 <body>
     <header class="topbar">
         <div class="topbar-inner">
-            <h1 class="topbar-title">Mr Deng Maths</h1>
+            <div class="topbar-brand">
+                <h1 class="topbar-title">Mr Deng Maths</h1>
+                <nav class="topbar-nav" aria-label="Primary navigation">
+                    <a href="./" class="topbar-link active">Apps</a>
+                    <a href="./quiz/" class="topbar-link">Quiz</a>
+                </nav>
+            </div>
             <input id="appSearch" class="search-input" type="search" placeholder="Search apps, games, or topics..." aria-label="Search apps">
         </div>
     </header>
