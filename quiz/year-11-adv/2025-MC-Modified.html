@@ -646,9 +646,9 @@
 
                 stagingRoot.appendChild(cloneBlock);
 
-                if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-                    await window.MathJax.typesetPromise([cloneBlock]);
-                }
+                // The source page is already typeset by MathJax.
+                // Re-typesetting cloned nodes can produce duplicate glyph layers in screenshots.
+                cloneBlock.querySelectorAll('mjx-assistive-mml').forEach(el => el.remove());
 
                 const canvas = await window.html2canvas(cloneBlock, {
                     backgroundColor: '#ffffff',
@@ -680,7 +680,7 @@
             y += 8;
 
             for (const item of wrongQuestionData) {
-                const line = `Q${item.number}: ${item.correctAnswerText}`;
+                const line = `Q${item.number}: ${item.correctAnswer}`;
                 const wrapped = doc.splitTextToSize(line, 186);
 
                 if (y + (wrapped.length * 5) > pageHeight - 10) {
