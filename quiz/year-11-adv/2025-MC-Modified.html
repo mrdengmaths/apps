@@ -178,6 +178,7 @@
     <!-- Include MathJax for reliable math rendering -->
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
@@ -563,13 +564,37 @@
         });
     }
 
-    function downloadWrongQuestionsPdf() {
+    function getCorrectOptionText(questionKey, optionValue) {
+        const optionInput = document.querySelector(`input[name="${questionKey}"][value="${optionValue}"]`);
+        if (!optionInput || !optionInput.parentElement) {
+            return optionValue.toUpperCase();
+        }
+
+        return optionInput.parentElement.innerText.replace(/\s+/g, ' ').trim();
+    }
+
+    function formatTimestamp(date) {
+        const pad = (n) => String(n).padStart(2, '0');
+        const year = date.getFullYear();
+        const month = pad(date.getMonth() + 1);
+        const day = pad(date.getDate());
+        const hour = pad(date.getHours());
+        const minute = pad(date.getMinutes());
+        const second = pad(date.getSeconds());
+
+        return {
+            display: `${day}/${month}/${year} ${hour}:${minute}:${second}`,
+            fileSafe: `${year}${month}${day}-${hour}${minute}${second}`
+        };
+    }
+
+    async function downloadWrongQuestionsPdf() {
         if (wrongQuestionData.length === 0) {
             return;
         }
 
         const jsPdfGlobal = window.jspdf;
-        if (!jsPdfGlobal || !jsPdfGlobal.jsPDF) {
+        if (!jsPdfGlobal || !jsPdfGlobal.jsPDF || typeof window.html2canvas !== 'function') {
             alert('PDF generator failed to load. Please refresh and try again.');
             return;
         }
@@ -577,34 +602,100 @@
         const { jsPDF } = jsPdfGlobal;
         const doc = new jsPDF();
         const pageHeight = doc.internal.pageSize.height;
-        const leftMargin = 14;
-        const rightMax = 195;
-        let y = 16;
+        const leftMargin = 10;
+        const maxImageWidth = 190;
+        let y = 12;
+        const createdAt = new Date();
+        const timestamp = formatTimestamp(createdAt);
 
-        doc.setFontSize(14);
-        doc.text('2025 MC Modified - Wrong Questions Review', leftMargin, y);
-        y += 10;
+        const stagingRoot = document.createElement('div');
+        stagingRoot.style.position = 'fixed';
+        stagingRoot.style.left = '-10000px';
+        stagingRoot.style.top = '0';
+        stagingRoot.style.width = '820px';
+        stagingRoot.style.padding = '10px';
+        stagingRoot.style.background = '#ffffff';
+        document.body.appendChild(stagingRoot);
 
-        doc.setFontSize(11);
-        doc.text(`Total wrong/unanswered: ${wrongQuestionData.length}`, leftMargin, y);
-        y += 8;
+        const form = document.getElementById('quiz-form');
 
-        wrongQuestionData.forEach(item => {
-            const lines = doc.splitTextToSize(
-                `Q${item.number} | Topic: ${item.topic} | Your answer: ${item.yourAnswer} | Correct answer: ${item.correctAnswer} | Question: ${item.text}`,
-                rightMax - leftMargin
-            );
+        try {
+            doc.setFontSize(14);
+            doc.text('2025 MC Modified - Wrong Questions for Reattempt', leftMargin, y);
+            y += 7;
 
-            if (y + (lines.length * 6) > pageHeight - 14) {
-                doc.addPage();
-                y = 16;
+            doc.setFontSize(10);
+            doc.text(`Created: ${timestamp.display}`, leftMargin, y);
+            y += 7;
+            doc.text(`Total questions: ${wrongQuestionData.length}`, leftMargin, y);
+            y += 5;
+
+            for (const item of wrongQuestionData) {
+                const originalBlock = form.querySelector(`input[name="${item.key}"]`)?.closest('.question-block');
+                if (!originalBlock) {
+                    continue;
+                }
+
+                const cloneBlock = originalBlock.cloneNode(true);
+
+                cloneBlock.querySelectorAll('.correct-answer-display, .rationale').forEach(el => el.remove());
+                cloneBlock.querySelectorAll('input[type="radio"]').forEach(input => {
+                    input.checked = false;
+                    input.disabled = false;
+                });
+
+                stagingRoot.appendChild(cloneBlock);
+
+                if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                    await window.MathJax.typesetPromise([cloneBlock]);
+                }
+
+                const canvas = await window.html2canvas(cloneBlock, {
+                    backgroundColor: '#ffffff',
+                    scale: 2,
+                    useCORS: true
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = maxImageWidth;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                if (y + imgHeight > pageHeight - 10) {
+                    doc.addPage();
+                    y = 12;
+                }
+
+                doc.addImage(imgData, 'PNG', leftMargin, y, imgWidth, imgHeight);
+                y += imgHeight + 5;
+                stagingRoot.removeChild(cloneBlock);
             }
 
-            doc.text(lines, leftMargin, y);
-            y += (lines.length * 6) + 2;
-        });
+            doc.addPage();
+            y = 14;
+            doc.setFontSize(14);
+            doc.text('Correct Answers for Selected Questions', leftMargin, y);
+            y += 8;
+            doc.setFontSize(10);
+            doc.text(`Created: ${timestamp.display}`, leftMargin, y);
+            y += 8;
 
-        doc.save('2025-MC-Modified-wrong-questions.pdf');
+            for (const item of wrongQuestionData) {
+                const line = `Q${item.number}: ${item.correctAnswerText}`;
+                const wrapped = doc.splitTextToSize(line, 186);
+
+                if (y + (wrapped.length * 5) > pageHeight - 10) {
+                    doc.addPage();
+                    y = 14;
+                }
+
+                doc.text(wrapped, leftMargin, y);
+                y += (wrapped.length * 5) + 2;
+            }
+
+            doc.save(`2025-MC-Modified-wrong-questions-${timestamp.fileSafe}.pdf`);
+        } finally {
+            document.body.removeChild(stagingRoot);
+        }
     }
 
     function submitQuiz() {
@@ -641,11 +732,12 @@
                 } else {
                     improvementSet.add(questionMeta[q].topic);
                     wrongQuestionData.push({
+                        key: q,
                         number: questionMeta[q].number,
                         topic: questionMeta[q].topic,
                         text: questionMeta[q].text,
-                        yourAnswer: selected.value.toUpperCase(),
-                        correctAnswer: correctAnswers[q].toUpperCase()
+                        correctAnswer: correctAnswers[q].toUpperCase(),
+                        correctAnswerText: getCorrectOptionText(q, correctAnswers[q])
                     });
                     answerDisplay.style.color = '#d32f2f'; // Red for incorrect
                     answerDisplay.innerHTML = '✗ ' + answerDisplay.innerHTML + ` (You chose ${selected.value.toUpperCase()})`;
@@ -653,11 +745,12 @@
             } else {
                 improvementSet.add(questionMeta[q].topic);
                 wrongQuestionData.push({
+                    key: q,
                     number: questionMeta[q].number,
                     topic: questionMeta[q].topic,
                     text: questionMeta[q].text,
-                    yourAnswer: 'Unanswered',
-                    correctAnswer: correctAnswers[q].toUpperCase()
+                    correctAnswer: correctAnswers[q].toUpperCase(),
+                    correctAnswerText: getCorrectOptionText(q, correctAnswers[q])
                 });
                 answerDisplay.style.color = '#f57c00'; // Orange for unanswered
                 answerDisplay.innerHTML = '⚠ Unanswered. ' + answerDisplay.innerHTML;
