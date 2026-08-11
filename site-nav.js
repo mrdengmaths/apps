@@ -7,6 +7,7 @@
     const navBrandLinkClass = 'mr-deng-global-nav__brand-link';
     const navInnerClass = 'mr-deng-global-nav__inner';
     const navLinksClass = 'mr-deng-global-nav__links';
+    const faviconId = 'mr-deng-favicon-link';
 
     if (document.getElementById(styleId)) {
         return;
@@ -93,12 +94,24 @@
         }
 
         .${navBrandLinkClass} {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 0.45rem 0.95rem 0.45rem 0.55rem;
+            border-radius: 999px;
             color: inherit;
             text-decoration: none;
+            background: rgba(16, 36, 58, 0.03);
+            border: 1px solid rgba(16, 36, 58, 0.08);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+            transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .${navBrandLinkClass}:hover {
-            text-decoration: underline;
+            text-decoration: none;
+            transform: translateY(-1px);
+            background: rgba(0, 91, 148, 0.08);
+            box-shadow: 0 10px 20px rgba(16, 36, 58, 0.08);
         }
 
         .${navClass}__brand-mark {
@@ -189,6 +202,15 @@
     `;
     document.head.appendChild(style);
 
+    if (!document.getElementById(faviconId)) {
+        const favicon = document.createElement('link');
+        favicon.id = faviconId;
+        favicon.rel = 'icon';
+        favicon.type = 'image/svg+xml';
+        favicon.href = `${prefixes.home}favicon.svg`;
+        document.head.appendChild(favicon);
+    }
+
     const linkMarkup = links
         .map((link) => `<a href="${link.href}" class="${navLinkClass}${prefixes.active === link.key ? ` ${navLinkActiveClass}` : ''}">${link.label}</a>`)
         .join('');
@@ -196,8 +218,10 @@
     const buildNavMarkup = () => `
         <div class="${navInnerClass}">
             <div class="${navBrandClass}">
-                <div class="${navClass}__brand-mark" aria-hidden="true">∑</div>
-                <a href="${prefixes.home}" class="${navBrandLinkClass}">Mr Deng Maths</a>
+                <a href="${prefixes.home}" class="${navBrandLinkClass}">
+                    <div class="${navClass}__brand-mark" aria-hidden="true">Δ</div>
+                    <span>Mr Deng Maths</span>
+                </a>
             </div>
             <nav class="${navLinksClass}" aria-label="Primary navigation">
                 ${linkMarkup}
