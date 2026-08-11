@@ -1,1 +1,565 @@
-﻿
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Line Equation Challenger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Simple transition for feedback text */
+        #feedback-message {
+            transition: all 0.3s ease-in-out;
+        }
+        /* Success animation for the canvas container */
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px #16a34a; }
+            50% { box-shadow: 0 0 20px #16a34a, 0 0 30px #16a34a; }
+        }
+        .success-glow {
+            animation: glow 1.5s ease-in-out;
+            border-radius: 0.5rem; /* Match the inner border radius */
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-5xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8">
+
+        <header class="mb-6 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Line Equation Challenger</h1>
+            <p class="text-slate-600 mt-2">Find the equation for the horizontal or vertical line shown on the graph.</p>
+        </header>
+
+        <div class="flex flex-col md:flex-row gap-6 md:gap-8 mt-6">
+            <!-- Left Column: Canvas -->
+            <div class="w-full md:w-3/5">
+                <div id="canvas-container" class="bg-white border-2 border-slate-200 rounded-lg overflow-hidden aspect-square">
+                    <canvas id="cartesian-plane"></canvas>
+                </div>
+            </div>
+
+            <!-- Right Column: Controls -->
+            <div class="w-full md:w-2/5 flex flex-col justify-center text-center space-y-6">
+                <!-- User Interaction Area -->
+                <div class="space-y-4">
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <input type="text" id="answer-input" placeholder="e.g., x=3 or y=-1.5" class="w-full sm:w-64 text-center text-lg px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200">
+                        <button id="check-btn" class="w-full sm:w-auto bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg shadow hover:bg-indigo-700 transition-transform transform hover:scale-105 disabled:bg-slate-400 disabled:cursor-not-allowed disabled:scale-100">Check Answer</button>
+                    </div>
+                     <button id="next-question-btn" class="hidden w-full sm:w-auto bg-green-600 text-white font-bold py-2 px-6 rounded-lg shadow hover:bg-green-700 transition-transform transform hover:scale-105">Next Question</button>
+                </div>
+                
+                <!-- Feedback and Score -->
+                <div class="min-h-[60px] flex flex-col items-center justify-center">
+                     <p id="feedback-message" class="text-lg font-medium"></p>
+                    <div class="flex items-center justify-center flex-wrap gap-4 mt-4">
+                         <p class="text-xl font-bold text-slate-700 flex items-center justify-center gap-2">
+                            <span>Correct:</span>
+                            <span id="score-display">0</span>
+                         </p>
+                         <div class="flex items-center justify-center gap-2">
+                            <span class="text-sm font-medium text-slate-700">Equations</span>
+                            <label for="inequality-switch" class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="inequality-switch" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                            <span class="text-sm font-medium text-slate-700">Inequalities</span>
+                        </div>
+                         <button id="help-btn" class="bg-slate-200 text-slate-700 font-semibold py-1 px-3 rounded-lg hover:bg-slate-300 transition">Help</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl p-8 max-w-lg w-full relative">
+            <button id="close-help-btn" class="absolute top-4 right-4 text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+            <h2 class="text-2xl font-bold mb-4">How to Find the Equation</h2>
+            <div class="text-left space-y-4 text-slate-700">
+                <div>
+                    <h3 class="font-bold text-lg text-indigo-600">Horizontal Lines (Flat)</h3>
+                    <p>A horizontal line goes straight across. Every point on this line has the exact same y-coordinate.</p>
+                    <p class="mt-1">The equation is always in the form: <strong class="font-mono bg-slate-100 p-1 rounded">y = a</strong></p>
+                    <p class="mt-1">The value 'a' is the <strong class="text-indigo-600">y-intercept</strong>, which is where the line crosses the vertical y-axis.</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg text-teal-600">Vertical Lines (Up and Down)</h3>
+                    <p>A vertical line goes straight up and down. Every point on this line has the exact same x-coordinate.</p>
+                    <p class="mt-1">The equation is always in the form: <strong class="font-mono bg-slate-100 p-1 rounded">x = a</strong></p>
+                    <p class="mt-1">The value 'a' is the <strong class="text-teal-600">x-intercept</strong>, which is where the line crosses the horizontal x-axis.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM ELEMENT SELECTION ---
+        const canvas = document.getElementById('cartesian-plane');
+        const canvasContainer = document.getElementById('canvas-container');
+        const ctx = canvas.getContext('2d');
+        const answerInput = document.getElementById('answer-input');
+        const checkBtn = document.getElementById('check-btn');
+        const nextQuestionBtn = document.getElementById('next-question-btn');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const scoreDisplay = document.getElementById('score-display');
+        const helpBtn = document.getElementById('help-btn');
+        const helpModal = document.getElementById('help-modal');
+        const closeHelpBtn = document.getElementById('close-help-btn');
+        const inequalitySwitch = document.getElementById('inequality-switch');
+
+
+        // --- STATE MANAGEMENT ---
+        let currentLine = {}; // Object to hold the current line's type ('horizontal'/'vertical') and value.
+        let lastLine = {}; // To store the previous question's properties to avoid repeats.
+        let isInequalityMode = false;
+        let currentInequality = {}; // To store the inequality operator and correct side
+        let canvasClickHandler = null; // To hold the reference to the canvas click handler
+        const UNIT_COUNT = 10; // The graph will go from -10 to 10 on both axes.
+
+        /**
+         * Score Manager using a closure to protect the score variable.
+         */
+        const scoreManager = (() => {
+            let score = 0;
+            return {
+                increment: () => {
+                    score++;
+                    scoreDisplay.textContent = score;
+                },
+                getScore: () => score,
+                reset: () => {
+                    score = 0;
+                    scoreDisplay.textContent = '0';
+                }
+            };
+        })();
+
+
+        // --- DRAWING FUNCTIONS ---
+
+        /**
+         * Resizes the canvas to fit its container and redraws the content.
+         */
+        function resizeCanvas() {
+            // Use clientWidth for responsive sizing within the flex/grid layout
+            const size = canvasContainer.clientWidth;
+            canvas.width = size;
+            canvas.height = size;
+            // Redraw the current question if one exists
+            if (currentLine.type) {
+                drawPlane();
+                drawLine(currentLine.type, currentLine.value);
+
+                // If in the middle of an inequality that's been answered, redraw the highlight
+                if(currentInequality.answeredSide) {
+                     drawHighlight(currentInequality.answeredSide, currentInequality.answeredColor);
+                }
+            }
+        }
+
+        /**
+         * Draws the Cartesian plane grid, axes, and labels.
+         */
+        function drawPlane() {
+            const width = canvas.width;
+            const height = canvas.height;
+            const scale = width / (UNIT_COUNT * 2);
+            const originX = width / 2;
+            const originY = height / 2;
+
+            ctx.clearRect(0, 0, width, height);
+            ctx.font = `${Math.max(10, scale * 0.6)}px Inter`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Draw grid lines
+            ctx.strokeStyle = '#e2e8f0'; // slate-200
+            ctx.lineWidth = 1;
+            for (let i = -UNIT_COUNT; i <= UNIT_COUNT; i++) {
+                // Vertical lines
+                ctx.beginPath();
+                ctx.moveTo(originX + i * scale, 0);
+                ctx.lineTo(originX + i * scale, height);
+                ctx.stroke();
+                // Horizontal lines
+                ctx.beginPath();
+                ctx.moveTo(0, originY + i * scale);
+                ctx.lineTo(width, originY + i * scale);
+                ctx.stroke();
+            }
+
+            // Draw axes
+            ctx.strokeStyle = '#334155'; // slate-700
+            ctx.lineWidth = 2;
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(0, originY);
+            ctx.lineTo(width, originY);
+            ctx.stroke();
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(originX, 0);
+            ctx.lineTo(originX, height);
+            ctx.stroke();
+
+            // Draw labels for all integers
+            ctx.fillStyle = '#475569'; // slate-600
+            for (let i = -UNIT_COUNT; i <= UNIT_COUNT; i++) {
+                if (i !== 0) {
+                    // X-axis labels
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(i, originX + i * scale, originY + 5);
+
+                    // Y-axis labels
+                    ctx.textAlign = 'right';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(i, originX - 5, originY - i * scale);
+                }
+            }
+             // Label origin
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.fillText('0', originX - 5, originY + 5);
+            
+            // Reset text alignment for other drawing functions
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+        }
+        
+        /**
+         * Draws the specific line for the current question.
+         * @param {string} type - 'horizontal' or 'vertical'.
+         * @param {number} value - The intercept value.
+         * @param {string} color - The color to draw the line.
+         */
+        function drawLine(type, value, color = '#3b82f6') { // blue-500
+            const width = canvas.width;
+            const height = canvas.height;
+            const scale = width / (UNIT_COUNT * 2);
+            const originX = width / 2;
+            const originY = height / 2;
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.fillStyle = color;
+
+            let interceptX, interceptY;
+
+            if (type === 'horizontal') {
+                const yPos = originY - value * scale;
+                ctx.beginPath();
+                ctx.moveTo(0, yPos);
+                ctx.lineTo(width, yPos);
+                ctx.stroke();
+                interceptX = originX;
+                interceptY = yPos;
+            } else { // vertical
+                const xPos = originX + value * scale;
+                ctx.beginPath();
+                ctx.moveTo(xPos, 0);
+                ctx.lineTo(xPos, height);
+                ctx.stroke();
+                interceptX = xPos;
+                interceptY = originY;
+            }
+
+            // Draw intercept marker
+            ctx.beginPath();
+            ctx.arc(interceptX, interceptY, scale / 3, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // The intercept label is intentionally removed as per the requirement.
+        }
+
+        /**
+         * Draws a semi-transparent highlight on one side of the line.
+         * @param {string} side - 'left', 'right', 'top', or 'bottom'.
+         * @param {string} color - The color of the highlight (e.g., 'rgba(0,0,255,0.3)').
+         */
+        function drawHighlight(side, color) {
+            // Redraw the plane and line underneath the highlight to keep them visible.
+            drawPlane();
+            drawLine(currentLine.type, currentLine.value);
+
+            const width = canvas.width;
+            const height = canvas.height;
+            const scale = width / (UNIT_COUNT * 2);
+            const originX = width / 2;
+            const originY = height / 2;
+
+            ctx.fillStyle = color;
+
+            const linePosition = currentLine.type === 'vertical' ?
+                originX + currentLine.value * scale :
+                originY - currentLine.value * scale;
+
+            // Draw the highlight rectangle based on the side
+            if (side === 'right') {
+                ctx.fillRect(linePosition, 0, width - linePosition, height);
+            } else if (side === 'left') {
+                ctx.fillRect(0, 0, linePosition, height);
+            } else if (side === 'top') {
+                ctx.fillRect(0, 0, width, linePosition);
+            } else if (side === 'bottom') {
+                ctx.fillRect(0, linePosition, width, height - linePosition);
+            }
+        }
+
+
+        // --- GAME LOGIC ---
+
+        /**
+         * Generates a new question, clears the UI, and draws the new line.
+         */
+        function generateQuestion() {
+            // If a canvas click listener from a previous question exists, remove it.
+            if (canvasClickHandler) {
+                canvas.removeEventListener('click', canvasClickHandler);
+                canvasClickHandler = null;
+            }
+            
+            // Remove success animation class
+            canvasContainer.classList.remove('success-glow');
+
+            // Reset UI elements
+            answerInput.value = '';
+            feedbackMessage.textContent = '';
+            feedbackMessage.className = 'text-lg font-medium';
+            answerInput.disabled = false;
+            answerInput.focus(); // Set focus to the input field
+            
+            checkBtn.disabled = false;
+            checkBtn.classList.remove('hidden');
+            nextQuestionBtn.classList.add('hidden');
+            
+            // Generate new line properties, ensuring they are different from the last question
+            let newType, newValue;
+            do {
+                const isHorizontal = Math.random() > 0.5;
+                newType = isHorizontal ? 'horizontal' : 'vertical';
+                
+                let value;
+                if (Math.random() < 0.1) { // 10% chance for a .5 value
+                    const integerPart = Math.floor(Math.random() * 18) - 9;
+                    value = integerPart + 0.5;
+                } else { // 90% chance for an integer value
+                    value = Math.floor(Math.random() * 19) - 9;
+                }
+                newValue = value === 0 ? 0 : value; // Avoid -0
+            } while (newType === lastLine.type && newValue === lastLine.value);
+
+
+            currentLine = {
+                type: newType,
+                value: newValue,
+            };
+            // Store the new line properties for the next comparison
+            lastLine = { ...currentLine };
+
+            currentInequality = {}; // Reset inequality state
+
+            // Draw the new problem
+            drawPlane();
+            drawLine(currentLine.type, currentLine.value);
+        }
+
+        /**
+         * Checks the user's answer against the correct equation.
+         */
+        function checkAnswer() {
+            checkBtn.disabled = true; // Disable after one click per question.
+            answerInput.disabled = true;
+
+            // Sanitize user input by removing spaces and converting to lowercase
+            const userAnswer = answerInput.value.toLowerCase().replace(/\s/g, '');
+            const correctVar = currentLine.type === 'horizontal' ? 'y' : 'x';
+            const correctAnswer = `${correctVar}=${currentLine.value}`;
+            
+            if (userAnswer === correctAnswer) {
+                // CORRECT EQUATION
+                if (isInequalityMode) {
+                    // If in inequality mode, transition to the next phase
+                    setupInequalityPhase();
+                } else {
+                    // In standard mode, this is a full success
+                    feedbackMessage.textContent = "Spot on! That's the correct equation!";
+                    feedbackMessage.className = 'text-lg font-medium text-green-600';
+                    scoreManager.increment();
+                    canvasContainer.classList.add('success-glow');
+                    drawPlane();
+                    drawLine(currentLine.type, currentLine.value, '#16a34a'); // green-600
+                    nextQuestionBtn.classList.remove('hidden');
+                }
+            } else {
+                // INCORRECT EQUATION
+                provideIncorrectFeedback(userAnswer, correctVar);
+                drawPlane();
+                drawLine(currentLine.type, currentLine.value, '#dc2626'); // red-600
+                nextQuestionBtn.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Sets up the second part of the challenge: the inequality selection.
+         */
+        function setupInequalityPhase() {
+            checkBtn.classList.add('hidden'); // Hide check button
+
+            // Randomly choose an inequality operator
+            const operators = ['>', '<'];
+            const operator = operators[Math.floor(Math.random() * operators.length)];
+            currentInequality.operator = operator;
+
+            // Determine the correct side based on the line type and operator
+            if (currentLine.type === 'vertical') { // x=a
+                currentInequality.side = operator.includes('>') ? 'right' : 'left';
+            } else { // y=a
+                currentInequality.side = operator.includes('>') ? 'top' : 'bottom';
+            }
+
+            // Update UI to prompt for the next action
+            const variable = currentLine.type === 'vertical' ? 'x' : 'y';
+            feedbackMessage.textContent = `Correct! Now click the region for ${variable} ${operator} ${currentLine.value}`;
+            feedbackMessage.className = 'text-lg font-medium text-indigo-600';
+
+            // Define the click handler and add it to the canvas
+            canvasClickHandler = (event) => handleCanvasClick(event);
+            canvas.addEventListener('click', canvasClickHandler);
+        }
+
+        /**
+         * Handles the click event on the canvas during the inequality phase.
+         * @param {Event} event - The click event.
+         */
+        function handleCanvasClick(event) {
+            // The listener should only fire once, so remove it immediately.
+            if (canvasClickHandler) {
+                canvas.removeEventListener('click', canvasClickHandler);
+                canvasClickHandler = null;
+            }
+
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            // Convert pixel coordinates to Cartesian coordinates
+            const width = canvas.width;
+            const height = canvas.height;
+            const scale = width / (UNIT_COUNT * 2);
+            const originX = width / 2;
+            const originY = height / 2;
+            const cartesianX = (x - originX) / scale;
+            const cartesianY = (originY - y) / scale;
+
+            let clickedSide;
+            if (currentLine.type === 'vertical') {
+                clickedSide = cartesianX > currentLine.value ? 'right' : 'left';
+            } else {
+                clickedSide = cartesianY > currentLine.value ? 'top' : 'bottom';
+            }
+
+            // Initially highlight the clicked side in light blue for feedback
+            const initialColor = 'rgba(59, 130, 246, 0.3)';
+            drawHighlight(clickedSide, initialColor);
+            currentInequality.answeredSide = clickedSide;
+            currentInequality.answeredColor = initialColor;
+
+
+            const isCorrect = (clickedSide === currentInequality.side);
+
+            // Use a short delay to show the final result (green/red)
+            setTimeout(() => {
+                let finalColor;
+                if (isCorrect) {
+                    finalColor = 'rgba(22, 163, 74, 0.4)'; // Green
+                    drawHighlight(clickedSide, finalColor);
+                    feedbackMessage.textContent = 'Excellent! You found the correct region!';
+                    feedbackMessage.className = 'text-lg font-medium text-green-600';
+                    scoreManager.increment();
+                    canvasContainer.classList.add('success-glow');
+                } else {
+                    finalColor = 'rgba(220, 38, 38, 0.4)'; // Red
+                    drawHighlight(clickedSide, finalColor);
+                    feedbackMessage.textContent = 'Not quite. That was the wrong side.';
+                    feedbackMessage.className = 'text-lg font-medium text-red-600';
+                }
+                currentInequality.answeredColor = finalColor; // Store final color for redraw on resize
+                nextQuestionBtn.classList.remove('hidden');
+            }, 400); // 0.4-second delay
+        }
+        
+        /**
+         * Provides detailed feedback for an incorrect answer.
+         * @param {string} userAnswer - The sanitized user input.
+         * @param {string} correctVar - The correct variable ('x' or 'y').
+         */
+        function provideIncorrectFeedback(userAnswer, correctVar) {
+            feedbackMessage.className = 'text-lg font-medium text-red-600';
+            const incorrectVar = correctVar === 'x' ? 'y' : 'x';
+
+            if (!userAnswer.includes('=')) {
+                feedbackMessage.textContent = "Incorrect. Make sure your answer is in the form x=a or y=a.";
+            } else if (userAnswer.startsWith(incorrectVar + '=')) {
+                 feedbackMessage.textContent = `Oops! Remember, ${currentLine.type} lines are ${correctVar}=a.`;
+            } else if (userAnswer.startsWith(correctVar + '=')) {
+                feedbackMessage.textContent = "You have the right variable, but check the intercept value on the graph.";
+            } else {
+                feedbackMessage.textContent = "That's not quite right. Try checking the format and the value.";
+            }
+        }
+        
+
+        // --- EVENT LISTENERS ---
+        window.addEventListener('load', () => {
+             resizeCanvas();
+             generateQuestion();
+        });
+        window.addEventListener('resize', resizeCanvas);
+        checkBtn.addEventListener('click', checkAnswer);
+        nextQuestionBtn.addEventListener('click', generateQuestion);
+        
+        // Allow pressing Enter to submit answer or move to next question
+        window.addEventListener('keyup', (event) => {
+            if (event.key !== 'Enter') return;
+            
+            // If next question button is visible, Enter should trigger it.
+            if (!nextQuestionBtn.classList.contains('hidden')) {
+                generateQuestion();
+            } 
+            // Otherwise, if check button is active, Enter should trigger it.
+            else if (!checkBtn.disabled) {
+                checkAnswer();
+            }
+        });
+
+        // Modal event listeners
+        helpBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
+        closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+        // Close modal if clicking outside the content
+        helpModal.addEventListener('click', (event) => {
+            if(event.target === helpModal) {
+                 helpModal.classList.add('hidden');
+            }
+        });
+
+        // Inequality switch listener
+        inequalitySwitch.addEventListener('change', (event) => {
+            isInequalityMode = event.target.checked;
+            // Start a new question whenever the mode is changed to avoid confusion
+            generateQuestion();
+        });
+    </script>
+    <script src='../../site-nav.js'></script>
+</body>
+</html>
+
+

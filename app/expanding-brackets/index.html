@@ -1,1 +1,452 @@
-﻿
+﻿<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expanding Brackets Maths Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for the game */
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Prevents scrollbars from confetti */
+        }
+        .term-input {
+            width: 120px; /* Made input bars narrower */
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+        .term-input.correct {
+            border-color: #22c55e; /* green-500 */
+            background-color: #f0fdf4; /* green-50 */
+        }
+        .term-input.incorrect {
+            border-color: #ef4444; /* red-500 */
+            background-color: #fef2f2; /* red-50 */
+        }
+        /* Highlighting style */
+        .highlight {
+            background-color: #dbeafe; /* blue-100 */
+            border: 2px solid #60a5fa; /* blue-400 */
+            padding: 0 0.5rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s ease-in-out;
+            /* The text color is inherited, not overridden */
+        }
+        .dark .highlight {
+            background-color: #1e3a8a; /* blue-900 */
+            border-color: #93c5fd; /* blue-300 */
+        }
+
+
+        /* Confetti animation */
+        .confetti {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        @keyframes burst {
+            0% {
+                transform: translate(0, 0) rotate(0deg) scale(var(--scale));
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--x), var(--y)) rotate(720deg) scale(0);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 h-full flex items-center justify-center p-4">
+
+    <div id="game-container" class="w-full max-w-2xl mx-auto bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-6 sm:p-8 lg:p-10 text-center relative overflow-hidden">
+        
+        <h1 class="text-3xl sm:text-4xl font-bold text-indigo-600 dark:text-indigo-400 mb-2">Expanding Brackets</h1>
+        <p class="text-gray-600 dark:text-gray-400 mb-6 sm:mb-8">Expand each term. Press Enter in the last box to check.</p>
+
+        <!-- Scoreboard -->
+        <div class="flex justify-center space-x-6 sm:space-x-12 mb-8 text-lg">
+            <div class="flex flex-col items-center">
+                <span class="font-bold text-3xl text-green-500" id="correct-score">0</span>
+                <span class="text-sm text-gray-500 dark:text-gray-400">Correct</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="font-bold text-3xl text-red-500" id="incorrect-score">0</span>
+                <span class="text-sm text-gray-500 dark:text-gray-400">Attempts</span>
+            </div>
+        </div>
+        
+        <!-- Question and Answer Area -->
+        <div id="q-and-a-area" class="bg-gray-100 dark:bg-gray-700 rounded-lg p-8 mb-6 min-h-[200px] flex flex-col items-center justify-center gap-y-6">
+            <!-- Question Expression -->
+            <div id="question-expression" class="flex items-center justify-center gap-x-2 sm:gap-x-4 text-4xl sm:text-5xl font-mono font-bold tracking-wider">
+                <span id="q-factor"></span>
+                <span>(</span>
+                <span id="q-term1"></span>
+                <span id="q-group2" class="flex items-center"> <!-- Wrapper for operator and term2 -->
+                    <span id="q-operator" class="mx-2"></span>
+                    <span id="q-term2"></span>
+                </span>
+                <span>)</span>
+            </div>
+            <!-- Answer Inputs -->
+            <div id="answer-inputs" class="flex items-center justify-center gap-x-12 sm:gap-x-16">
+                 <input type="text" id="ans-term1" class="term-input text-center text-2xl p-2 rounded-md border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 transition">
+                 <input type="text" id="ans-term2" class="term-input text-center text-2xl p-2 rounded-md border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 transition">
+            </div>
+        </div>
+
+        <!-- Feedback Message -->
+        <div id="feedback-message" class="mt-4 text-xl font-semibold h-8 transition-opacity duration-300"></div>
+        <div id="encouragement-message" class="mt-1 text-md text-gray-500 dark:text-gray-400 h-6"></div>
+
+    </div>
+
+    <script>
+        // --- DOM ELEMENTS ---
+        const qFactor = document.getElementById('q-factor');
+        const qTerm1 = document.getElementById('q-term1');
+        const qTerm2 = document.getElementById('q-term2');
+        const qOperator = document.getElementById('q-operator');
+        const qGroup2 = document.getElementById('q-group2'); // New wrapper element
+        const ansTerm1 = document.getElementById('ans-term1');
+        const ansTerm2 = document.getElementById('ans-term2');
+        
+        const correctScoreEl = document.getElementById('correct-score');
+        const incorrectScoreEl = document.getElementById('incorrect-score');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const encouragementMessage = document.getElementById('encouragement-message');
+        const gameContainer = document.getElementById('game-container');
+
+        // --- GAME STATE ---
+        let state = {
+            correctScore: 0,
+            incorrectScore: 0,
+            consecutiveCorrect: 0,
+            correctAnswerParts: [],
+            isAnswered: false, // Prevents rapid submissions during feedback
+            hasAttempted: false, // Tracks if first attempt has been made
+        };
+
+        // --- WEB AUDIO API SETUP ---
+        let audioContext;
+        const initAudio = () => {
+            if (!audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) { console.error("Web Audio API is not supported."); }
+            }
+        };
+        document.body.addEventListener('click', initAudio, { once: true });
+        document.body.addEventListener('keydown', initAudio, { once: true });
+
+        // --- SOUND EFFECTS ---
+        function playSound(type) {
+            if (!audioContext) return;
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+            if (type === 'correct') {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(1046.50, audioContext.currentTime + 0.15);
+            } else if (type === 'incorrect') {
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(261.63, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(130.81, audioContext.currentTime + 0.2);
+            }
+            oscillator.start(audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+        
+        // --- CELEBRATION ANIMATION ---
+        function triggerConfetti() {
+            const colors = ['#f43f5e', '#ec4899', '#d946ef', '#a855f7', '#8b5cf6', '#6366f1', '#3b82f6'];
+            for (let i = 0; i < 60; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = '50%';
+                confetti.style.top = '20%'; // Start burst from higher up
+                const x = (Math.random() - 0.5) * 450;
+                const y = -(Math.random() * 200 + 100);
+                const scale = Math.random() * 0.8 + 0.5;
+                confetti.style.setProperty('--x', `${x}px`);
+                confetti.style.setProperty('--y', `${y}px`);
+                confetti.style.setProperty('--scale', scale);
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animation = `burst 1.2s cubic-bezier(0.1, 0.9, 0.2, 1) forwards`;
+                confetti.style.animationDelay = `${Math.random() * 0.2}s`;
+                gameContainer.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 1400);
+            }
+        }
+
+        // --- QUESTION GENERATION ---
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+        // Generates a term with 'x', e.g., '3x', '-x', 'x'
+        function getXTerm() {
+            let coeff = getRandomInt(-10, 10);
+            if (coeff === 0) coeff = 1; // Avoid 0x
+            if (coeff === 1) return 'x';
+            if (coeff === -1) return '-x';
+            return `${coeff}x`;
+        }
+
+        // Generates a constant term, e.g., '5', '-8'
+        function getConstantTerm() {
+            let coeff = getRandomInt(-10, 10);
+            if (coeff === 0) coeff = 2; // Avoid 0
+            return coeff.toString();
+        }
+
+        function generateQuestion() {
+            // Factor is a single number (non-zero or 1)
+            let a;
+            do {
+                a = getRandomInt(-10, 10);
+            } while (a === 0 || a === 1 || a === -1);
+
+            // Generate one 'x' term and one constant term
+            const xTerm = getXTerm();
+            const constTerm = getConstantTerm();
+
+            let b, c;
+            // Randomly decide the order of the terms inside the bracket
+            if (Math.random() > 0.5) {
+                b = xTerm;
+                c = constTerm;
+            } else {
+                b = constTerm;
+                c = xTerm;
+            }
+            
+            // Store the full expanded terms as the correct answer
+            state.correctAnswerParts = calculateAnswerParts(a, [b, c]);
+
+            // Display question
+            qFactor.textContent = a;
+            qTerm1.textContent = b;
+            
+            // Determine operator and display second term without its sign
+            if (c.startsWith('-')) {
+                qOperator.textContent = '-';
+                qTerm2.textContent = c.substring(1);
+            } else {
+                qOperator.textContent = '+';
+                qTerm2.textContent = c;
+            }
+
+            resetForNewQuestion();
+        }
+        
+        // --- ANSWER PARSING AND NORMALIZATION ---
+        function parseTerm(termStr) {
+            termStr = termStr.toString().trim().replace(/\s/g, '');
+            if (!termStr) return { coeff: 0, vars: '' };
+            const match = termStr.match(/^(-?\+?\d*)?([a-zA-Z]+)?$/);
+            if (!match) return { coeff: 0, vars: '' };
+            
+            let coeff;
+            if (match[1] === undefined || match[1] === null || match[1] === '' || match[1] === '+') {
+                 coeff = 1;
+            } else if (match[1] === '-') {
+                 coeff = -1;
+            } else {
+                 coeff = parseInt(match[1]);
+            }
+            if (isNaN(coeff)) coeff = termStr.startsWith('-') ? -1 : 1;
+
+            const vars = match[2] ? match[2].split('').sort().join('') : '';
+            return { coeff, vars };
+        }
+
+        function formatTerm(termObj, forcePlus = false) {
+            let sign = '';
+            if (termObj.coeff > 0 && forcePlus) {
+                sign = '+';
+            }
+            
+            if (termObj.coeff === 0) return '0';
+            if (termObj.coeff === 1 && termObj.vars) return `${sign}${termObj.vars}`;
+            if (termObj.coeff === -1 && termObj.vars) return `-${termObj.vars}`;
+            return `${sign}${termObj.coeff}${termObj.vars}`;
+        }
+
+        function calculateAnswerParts(a, bcdTerms) {
+            const parts = bcdTerms.map(termStr => {
+                const term = parseTerm(termStr);
+                const newCoeff = a * term.coeff;
+                const newVars = term.vars;
+                return { coeff: newCoeff, vars: newVars };
+            });
+            return [
+                formatTerm(parts[0], false), // First term doesn't need a forced '+'
+                formatTerm(parts[1], true)   // Second term needs a forced '+' if positive
+            ];
+        }
+
+        function normalizeInput(inputStr) {
+            const parsed = parseTerm(inputStr);
+            return formatTerm(parsed, inputStr.trim().startsWith('+'));
+        }
+        
+        // --- GAME FLOW & UI UPDATES ---
+        function checkAnswer() {
+            if (state.isAnswered) return;
+            state.isAnswered = true;
+
+            if (!state.hasAttempted) {
+                state.incorrectScore++;
+                state.hasAttempted = true;
+                updateScore();
+            }
+            
+            const userAns1 = ansTerm1.value.trim();
+            const userAns2 = ansTerm2.value.trim();
+            const [correctAns1, correctAns2] = state.correctAnswerParts;
+
+            const isAns1Correct = normalizeInput(userAns1) === correctAns1;
+            const isAns2Correct = userAns2 === correctAns2; // Strict check for term 2 including '+'
+
+            ansTerm1.classList.toggle('correct', isAns1Correct);
+            ansTerm1.classList.toggle('incorrect', !isAns1Correct);
+            ansTerm2.classList.toggle('correct', isAns2Correct);
+            ansTerm2.classList.toggle('incorrect', !isAns2Correct);
+
+            if (isAns1Correct && isAns2Correct) {
+                handleCorrectAnswer();
+            } else {
+                handleIncorrectAnswer(userAns1, userAns2, correctAns1, correctAns2);
+            }
+        }
+        
+        function handleCorrectAnswer() {
+            state.correctScore++;
+            state.consecutiveCorrect++;
+            playSound('correct');
+            triggerConfetti();
+            feedbackMessage.textContent = 'Correct!';
+            feedbackMessage.className = 'mt-4 text-xl font-semibold h-8 text-green-500';
+            const encouragements = ["Great job!", "Keep it up!", "Excellent!", "You're a star!"];
+            encouragementMessage.textContent = encouragements[Math.floor(Math.random() * encouragements.length)];
+            setTimeout(generateQuestion, 1500);
+        }
+        
+        function handleIncorrectAnswer(userAns1, userAns2, correctAns1, correctAns2) {
+            state.consecutiveCorrect = 0;
+            playSound('incorrect');
+            
+            // Generate targeted feedback
+            let feedback = '';
+            const normalizedUser1 = normalizeInput(userAns1);
+            const normalizedUser2 = normalizeInput(userAns2);
+
+            if (normalizedUser1 !== correctAns1 && Math.abs(parseTerm(normalizedUser1).coeff) === Math.abs(parseTerm(correctAns1).coeff) && parseTerm(normalizedUser1).vars === parseTerm(correctAns1).vars) {
+                feedback = 'Check the sign of your first term.';
+            } else if (normalizedUser2 !== correctAns2) {
+                // Check if only the sign is wrong for the second term
+                const user2Term = parseTerm(userAns2);
+                const correct2Term = parseTerm(correctAns2);
+                if (user2Term.vars === correct2Term.vars && user2Term.coeff === -correct2Term.coeff) {
+                    feedback = 'Check the sign of your second term.';
+                } else if (userAns2.replace('+','') === correctAns2.replace('+','')) {
+                     if (correctAns2.startsWith('+')) {
+                        feedback = "Remember to add '+' for the second term if it's positive.";
+                     }
+                }
+            }
+
+            feedbackMessage.textContent = 'Not quite. Try again!';
+            feedbackMessage.className = 'mt-4 text-xl font-semibold h-8 text-red-500';
+            encouragementMessage.textContent = feedback;
+            gameContainer.classList.add('animate-shake');
+            
+            setTimeout(() => {
+                state.isAnswered = false; 
+                gameContainer.classList.remove('animate-shake');
+            }, 500);
+        }
+
+        function updateScore() {
+            correctScoreEl.textContent = state.correctScore;
+            incorrectScoreEl.textContent = state.incorrectScore;
+        }
+
+        function resetForNewQuestion() {
+            state.isAnswered = false;
+            state.hasAttempted = false;
+            ansTerm1.value = '';
+            ansTerm2.value = '';
+            ansTerm1.className = ansTerm2.className = 'term-input text-center text-2xl p-2 rounded-md border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 transition';
+            feedbackMessage.textContent = '';
+            encouragementMessage.textContent = '';
+            updateScore();
+            ansTerm1.focus();
+        }
+
+        // --- EVENT LISTENERS ---
+        ansTerm1.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                ansTerm2.focus();
+            }
+        });
+        ansTerm2.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+        
+        // Highlight feature listeners
+        ansTerm1.addEventListener('focus', () => {
+            qFactor.classList.add('highlight');
+            qTerm1.classList.add('highlight');
+        });
+        ansTerm1.addEventListener('blur', () => {
+            qFactor.classList.remove('highlight');
+            qTerm1.classList.remove('highlight');
+        });
+        ansTerm2.addEventListener('focus', () => {
+            qFactor.classList.add('highlight');
+            qGroup2.classList.add('highlight'); // Highlight the whole group
+        });
+        ansTerm2.addEventListener('blur', () => {
+            qFactor.classList.remove('highlight');
+            qGroup2.classList.remove('highlight'); // Remove highlight from the whole group
+        });
+
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            generateQuestion();
+            const style = document.createElement('style');
+            style.innerHTML = `
+                @keyframes shake {
+                    10%, 90% { transform: translateX(-1px); }
+                    20%, 80% { transform: translateX(2px); }
+                    30%, 50%, 70% { transform: translateX(-4px); }
+                    40%, 60% { transform: translateX(4px); }
+                }
+                .animate-shake {
+                    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+                }
+            `;
+            document.head.appendChild(style);
+        });
+
+    </script>
+    <script src='../../site-nav.js'></script>
+</body>
+</html>
+

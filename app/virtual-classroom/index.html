@@ -1,1 +1,235 @@
-﻿
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Virtual Classroom - Kaboom</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: Inter, system-ui, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        #game {
+            width: 100%;
+            height: 100%;
+        }
+        .hud {
+            position: absolute;
+            left: 16px;
+            top: 16px;
+            display: grid;
+            gap: 10px;
+            width: min(320px, calc(100% - 32px));
+            z-index: 20;
+        }
+        .hud-panel {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: 18px;
+            padding: 14px 16px;
+            box-shadow: 0 18px 35px rgba(15, 23, 42, 0.6);
+        }
+        .hud-panel h1,
+        .hud-panel h2 {
+            margin: 0 0 10px;
+            font-size: 1.05rem;
+            color: #f8fafc;
+        }
+        .hud-panel p {
+            margin: 0;
+            line-height: 1.5;
+            color: #cbd5e1;
+            font-size: 0.96rem;
+        }
+        .hud-panel .controls {
+            margin-top: 12px;
+            display: grid;
+            gap: 8px;
+        }
+        .hud-panel button {
+            border: none;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-weight: 700;
+            color: #f8fafc;
+            background: #2563eb;
+            cursor: pointer;
+        }
+        .hud-panel button:hover {
+            background: #1d4ed8;
+        }
+        .dialog-box {
+            position: absolute;
+            left: 16px;
+            bottom: 16px;
+            right: 16px;
+            padding: 18px 20px;
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 22px;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.55);
+            font-size: 1rem;
+            color: #e2e8f0;
+            line-height: 1.6;
+            z-index: 20;
+        }
+        .dialog-box.hidden {
+            display: none;
+        }
+    </style>
+    <script src="https://unpkg.com/kaboom@next/dist/kaboom.js"></script>
+</head>
+<body>
+    <canvas id="game"></canvas>
+    <div class="hud">
+        <div class="hud-panel">
+            <h1>Virtual Classroom</h1>
+            <p>Loaded with Kaboom.js and Tiled JSON. Use arrow keys / WASD to move, interact with objects, and move between scenes.</p>
+        </div>
+        <div class="hud-panel">
+            <h2>Game State</h2>
+            <p id="stateLabel">Loading map...</p>
+            <div class="controls">
+                <button id="toggleHelp">Show Help</button>
+            </div>
+        </div>
+    </div>
+    <div class="dialog-box hidden" id="dialogBox">
+        <p id="dialogText"></p>
+    </div>
+    <script>
+        const k = kaboom({
+            global: true,
+            canvas: document.getElementById('game'),
+            width: 960,
+            height: 640,
+            scale: 1,
+            clearColor: [0.06, 0.1, 0.2, 1],
+        });
+
+        const stateLabel = document.getElementById('stateLabel');
+        const dialogBox = document.getElementById('dialogBox');
+        const dialogText = document.getElementById('dialogText');
+        const toggleHelp = document.getElementById('toggleHelp');
+
+        const mapName = 'classroom';
+        const mapPath = `maps/${mapName}.json`;
+        const tileSize = 32;
+
+        loadRoot('./');
+        loadSprite('player', 'assets/player.png');
+        loadSprite('tileset', 'assets/tileset.png');
+        loadJSON('mapdata', mapPath);
+
+        function showDialog(text) {
+            dialogText.textContent = text;
+            dialogBox.classList.remove('hidden');
+            setTimeout(() => dialogBox.classList.add('hidden'), 5200);
+        }
+
+        toggleHelp.addEventListener('click', () => {
+            showDialog('Use arrow keys or WASD to move. Press space to interact with the teacher, board, or door.');
+        });
+
+        k.scene('main', async () => {
+            const mapData = k.loadJSON(mapPath);
+            const tileset = mapData.tilesets[0];
+
+            k.add([
+                rect(width(), height()),
+                color(0.06, 0.1, 0.2),
+                pos(0, 0),
+                layer('bg'),
+            ]);
+
+            const ground = mapData.layers.find(l => l.type === 'tilelayer');
+            const objects = mapData.layers.find(l => l.type === 'objectgroup');
+
+            const map = addLevel(ground.data.map((v, idx) => {
+                if (v === 2) return '.';
+                if (v === 1) return 'f';
+                if (v === 4) return 'd';
+                if (v === 5) return 't';
+                if (v === 6) return 'b';
+                if (v === 7) return 's';
+                return '.';
+            }), {
+                width: tileSize,
+                height: tileSize,
+                pos: vec2(0, 0),
+                'f': () => [sprite('tileset'), area(), solid(), opacity(0.0)],
+                '.': () => [sprite('tileset'), area(), opacity(0.0)],
+                'd': () => [sprite('tileset'), area(), solid(), opacity(0.0)],
+                't': () => [sprite('tileset'), area(), solid(), opacity(0.0)],
+                'b': () => [sprite('tileset'), area(), solid(), opacity(0.0)],
+                's': () => [sprite('tileset'), area(), solid(), opacity(0.0)],
+            });
+
+            const startObject = objects.objects.find(obj => obj.type === 'start');
+            const player = add([
+                sprite('player'),
+                pos(startObject.x, startObject.y),
+                area({ width: 24, height: 28, offset: vec2(4, 2) }),
+                solid(),
+                origin('center'),
+                { speed: 120 },
+            ]);
+
+            const npcObjects = objects.objects.filter(obj => obj.type === 'npc' || obj.type === 'sign' || obj.type === 'door');
+            npcObjects.forEach(obj => {
+                const comp = add([
+                    rect(tileSize, tileSize),
+                    pos(obj.x, obj.y),
+                    area(),
+                    solid(),
+                    opacity(0),
+                    'interactable',
+                    obj.type,
+                    { props: Object.fromEntries((obj.properties || []).map(p => [p.name, p.value])) },
+                ]);
+            });
+
+            keyDown(['left', 'a'], () => player.move(-player.speed, 0));
+            keyDown(['right', 'd'], () => player.move(player.speed, 0));
+            keyDown(['up', 'w'], () => player.move(0, -player.speed));
+            keyDown(['down', 's'], () => player.move(0, player.speed));
+
+            const interactMask = add([rect(32, 32), pos(-tileSize, -tileSize), area(), opacity(0), 'interactMask']);
+
+            action('interactable', obj => {
+                if (obj.isColliding(player)) {
+                    obj.color = rgb(255, 255, 255);
+                }
+            });
+
+            keyPress('space', () => {
+                const target = npcObjects.find(obj => obj.x === player.pos.x || obj.y === player.pos.y);
+                const near = get('interactable').find(i => i.isColliding(player));
+                if (!near.length) {
+                    showDialog('There is nothing to interact with here.');
+                    return;
+                }
+                const first = near[0];
+                if (first.is('npc') || first.is('sign')) {
+                    showDialog(first.props.dialog || 'You inspect the object.');
+                } else if (first.is('door')) {
+                    showDialog('The door leads to a hallway. Room transition can be added here.');
+                }
+            });
+
+            stateLabel.textContent = 'Map: ' + mapName;
+            showDialog('Classroom loaded. Use the arrow keys or WASD to move, then press space to interact.');
+        });
+
+        k.start('main');
+    </script>
+    <script src='../../site-nav.js'></script>
+</body>
+</html>
+

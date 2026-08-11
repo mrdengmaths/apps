@@ -1,1 +1,660 @@
-﻿
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraction Ninja: Simplify & Survive!</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for a gamified look -->
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        h1, h2, .ninja-font {
+            font-family: 'Bangers', cursive;
+            letter-spacing: 2px;
+        }
+        /* Custom Input Styles */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+            text-align: center;
+        }
+        /* Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .pop-in {
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes float-up {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+        .floating-points {
+            position: absolute;
+            animation: float-up 1s ease-out forwards;
+            font-weight: bold;
+            font-size: 2rem;
+            z-index: 50;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative">
+
+    <!-- Confetti Container -->
+    <div id="confetti-container" class="absolute inset-0 pointer-events-none z-40 overflow-hidden"></div>
+
+    <!-- Top Bar -->
+    <header class="w-full max-w-4xl mx-auto p-4 flex justify-between items-center z-10 relative">
+        <div class="glass-panel px-6 py-2 rounded-full shadow-lg border-b-4 border-indigo-400">
+            <span class="text-indigo-200 text-sm font-bold uppercase tracking-wider">Round</span>
+            <div class="text-3xl ninja-font text-white" id="round-display">1 / 10</div>
+        </div>
+        
+        <div class="text-center">
+            <h1 class="text-4xl md:text-5xl text-yellow-400 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)] cursor-pointer hover:scale-105 transition-transform" onclick="app.showHelp()">
+                🥷 Fraction Ninja 🗡️
+            </h1>
+        </div>
+
+        <div class="glass-panel px-6 py-2 rounded-full shadow-lg border-b-4 border-yellow-500">
+            <span class="text-yellow-200 text-sm font-bold uppercase tracking-wider">Total Score</span>
+            <div class="text-3xl ninja-font text-yellow-400" id="score-display">0</div>
+        </div>
+    </header>
+
+    <!-- Timer Bar -->
+    <div class="w-full max-w-2xl mx-auto mt-2 bg-gray-800 rounded-full h-4 overflow-hidden border border-gray-600 shadow-inner z-10 relative">
+        <div id="timer-bar" class="h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-100 ease-linear w-full"></div>
+    </div>
+    <div class="w-full max-w-2xl mx-auto text-center mt-1 z-10 relative">
+        <span class="text-sm text-gray-300 font-bold" id="round-points-display">1000 pts</span>
+    </div>
+
+    <!-- Main Game Area -->
+    <main class="flex-grow flex flex-col items-center justify-center p-4 z-10 relative">
+        
+        <div id="game-container" class="flex flex-col md:flex-row items-center gap-12 glass-panel p-8 md:p-12 rounded-3xl shadow-2xl relative w-full max-w-3xl justify-center">
+            
+            <!-- Target Fraction -->
+            <div class="flex flex-col items-center text-6xl md:text-8xl font-black text-white drop-shadow-lg">
+                <div id="target-num">?</div>
+                <div class="h-3 w-24 md:w-32 bg-white my-4 rounded-full"></div>
+                <div id="target-denom">?</div>
+            </div>
+
+            <!-- Arrow / Equals (Visible on md+) -->
+            <div class="text-4xl text-indigo-300 hidden md:block">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+            </div>
+
+            <!-- Input Fraction -->
+            <div id="input-container" class="flex flex-col items-center">
+                <input type="number" id="user-num" placeholder="Top" class="w-24 md:w-32 h-20 text-center text-4xl font-bold rounded-xl text-gray-900 border-4 border-transparent focus:border-indigo-500 focus:outline-none shadow-inner bg-white/90 placeholder-gray-400">
+                <div class="h-2 w-24 md:w-32 bg-indigo-300 my-4 rounded-full"></div>
+                <input type="number" id="user-denom" placeholder="Bot" class="w-24 md:w-32 h-20 text-center text-4xl font-bold rounded-xl text-gray-900 border-4 border-transparent focus:border-indigo-500 focus:outline-none shadow-inner bg-white/90 placeholder-gray-400">
+            </div>
+
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mt-8 z-10 relative w-full max-w-2xl justify-center">
+            <button onclick="app.submitAnswer()" class="flex-1 bg-gradient-to-b from-green-400 to-green-600 hover:from-green-300 hover:to-green-500 text-white text-2xl ninja-font py-4 px-8 rounded-2xl shadow-[0_6px_0_#166534] hover:shadow-[0_4px_0_#166534] hover:translate-y-[2px] transition-all">
+                Submit Answer 🎯
+            </button>
+            <button onclick="app.submitAlreadySimplified()" class="flex-1 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white text-2xl ninja-font py-4 px-8 rounded-2xl shadow-[0_6px_0_#1e3a8a] hover:shadow-[0_4px_0_#1e3a8a] hover:translate-y-[2px] transition-all">
+                Already Simplified! 🛡️
+            </button>
+        </div>
+        
+        <!-- Utility Buttons -->
+        <div class="flex gap-4 mt-8 z-10 relative">
+            <button onclick="app.showRanks()" class="bg-yellow-600/50 hover:bg-yellow-500/80 text-white rounded-full p-3 shadow-lg transition-colors border border-yellow-400 backdrop-blur-sm" title="View Ranks">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+            </button>
+            <button onclick="app.showHelp()" class="bg-indigo-600/50 hover:bg-indigo-500/80 text-white rounded-full p-3 shadow-lg transition-colors border border-indigo-400 backdrop-blur-sm" title="How to Play">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </button>
+        </div>
+    </main>
+
+    <!-- Overlays & Modals -->
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white text-gray-900 rounded-3xl p-8 max-w-md w-full shadow-2xl pop-in text-center border-b-8 border-indigo-600">
+            <div id="feedback-icon" class="text-6xl mb-4">🤔</div>
+            <h2 id="feedback-title" class="text-3xl ninja-font text-indigo-700 mb-4">Wait a second...</h2>
+            <p id="feedback-text" class="text-lg font-semibold text-gray-700 mb-8 leading-relaxed"></p>
+            <button onclick="app.closeFeedback()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xl py-3 px-6 rounded-xl shadow-lg transition-colors">
+                Got it! Let me try again.
+            </button>
+        </div>
+    </div>
+
+    <!-- Help / Instructions Modal -->
+    <div id="help-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 transition-opacity duration-300">
+        <div class="bg-indigo-900 text-white rounded-3xl p-8 max-w-lg w-full shadow-2xl border-4 border-indigo-500 pop-in relative">
+            <h2 class="text-4xl ninja-font text-yellow-400 mb-4 text-center border-b border-indigo-700 pb-4">📜 How to Play 📜</h2>
+            
+            <div class="space-y-4 text-indigo-100 font-semibold text-lg leading-relaxed">
+                <p>Welcome, Ninja! Your mission is to simplify the giant fraction before time runs out.</p>
+                <ul class="list-disc pl-6 space-y-2 text-indigo-200">
+                    <li>To simplify, divide both the <strong>top</strong> and <strong>bottom</strong> numbers by their Greatest Common Factor.</li>
+                    <li>Type your smaller, simplified fraction into the boxes and hit <strong class="text-green-400">Submit</strong>.</li>
+                    <li>If the fraction can't be divided any further, quickly click <strong class="text-blue-400">Already Simplified!</strong></li>
+                    <li><strong>Speed matters!</strong> You start with 1000 points per round. The longer you take, the lower your points drop.</li>
+                    <li>Mistakes cost <strong class="text-red-400">100 points</strong>, but you can keep trying until you get it right!</li>
+                </ul>
+            </div>
+            
+            <button onclick="app.closeHelp()" class="mt-8 w-full bg-yellow-500 hover:bg-yellow-400 text-indigo-900 font-black text-2xl py-3 px-6 rounded-xl shadow-[0_4px_0_#b45309] hover:translate-y-[2px] hover:shadow-none transition-all ninja-font tracking-widest">
+                START MISSION
+            </button>
+        </div>
+    </div>
+
+    <!-- Ranks Modal -->
+    <div id="ranks-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-opacity duration-300">
+        <div class="bg-indigo-900 text-white rounded-3xl p-8 max-w-md w-full shadow-2xl border-4 border-yellow-500 pop-in relative">
+            <h2 class="text-4xl ninja-font text-yellow-400 mb-6 text-center border-b border-indigo-700 pb-4">🏆 Ninja Ranks 🏆</h2>
+            
+            <div class="space-y-4 text-indigo-100 font-semibold text-lg">
+                <div class="flex justify-between items-center bg-black/30 p-3 rounded-lg border border-indigo-700/50">
+                    <span>Grandmaster 🥷🐉</span>
+                    <span class="text-yellow-400">8500+ pts</span>
+                </div>
+                <div class="flex justify-between items-center bg-black/30 p-3 rounded-lg border border-indigo-700/50">
+                    <span>Sorcerer 🧙‍♂️✨</span>
+                    <span class="text-purple-400">6000+ pts</span>
+                </div>
+                <div class="flex justify-between items-center bg-black/30 p-3 rounded-lg border border-indigo-700/50">
+                    <span>Warrior ⚔️🛡️</span>
+                    <span class="text-blue-400">3000+ pts</span>
+                </div>
+                <div class="flex justify-between items-center bg-black/30 p-3 rounded-lg border border-indigo-700/50">
+                    <span>Apprentice 📚🌱</span>
+                    <span class="text-green-400">&lt; 3000 pts</span>
+                </div>
+            </div>
+            
+            <button onclick="app.closeRanks()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xl py-3 px-6 rounded-xl shadow-lg transition-colors ninja-font tracking-widest">
+                RESUME MISSION
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="fixed inset-0 bg-black/90 backdrop-blur-lg z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gradient-to-br from-indigo-900 to-purple-900 text-white rounded-3xl p-8 max-w-lg w-full shadow-2xl border-4 border-yellow-400 pop-in text-center relative overflow-hidden">
+            <div class="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cGF0aCBkPSJNMjAgMGwyMCAyMC0yMCAyMEwwIDIweiIgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIwLjEiLz48L3N2Zz4=')]"></div>
+            
+            <h2 class="text-5xl ninja-font text-white mb-2 relative z-10 drop-shadow-md">Mission Complete!</h2>
+            <p class="text-xl text-indigo-200 mb-6 relative z-10">Your Final Score</p>
+            
+            <div class="text-7xl ninja-font text-yellow-400 mb-6 relative z-10 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" id="final-score">0</div>
+            
+            <div class="bg-black/40 rounded-xl p-4 mb-8 relative z-10 border border-indigo-500">
+                <p class="text-sm text-indigo-300 uppercase tracking-widest mb-1">Your Ninja Rank:</p>
+                <div id="player-title" class="text-3xl font-bold text-white">Apprentice</div>
+            </div>
+
+            <button onclick="app.restartGame()" class="w-full bg-gradient-to-r from-green-400 to-emerald-600 hover:from-green-300 hover:to-emerald-500 text-white font-black text-2xl py-4 px-6 rounded-xl shadow-[0_6px_0_#064e3b] hover:translate-y-[2px] hover:shadow-none transition-all ninja-font tracking-widest relative z-10">
+                PLAY AGAIN 🔄
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Application Logic (Scoped using IIFE) -->
+    <script>
+        const app = (() => {
+            // --- State Variables ---
+            let totalScore = 0;
+            let currentRound = 1;
+            const maxRounds = 10;
+            let currentNum = 0;
+            let currentDenom = 0;
+            
+            let roundPoints = 1000;
+            let timerInterval = null;
+            let gameActive = false;
+
+            // --- DOM Elements ---
+            const els = {
+                targetNum: document.getElementById('target-num'),
+                targetDenom: document.getElementById('target-denom'),
+                userNum: document.getElementById('user-num'),
+                userDenom: document.getElementById('user-denom'),
+                roundDisplay: document.getElementById('round-display'),
+                scoreDisplay: document.getElementById('score-display'),
+                timerBar: document.getElementById('timer-bar'),
+                roundPointsDisplay: document.getElementById('round-points-display'),
+                feedbackModal: document.getElementById('feedback-modal'),
+                feedbackTitle: document.getElementById('feedback-title'),
+                feedbackText: document.getElementById('feedback-text'),
+                feedbackIcon: document.getElementById('feedback-icon'),
+                helpModal: document.getElementById('help-modal'),
+                ranksModal: document.getElementById('ranks-modal'),
+                gameOverModal: document.getElementById('game-over-modal'),
+                finalScore: document.getElementById('final-score'),
+                playerTitle: document.getElementById('player-title'),
+                inputContainer: document.getElementById('input-container'),
+                confettiContainer: document.getElementById('confetti-container')
+            };
+
+            // --- Math Helpers ---
+            const getGCF = (a, b) => {
+                a = Math.abs(a);
+                b = Math.abs(b);
+                return b === 0 ? a : getGCF(b, a % b);
+            };
+
+            const getSmallestCommonFactor = (n, d) => {
+                let g = getGCF(n, d);
+                if (g <= 1) return 1;
+                for (let i = 2; i <= g; i++) {
+                    if (n % i === 0 && d % i === 0) return i;
+                }
+                return g;
+            };
+
+            const isSimplified = (n, d) => getGCF(n, d) === 1;
+
+            // --- Core Game Logic ---
+            const generateFraction = () => {
+                const makeReducible = Math.random() < 0.7; // 70% chance to need simplifying
+                let n, d;
+                
+                if (makeReducible) {
+                    do {
+                        d = Math.floor(Math.random() * 34) + 3; // Denominator 3 to 36
+                        n = Math.floor(Math.random() * (d - 1)) + 1; // Numerator 1 to d-1
+                    } while (getGCF(n, d) === 1); // Keep generating until it CAN be reduced
+                } else {
+                    do {
+                        d = Math.floor(Math.random() * 34) + 3;
+                        n = Math.floor(Math.random() * (d - 1)) + 1;
+                    } while (getGCF(n, d) > 1); // Keep generating until it is ALREADY simple
+                }
+                
+                currentNum = n;
+                currentDenom = d;
+                els.targetNum.innerText = n;
+                els.targetDenom.innerText = d;
+            };
+
+            // --- Timer & Points ---
+            const updateUI = () => {
+                els.roundPointsDisplay.innerText = `${roundPoints} pts`;
+                // Calculate percentage (0 to 100)
+                let pct = (roundPoints / 1000) * 100;
+                els.timerBar.style.width = `${pct}%`;
+                
+                // Change color based on remaining points
+                if (pct > 60) {
+                    els.timerBar.className = 'h-full transition-all duration-100 ease-linear w-full bg-gradient-to-r from-green-400 to-emerald-500';
+                } else if (pct > 30) {
+                    els.timerBar.className = 'h-full transition-all duration-100 ease-linear w-full bg-gradient-to-r from-yellow-400 to-orange-500';
+                } else {
+                    els.timerBar.className = 'h-full transition-all duration-100 ease-linear w-full bg-gradient-to-r from-red-500 to-rose-600';
+                }
+            };
+
+            const startTimer = () => {
+                if (timerInterval) clearInterval(timerInterval);
+                timerInterval = setInterval(() => {
+                    if (roundPoints > 0) {
+                        roundPoints -= 1; // Drops 1 point every 100ms = 10 pts/sec
+                        updateUI();
+                    }
+                }, 100);
+            };
+
+            const pauseTimer = () => {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            };
+
+            const applyPenalty = () => {
+                const penalty = 100;
+                roundPoints = Math.max(0, roundPoints - penalty);
+                updateUI();
+                
+                // Visual shake
+                els.inputContainer.classList.remove('shake');
+                void els.inputContainer.offsetWidth; // trigger reflow
+                els.inputContainer.classList.add('shake');
+                
+                // Floating red text near inputs
+                createFloatingText("-100", 'text-red-500');
+            };
+
+            // --- Feedback Modals ---
+            const showFeedback = (title, message, icon) => {
+                pauseTimer(); // CRITICAL: Stop timer while reading
+                els.feedbackTitle.innerText = title;
+                els.feedbackText.innerText = message;
+                els.feedbackIcon.innerText = icon;
+                els.feedbackModal.classList.remove('hidden');
+            };
+
+            const closeFeedback = () => {
+                els.feedbackModal.classList.add('hidden');
+                els.userNum.focus();
+                if (gameActive) startTimer();
+            };
+
+            // --- Checking Logic ---
+            const submitAnswer = () => {
+                if (!gameActive) return;
+                
+                const uNumRaw = els.userNum.value;
+                const uDenomRaw = els.userDenom.value;
+
+                if (uNumRaw === "" || uDenomRaw === "") {
+                    // Don't penalize for accidental blank submission, just prompt gently
+                    els.inputContainer.classList.add('shake');
+                    setTimeout(() => els.inputContainer.classList.remove('shake'), 400);
+                    return;
+                }
+
+                const un = parseInt(uNumRaw);
+                const ud = parseInt(uDenomRaw);
+
+                // Math validations
+                const originalIsSimple = isSimplified(currentNum, currentDenom);
+                const mathValueMatches = (un * currentDenom === ud * currentNum);
+                const userIsSimple = isSimplified(un, ud);
+
+                // Scenario E: Completely Correct
+                if (mathValueMatches && userIsSimple) {
+                    if(originalIsSimple && un === currentNum && ud === currentDenom) {
+                         // They typed the original numbers. It is correct, but let's encourage using the button
+                         handleCorrect(); 
+                    } else {
+                         handleCorrect();
+                    }
+                    return;
+                }
+
+                // If not completely correct, deduct points!
+                applyPenalty();
+
+                // Scenario D: Fraction WAS already simplified, but user typed different numbers
+                if (originalIsSimple) {
+                    showFeedback(
+                        "Already in simplest form!", 
+                        `Actually, ${currentNum} and ${currentDenom} don't share any common factors other than 1. This fraction was already in its simplest form! Just click the 'Already Simplified' button.`,
+                        "🛡️"
+                    );
+                    return;
+                }
+
+                // Scenario B: User types an answer, but fraction isn't fully simplified yet
+                if (mathValueMatches && !userIsSimple) {
+                    let remainingFactor = getSmallestCommonFactor(un, ud);
+                    showFeedback(
+                        "Almost there!",
+                        `You are on the right track! You simplified it, but it can go even further. Both ${un} and ${ud} can still be divided by ${remainingFactor}. Keep going!`,
+                        "👍"
+                    );
+                    return;
+                }
+
+                // Scenario C: Completely wrong numbers
+                showFeedback(
+                    "Oops! Not quite.",
+                    `To simplify, whatever you divide the top by, you must divide the bottom by the exact same number. What number goes perfectly into both ${currentNum} and ${currentDenom}?`,
+                    "❌"
+                );
+            };
+
+            const submitAlreadySimplified = () => {
+                if (!gameActive) return;
+
+                const originalIsSimple = isSimplified(currentNum, currentDenom);
+
+                // Scenario E variant: Was correct to click it
+                if (originalIsSimple) {
+                    handleCorrect();
+                    return;
+                }
+
+                // Scenario A: Clicked button, but it CAN be simplified
+                applyPenalty();
+                let factor = getSmallestCommonFactor(currentNum, currentDenom);
+                showFeedback(
+                    "Look closer!",
+                    `Wait! Take another look. Both ${currentNum} and ${currentDenom} can be divided by ${factor}. Try dividing them!`,
+                    "🔎"
+                );
+            };
+
+            // --- Round / Flow Management ---
+            const handleCorrect = () => {
+                gameActive = false;
+                pauseTimer();
+                
+                // Add points
+                totalScore += roundPoints;
+                els.scoreDisplay.innerText = totalScore;
+                
+                // Visuals
+                createFloatingText(`+${roundPoints} Points!`, 'text-green-400');
+                fireConfetti();
+                
+                // Highlight input container to green temporarily
+                const origBorder = els.inputContainer.className;
+                els.inputContainer.classList.add('border-4', 'border-green-400', 'bg-green-50');
+                
+                setTimeout(() => {
+                    els.inputContainer.classList.remove('border-4', 'border-green-400', 'bg-green-50');
+                    nextRound();
+                }, 2000);
+            };
+
+            const nextRound = () => {
+                if (currentRound >= maxRounds) {
+                    endGame();
+                    return;
+                }
+                currentRound++;
+                startRound();
+            };
+
+            const startRound = () => {
+                gameActive = true;
+                roundPoints = 1000;
+                els.roundDisplay.innerText = `${currentRound} / ${maxRounds}`;
+                els.userNum.value = "";
+                els.userDenom.value = "";
+                updateUI();
+                generateFraction();
+                startTimer();
+                els.userNum.focus();
+            };
+
+            const endGame = () => {
+                gameActive = false;
+                pauseTimer();
+                
+                els.finalScore.innerText = totalScore;
+                
+                // Title Logic
+                let title = "";
+                if (totalScore >= 8500) title = "Fraction Ninja Grandmaster 🥷🐉";
+                else if (totalScore >= 6000) title = "Simplification Sorcerer 🧙‍♂️✨";
+                else if (totalScore >= 3000) title = "Math Warrior ⚔️🛡️";
+                else title = "Fraction Apprentice 📚🌱 (Keep practicing!)";
+                
+                els.playerTitle.innerText = title;
+                els.gameOverModal.classList.remove('hidden');
+            };
+
+            const restartGame = () => {
+                els.gameOverModal.classList.add('hidden');
+                totalScore = 0;
+                currentRound = 1;
+                els.scoreDisplay.innerText = "0";
+                startRound();
+            };
+
+            // --- Visual Effects ---
+            const createFloatingText = (text, colorClass) => {
+                const el = document.createElement('div');
+                el.innerText = text;
+                el.className = `floating-points ${colorClass}`;
+                
+                // Position near the input box roughly
+                const rect = els.inputContainer.getBoundingClientRect();
+                el.style.left = `${rect.left + (rect.width / 2) - 40}px`;
+                el.style.top = `${rect.top - 20}px`;
+                
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 1000);
+            };
+
+            const fireConfetti = () => {
+                const colors = ['#fde047', '#4ade80', '#60a5fa', '#f472b6', '#c084fc'];
+                for (let i = 0; i < 40; i++) {
+                    const conf = document.createElement('div');
+                    conf.style.position = 'absolute';
+                    conf.style.width = `${Math.random() * 8 + 4}px`;
+                    conf.style.height = `${Math.random() * 12 + 6}px`;
+                    conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    
+                    // Start at center
+                    conf.style.left = '50%';
+                    conf.style.top = '50%';
+                    conf.style.transform = `translate(-50%, -50%) rotate(${Math.random() * 360}deg)`;
+                    els.confettiContainer.appendChild(conf);
+
+                    // Physics vars
+                    const angle = Math.random() * Math.PI * 2;
+                    const velocity = 8 + Math.random() * 15;
+                    let vx = Math.cos(angle) * velocity;
+                    let vy = Math.sin(angle) * velocity;
+                    let opacity = 1;
+                    let rot = Math.random() * 360;
+                    let rotSpeed = (Math.random() - 0.5) * 20;
+
+                    const animate = () => {
+                        if (!conf.parentElement) return; // safeguard
+                        
+                        let left = parseFloat(conf.style.left);
+                        let top = parseFloat(conf.style.top);
+                        
+                        // Convert percentage to px to move
+                        if (conf.style.left.includes('%')) {
+                            left = els.confettiContainer.offsetWidth / 2;
+                            top = els.confettiContainer.offsetHeight / 2;
+                        }
+
+                        left += vx;
+                        top += vy;
+                        vy += 0.4; // Gravity
+                        rot += rotSpeed;
+                        opacity -= 0.015;
+
+                        conf.style.left = `${left}px`;
+                        conf.style.top = `${top}px`;
+                        conf.style.transform = `rotate(${rot}deg)`;
+                        conf.style.opacity = opacity;
+
+                        if (opacity > 0 && top < window.innerHeight) {
+                            requestAnimationFrame(animate);
+                        } else {
+                            conf.remove();
+                        }
+                    };
+                    requestAnimationFrame(animate);
+                }
+            };
+
+            // --- Event Listeners & Init ---
+            const init = () => {
+                // Enter key support for inputs
+                els.userNum.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') els.userDenom.focus();
+                });
+                els.userDenom.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') submitAnswer();
+                });
+                
+                // Show Help on start
+                // Do not start timer until help is closed
+            };
+
+            init();
+
+            // --- Public API ---
+            return {
+                showHelp: () => {
+                    pauseTimer();
+                    els.helpModal.classList.remove('hidden');
+                    els.helpModal.classList.add('opacity-100');
+                },
+                closeHelp: () => {
+                    els.helpModal.classList.add('hidden');
+                    if (currentRound === 1 && totalScore === 0 && !gameActive) {
+                        // First time starting
+                        startRound();
+                    } else if (gameActive) {
+                        startTimer();
+                        els.userNum.focus();
+                    }
+                },
+                showRanks: () => {
+                    pauseTimer();
+                    els.ranksModal.classList.remove('hidden');
+                },
+                closeRanks: () => {
+                    els.ranksModal.classList.add('hidden');
+                    if (gameActive) {
+                        startTimer();
+                        els.userNum.focus();
+                    }
+                },
+                closeFeedback,
+                submitAnswer,
+                submitAlreadySimplified,
+                restartGame
+            };
+        })();
+    </script>
+    <script src='../../site-nav.js'></script>
+</body>
+</html>

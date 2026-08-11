@@ -1,1 +1,580 @@
-﻿
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parabola Features Identifier Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles to supplement Tailwind */
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+        }
+        #parabolaCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        /* Style for the confetti animation canvas */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        /* Ensure input fields are consistently sized */
+        input[type="text"], select {
+            min-height: 44px;
+        }
+        /* Style for disabled state */
+        .input-disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 flex items-center justify-center min-h-screen p-4">
+
+    <div id="game-container" class="w-full max-w-4xl bg-white rounded-2xl shadow-2xl p-4 sm:p-6 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+
+        <!-- Left Column: Graph and Scores -->
+        <div class="flex flex-col gap-4">
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 text-center">Parabola Explorer</h1>
+            <div class="aspect-square bg-slate-50 rounded-xl border-2 border-slate-200 shadow-inner">
+                <canvas id="parabolaCanvas"></canvas>
+            </div>
+            <div class="grid grid-cols-2 gap-2 sm:gap-4 text-center">
+                <div class="bg-green-100 text-green-800 p-2 rounded-lg">
+                    <p class="font-semibold text-sm sm:text-base">Correct</p>
+                    <p id="correct-score" class="text-xl sm:text-2xl font-bold">0</p>
+                </div>
+                <div class="bg-yellow-100 text-yellow-800 p-2 rounded-lg">
+                    <p class="font-semibold text-sm sm:text-base">Streak</p>
+                    <p id="streak-score" class="text-xl sm:text-2xl font-bold">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Inputs and Controls -->
+        <div class="flex flex-col justify-between">
+            <div class="space-y-3 sm:space-y-4">
+                <div id="input-group">
+                    <!-- Turning Point -->
+                    <div>
+                        <label for="turning-point-input" class="font-semibold text-slate-700">1. Turning Point <span class="text-xs font-normal text-slate-500">e.g., (x, y)</span></label>
+                        <input type="text" id="turning-point-input" class="mt-1 w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    <!-- Max/Min -->
+                    <div>
+                        <label class="font-semibold text-slate-700">2. Type of Turning Point</label>
+                        <select id="max-min-select" class="mt-1 w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white">
+                            <option value="">Select...</option>
+                            <option value="Maximum">Maximum</option>
+                            <option value="Minimum">Minimum</option>
+                        </select>
+                    </div>
+                    <!-- Axis of Symmetry -->
+                    <div>
+                        <label for="aos-input" class="font-semibold text-slate-700">3. Axis of Symmetry <span class="text-xs font-normal text-slate-500">e.g., x = h</span></label>
+                        <input type="text" id="aos-input" class="mt-1 w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    <!-- Y-intercept -->
+                    <div>
+                        <label for="y-intercept-input" class="font-semibold text-slate-700">4. Y-intercept <span class="text-xs font-normal text-slate-500">e.g., y</span></label>
+                        <input type="text" id="y-intercept-input" class="mt-1 w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    <!-- X-intercept(s) -->
+                    <div>
+                        <label for="x-intercepts-input" class="font-semibold text-slate-700">5. X-intercept(s) <span class="text-xs font-normal text-slate-500">e.g., x1, x2 or none</span></label>
+                        <input type="text" id="x-intercepts-input" class="mt-1 w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                </div>
+
+                <!-- Feedback Message -->
+                <div id="feedbackMessage" class="h-10 text-center font-medium flex items-center justify-center rounded-md"></div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-4 space-y-2">
+                <button id="actionButton" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 ease-in-out disabled:bg-slate-400 disabled:cursor-not-allowed">
+                    Check Answer
+                </button>
+                <div class="flex justify-center items-center space-x-4 mt-2">
+                    <button id="helpButton" class="text-sm text-slate-500 hover:text-blue-600">How to Play</button>
+                    <span class="text-slate-300">|</span>
+                    <button id="skipButton" class="text-sm text-slate-500 hover:text-blue-600">Skip Question</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+    
+    <!-- Help Modal -->
+    <div id="helpModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full transform transition-all scale-95 opacity-0" id="modal-content">
+            <h2 class="text-2xl font-bold mb-4">How to Play & Feature Guide</h2>
+            <div class="space-y-3 text-slate-600">
+                <p><strong>Objective:</strong> Identify the 5 key features of the parabola shown on the graph and enter them into the input fields.</p>
+                <div>
+                    <strong class="text-slate-800">1. Turning Point:</strong> The point where the parabola changes direction. Enter it as <code class="bg-slate-200 p-1 rounded">(x,y)</code>.
+                </div>
+                <div>
+                    <strong class="text-slate-800">2. Max/Min:</strong> If the parabola opens downwards (like a frown), it has a Maximum. If it opens upwards (like a smile), it has a Minimum.
+                </div>
+                <div>
+                    <strong class="text-slate-800">3. Axis of Symmetry:</strong> The vertical dashed line that cuts the parabola in half. Enter it as <code class="bg-slate-200 p-1 rounded">x=value</code>.
+                </div>
+                 <div>
+                    <strong class="text-slate-800">4. Y-intercept:</strong> The point where the graph crosses the vertical y-axis. Enter just the y-value.
+                </div>
+                <div>
+                    <strong class="text-slate-800">5. X-intercept(s):</strong> The point(s) where the graph crosses the horizontal x-axis.
+                    <ul class="list-disc list-inside ml-4 mt-1">
+                        <li>If there are two, enter them separated by a comma, e.g., <code class="bg-slate-200 p-1 rounded">-2, 5</code>. Order doesn't matter.</li>
+                        <li>If there is one, enter the single value.</li>
+                        <li>If there are none, type <code class="bg-slate-200 p-1 rounded">none</code>.</li>
+                    </ul>
+                </div>
+                <p>Click "Check Answer" or press Enter. If you're correct, a "Next Question" button will appear. Good luck!</p>
+            </div>
+            <button id="closeModalButton" class="mt-6 w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                Got it!
+            </button>
+        </div>
+    </div>
+
+
+    <script>
+        // --- DOM ELEMENT SELECTION ---
+        const canvas = document.getElementById('parabolaCanvas');
+        const ctx = canvas.getContext('2d');
+        const actionButton = document.getElementById('actionButton');
+        const feedbackMessage = document.getElementById('feedbackMessage');
+        const inputGroup = document.getElementById('input-group');
+        const tpInput = document.getElementById('turning-point-input');
+        const maxMinSelect = document.getElementById('max-min-select');
+        const aosInput = document.getElementById('aos-input');
+        const yInterceptInput = document.getElementById('y-intercept-input');
+        const xInterceptsInput = document.getElementById('x-intercepts-input');
+        const correctScoreEl = document.getElementById('correct-score');
+        const streakScoreEl = document.getElementById('streak-score');
+        const helpButton = document.getElementById('helpButton');
+        const skipButton = document.getElementById('skipButton');
+        const helpModal = document.getElementById('helpModal');
+        const modalContent = document.getElementById('modal-content');
+        const closeModalButton = document.getElementById('closeModalButton');
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+
+        // --- GAME STATE & CONFIGURATION ---
+        let currentParabola = {};
+        let scores = { correct: 0, streak: 0 };
+        const range = 10; // Axis range from -10 to 10
+        const inputs = [tpInput, maxMinSelect, aosInput, yInterceptInput, xInterceptsInput];
+
+        // --- WEB AUDIO API FOR SOUNDS ---
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) {
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.error("Web Audio API is not supported in this browser");
+                }
+            }
+        }
+        
+        function playSound(type) {
+            if (!audioCtx) return;
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.01);
+
+            if (type === 'correct') {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+                setTimeout(() => { oscillator.frequency.setValueAtTime(659.25, audioCtx.currentTime); }, 100); // E5
+                 setTimeout(() => { oscillator.frequency.setValueAtTime(783.99, audioCtx.currentTime); }, 200); // G5
+            } else if (type === 'incorrect') {
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+            }
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        }
+        
+        // --- CONFETTI ANIMATION ---
+        let confettiPieces = [];
+        function runConfetti() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+            
+            for (let i = 0; i < 100; i++) {
+                confettiPieces.push({
+                    x: Math.random() * confettiCanvas.width,
+                    y: -20 - Math.random() * 20,
+                    size: Math.random() * 10 + 5,
+                    color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+                    speed: Math.random() * 3 + 2,
+                    angle: Math.random() * Math.PI * 2,
+                    spin: (Math.random() - 0.5) * 0.2
+                });
+            }
+
+            let animationFrame;
+            function animateConfetti() {
+                confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+                confettiPieces.forEach(p => {
+                    p.y += p.speed;
+                    p.x += Math.sin(p.angle);
+                    p.angle += p.spin;
+                    confettiCtx.fillStyle = p.color;
+                    confettiCtx.beginPath();
+                    confettiCtx.rect(p.x, p.y, p.size, p.size);
+                    confettiCtx.fill();
+                });
+                confettiPieces = confettiPieces.filter(p => p.y < confettiCanvas.height + 20);
+                if (confettiPieces.length > 0) {
+                    animationFrame = requestAnimationFrame(animateConfetti);
+                } else {
+                    cancelAnimationFrame(animationFrame);
+                    confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+                }
+            }
+            animateConfetti();
+        }
+
+        // --- CANVAS DRAWING FUNCTIONS ---
+        function setupCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            // Style properties are set by CSS, no need to set them here
+        }
+
+        function drawGrid() {
+            const logicalWidth = canvas.getBoundingClientRect().width;
+            const logicalHeight = canvas.getBoundingClientRect().height;
+            if (logicalWidth === 0) return; // Don't draw if canvas has no size
+            const dynamicScale = logicalWidth / (2 * range);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Use canvas.width/height for clearing
+            ctx.strokeStyle = '#e2e8f0'; // slate-200
+            ctx.lineWidth = 1;
+
+            for (let i = -range; i <= range; i++) {
+                ctx.beginPath();
+                ctx.moveTo(logicalWidth / 2 + i * dynamicScale, 0);
+                ctx.lineTo(logicalWidth / 2 + i * dynamicScale, logicalHeight);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, logicalHeight / 2 + i * dynamicScale);
+                ctx.lineTo(logicalWidth, logicalHeight / 2 + i * dynamicScale);
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = '#475569'; // slate-600
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, logicalHeight / 2);
+            ctx.lineTo(logicalWidth, logicalHeight / 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(logicalWidth / 2, 0);
+            ctx.lineTo(logicalWidth / 2, logicalHeight);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#475569';
+            ctx.font = `${0.55 * dynamicScale}px Inter`; // Increased font size
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+             for (let i = -range; i <= range; i++) {
+                if (i !== 0) {
+                    ctx.fillText(i, logicalWidth / 2 + i * dynamicScale, logicalHeight / 2 + (0.6 * dynamicScale));
+                    ctx.fillText(i, logicalWidth / 2 - (0.6 * dynamicScale), logicalHeight / 2 - i * dynamicScale);
+                }
+            }
+        }
+
+        function drawParabola(p) {
+            const logicalWidth = canvas.getBoundingClientRect().width;
+            const logicalHeight = canvas.getBoundingClientRect().height;
+            if (logicalWidth === 0) return;
+            const dynamicScale = logicalWidth / (2 * range);
+            
+            ctx.strokeStyle = p.a > 0 ? '#2563eb' : '#db2777'; // blue-600 or pink-600
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            for (let x = -range; x <= range; x += 0.05) {
+                const y = p.a * x * x + p.b * x + p.c;
+                const canvasX = logicalWidth / 2 + x * dynamicScale;
+                const canvasY = logicalHeight / 2 - y * dynamicScale;
+                if (x === -range) {
+                    ctx.moveTo(canvasX, canvasY);
+                } else {
+                    ctx.lineTo(canvasX, canvasY);
+                }
+            }
+            ctx.stroke();
+            
+            const aosX = logicalWidth / 2 + p.turningPoint.x * dynamicScale;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#f59e0b'; // amber-500
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(aosX, 0);
+            ctx.lineTo(aosX, logicalHeight);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            drawMarker(p.turningPoint.x, p.turningPoint.y, '#ef4444'); // red-500
+            drawMarker(0, p.yIntercept, '#10b981'); // emerald-500
+            p.xIntercepts.forEach(ix => drawMarker(ix, 0, '#8b5cf6')); // violet-500
+        }
+        
+        function drawMarker(x, y, color) {
+            const logicalWidth = canvas.getBoundingClientRect().width;
+            const logicalHeight = canvas.getBoundingClientRect().height;
+            const dynamicScale = logicalWidth / (2 * range);
+            const canvasX = logicalWidth / 2 + x * dynamicScale;
+            const canvasY = logicalHeight / 2 - y * dynamicScale;
+            
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(canvasX, canvasY, 5, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        // --- QUESTION GENERATION ---
+        function generateParabola() {
+            let h, k, a, b, c;
+            let xInts = [];
+            let isValid = false;
+
+            while (!isValid) {
+                h = Math.floor(Math.random() * 13) - 6 + (Math.random() > 0.5 ? 0.5 : 0); // -6 to 6.5
+                k = Math.floor(Math.random() * 13) - 6 + (Math.random() > 0.5 ? 0.5 : 0); // -6 to 6.5
+                const aValues = [-2, -1, -0.5, 0.5, 1, 2];
+                a = aValues[Math.floor(Math.random() * aValues.length)];
+                
+                b = -2 * a * h;
+                c = a * h * h + k;
+                
+                // Stricter visibility check
+                if (Math.abs(k) > range - 1 || Math.abs(c) > range - 1) {
+                    continue;
+                }
+                
+                if (isSimpleDecimal(b) && isSimpleDecimal(c)) {
+                    const discriminant = b * b - 4 * a * c;
+                    if (discriminant >= 0) {
+                        const sqrtDiscriminant = Math.sqrt(discriminant);
+                        if (isSimpleDecimal(sqrtDiscriminant)) {
+                            const x1 = (-b + sqrtDiscriminant) / (2 * a);
+                            const x2 = (-b - sqrtDiscriminant) / (2 * a);
+                            if (isSimpleDecimal(x1) && isSimpleDecimal(x2)) {
+                                xInts = discriminant === 0 ? [x1] : [x1, x2].sort((n1, n2) => n1 - n2);
+                                isValid = true;
+                            }
+                        }
+                    } else {
+                        xInts = [];
+                        isValid = true;
+                    }
+                }
+            }
+
+            return { a, b, c, turningPoint: { x: h, y: k }, maxMin: a < 0 ? 'Maximum' : 'Minimum', axisOfSymmetry: h, yIntercept: c, xIntercepts: xInts };
+        }
+        
+        function isSimpleDecimal(num) {
+            return num === Math.floor(num) || num === Math.floor(num) + 0.5;
+        }
+
+        // --- GAME LOGIC ---
+        function newQuestion() {
+            currentParabola = generateParabola();
+            
+            function redraw() {
+                setupCanvas();
+                drawGrid();
+                drawParabola(currentParabola);
+            }
+            redraw();
+            window.onresize = redraw;
+            
+            resetInputs();
+            updateScores();
+            feedbackMessage.textContent = '';
+            feedbackMessage.className = 'h-10 text-center font-medium flex items-center justify-center rounded-md';
+            actionButton.textContent = 'Check Answer';
+            actionButton.onclick = checkAnswer;
+            actionButton.disabled = false;
+            tpInput.focus();
+        }
+
+        function resetInputs() {
+            inputs.forEach(input => {
+                input.value = '';
+                input.disabled = false;
+                input.classList.remove('input-disabled', 'border-green-500', 'border-red-500');
+            });
+        }
+
+        function checkAnswer() {
+            if (inputs.some(input => !input.value.trim())) {
+                setFeedback('Please fill in all fields.', 'orange');
+                return;
+            }
+            
+            initAudio();
+            let allCorrect = true;
+            
+            if (!checkTurningPoint()) allCorrect = false;
+            if (!checkMaxMin()) allCorrect = false;
+            if (!checkAOS()) allCorrect = false;
+            if (!checkYIntercept()) allCorrect = false;
+            if (!checkXIntercepts()) allCorrect = false;
+
+            if (allCorrect) {
+                playSound('correct');
+                runConfetti();
+                setFeedback('Correct! Well done!', 'green');
+                scores.correct++;
+                scores.streak++;
+                actionButton.textContent = 'Next Question';
+                actionButton.onclick = newQuestion;
+                inputs.forEach(input => {
+                    input.disabled = true;
+                    input.classList.add('input-disabled');
+                });
+            } else {
+                playSound('incorrect');
+                setFeedback('Some answers are incorrect. Check the highlighted fields.', 'red');
+                scores.streak = 0;
+            }
+            updateScores();
+        }
+
+        // --- INPUT VALIDATION HELPERS ---
+        function normalizeNumber(val) { return parseFloat(val.toFixed(2)); }
+
+        function checkTurningPoint() {
+            const match = tpInput.value.trim().match(/^\(\s*(-?\d*\.?\d+)\s*,\s*(-?\d*\.?\d+)\s*\)$/);
+            if (!match) return highlightInput(tpInput, false);
+            const userX = normalizeNumber(parseFloat(match[1]));
+            const userY = normalizeNumber(parseFloat(match[2]));
+            const isCorrect = userX === normalizeNumber(currentParabola.turningPoint.x) && userY === normalizeNumber(currentParabola.turningPoint.y);
+            return highlightInput(tpInput, isCorrect);
+        }
+
+        function checkMaxMin() {
+            const isCorrect = maxMinSelect.value === currentParabola.maxMin;
+            return highlightInput(maxMinSelect, isCorrect);
+        }
+
+        function checkAOS() {
+            const match = aosInput.value.trim().replace(/\s/g, '').match(/^x=(-?\d*\.?\d+)$/);
+            if (!match) return highlightInput(aosInput, false);
+            const isCorrect = normalizeNumber(parseFloat(match[1])) === normalizeNumber(currentParabola.axisOfSymmetry);
+            return highlightInput(aosInput, isCorrect);
+        }
+
+        function checkYIntercept() {
+            const isCorrect = normalizeNumber(parseFloat(yInterceptInput.value)) === normalizeNumber(currentParabola.yIntercept);
+            return highlightInput(yInterceptInput, isCorrect);
+        }
+
+        function checkXIntercepts() {
+            const input = xInterceptsInput.value.trim().toLowerCase();
+            const correctInts = currentParabola.xIntercepts.map(normalizeNumber);
+
+            if (correctInts.length === 0) {
+                return highlightInput(xInterceptsInput, input === 'none');
+            }
+            
+            const userIntsRaw = input.split(',').map(s => s.trim()).filter(s => s !== '');
+            if (userIntsRaw.length !== correctInts.length) return highlightInput(xInterceptsInput, false);
+            
+            const userInts = userIntsRaw.map(s => normalizeNumber(parseFloat(s))).sort((a, b) => a - b);
+            if (userInts.some(isNaN)) return highlightInput(xInterceptsInput, false);
+
+            const isCorrect = JSON.stringify(userInts) === JSON.stringify(correctInts);
+            return highlightInput(xInterceptsInput, isCorrect);
+        }
+
+        function highlightInput(el, isCorrect) {
+            el.classList.remove('border-green-500', 'border-red-500');
+            el.classList.add(isCorrect ? 'border-green-500' : 'border-red-500');
+            return isCorrect;
+        }
+        
+        function setFeedback(message, type) {
+            feedbackMessage.textContent = message;
+            const classMap = {
+                green: ['text-green-600', 'bg-green-100'],
+                red: ['text-red-600', 'bg-red-100'],
+                orange: ['text-orange-600', 'bg-orange-100']
+            };
+            feedbackMessage.className = 'h-10 text-center font-medium flex items-center justify-center rounded-md';
+            if(classMap[type]) feedbackMessage.classList.add(...classMap[type]);
+        }
+
+        function updateScores() {
+            correctScoreEl.textContent = scores.correct;
+            streakScoreEl.textContent = scores.streak;
+        }
+
+        // --- EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', newQuestion);
+
+        inputGroup.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                actionButton.click();
+            }
+        });
+
+        skipButton.addEventListener('click', () => {
+            scores.streak = 0;
+            updateScores();
+            newQuestion();
+        });
+
+        helpButton.addEventListener('click', () => {
+            helpModal.classList.remove('hidden');
+            setTimeout(() => { modalContent.classList.remove('scale-95', 'opacity-0'); }, 10);
+        });
+
+        closeModalButton.addEventListener('click', () => {
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { helpModal.classList.add('hidden'); }, 200);
+        });
+        
+        helpModal.addEventListener('click', (e) => {
+            if (e.target === helpModal) closeModalButton.click();
+        });
+
+    </script>
+    <script src='../../site-nav.js'></script>
+</body>
+</html>
+

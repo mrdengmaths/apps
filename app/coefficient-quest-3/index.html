@@ -1,1 +1,588 @@
-﻿
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coefficient Quest</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Poppins for headings and Inter for body text -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Tone.js for audio effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+
+    <style>
+        /* Custom styles to complement Tailwind */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            overflow: hidden; /* Prevent scrollbars during animations */
+        }
+
+        h1, h2 {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Styling for the main expression text */
+        .expression-term {
+            transition: all 0.2s ease-in-out;
+            padding: 0.25rem 0.5rem;
+            border-radius: 8px;
+            border: 2px solid transparent;
+        }
+        
+        /* Highlight for the term when its input is focused */
+        .term-highlight {
+            background-color: #e0f2fe; /* light-sky-100 */
+            border-color: #38bdf8; /* sky-400 */
+        }
+
+        /* Custom input styles */
+        .coefficient-input {
+            width: 80px;
+            height: 50px;
+            text-align: center;
+            font-size: 1.25rem;
+            border-radius: 8px;
+            border: 2px solid #9ca3af; /* gray-400 */
+            transition: all 0.2s ease-in-out;
+        }
+
+        .coefficient-input:focus {
+            outline: none;
+            border-color: #3b82f6; /* blue-500 */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* Feedback styles for inputs */
+        .input-correct {
+            background-color: #dcfce7; /* green-100 */
+            border-color: #22c55e; /* green-500 */
+        }
+        
+        .input-incorrect {
+            background-color: #fee2e2; /* red-100 */
+            border-color: #ef4444; /* red-500 */
+        }
+
+        /* Button styles */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: translateY(0);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Confetti animation styles */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            overflow: hidden;
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            opacity: 0.7;
+            animation: fall 5s linear forwards;
+        }
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        /* Style to hide the terms above inputs */
+        #inputs-container.terms-hidden .term-display {
+            display: none;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-2">
+
+    <div class="confetti-container" id="confetti-container"></div>
+
+    <main id="app-container" class="w-full max-w-4xl mx-auto p-4 md:p-8 bg-white shadow-2xl rounded-2xl text-center transition-colors duration-500">
+        
+        <!-- Header: Title, Score, Help -->
+        <header class="flex justify-between items-center mb-6 gap-4">
+             <div class="flex items-center space-x-4">
+                <button id="reset-btn" class="text-sm text-gray-500 hover:text-blue-600 transition whitespace-nowrap">Start Over</button>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-gray-600">Show Terms</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="toggle-terms" class="sr-only peer">
+                      <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+            </div>
+            <h1 class="text-xl sm:text-2xl md:text-4xl font-bold text-gray-800 text-center">Coefficient Quest</h1>
+            <button id="help-btn" class="w-10 h-10 bg-sky-100 text-sky-600 rounded-full text-2xl font-bold flex items-center justify-center shadow-sm hover:bg-sky-200 transition shrink-0">?</button>
+        </header>
+
+        <!-- Score & Streak Trackers -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 text-lg">
+            <div class="bg-gray-100 p-3 rounded-lg">
+                <div class="text-sm font-medium text-gray-500">SCORE</div>
+                <div id="score" class="text-2xl font-bold text-gray-700">0</div>
+            </div>
+            <div class="bg-gray-100 p-3 rounded-lg">
+                <div class="text-sm font-medium text-gray-500">STREAK</div>
+                <div id="streak" class="text-2xl font-bold text-gray-700">0</div>
+            </div>
+            <div class="bg-gray-100 p-3 rounded-lg col-span-2 md:col-span-1">
+                <div class="text-sm font-medium text-gray-500">HIGH SCORE</div>
+                <div id="high-score" class="text-2xl font-bold text-gray-700">0</div>
+            </div>
+        </div>
+
+        <!-- Question Display Area -->
+        <div class="mb-4 min-h-[80px] flex items-center justify-center">
+            <p id="question-text" class="text-2xl md:text-4xl font-mono text-gray-900 tracking-wide"></p>
+        </div>
+
+        <!-- Input Fields Area -->
+        <div id="inputs-container" class="flex justify-center items-start gap-x-4 md:gap-x-8 gap-y-4 flex-wrap mb-6 min-h-[80px]">
+            <!-- Dynamic input fields will be inserted here -->
+        </div>
+
+        <!-- Feedback Message Area -->
+        <div id="feedback-container" class="min-h-[60px] flex flex-col items-center justify-center mb-4">
+             <p id="feedback-text" class="text-2xl font-bold"></p>
+             <p id="encouragement-text" class="text-md text-gray-500"></p>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="flex justify-center space-x-4">
+            <button id="check-btn" class="btn bg-blue-600 hover:bg-blue-700">Check Answer</button>
+            <button id="next-btn" class="btn bg-green-600 hover:bg-green-700" style="display: none;">Next Question</button>
+        </div>
+
+    </main>
+    
+    <!-- Help Modal -->
+    <div id="help-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-lg w-full relative">
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">What is a Coefficient?</h2>
+            <div class="text-left text-gray-600 space-y-3">
+                <p>The <strong class="text-blue-600">coefficient</strong> is the number part that is multiplied by a variable.</p>
+                <ul class="list-disc list-inside space-y-2">
+                    <li>In the term <code class="bg-gray-200 p-1 rounded">3x</code>, the coefficient is <strong class="text-blue-600">3</strong>.</li>
+                    <li>In the term <code class="bg-gray-200 p-1 rounded">-5y²z</code>, the coefficient is <strong class="text-blue-600">-5</strong>.</li>
+                    <li>If a variable stands alone, like <code class="bg-gray-200 p-1 rounded">z</code>, the coefficient is <strong class="text-blue-600">1</strong>.</li>
+                    <li>If it's negative, like <code class="bg-gray-200 p-1 rounded">-ab³</code>, the coefficient is <strong class="text-blue-600">-1</strong>.</li>
+                    <li>A constant term (a number by itself), like <code class="bg-gray-200 p-1 rounded">12</code>, is its own coefficient. The coefficient is <strong class="text-blue-600">12</strong>.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Element References ---
+            const appContainer = document.getElementById('app-container');
+            const questionTextEl = document.getElementById('question-text');
+            const inputsContainer = document.getElementById('inputs-container');
+            const checkBtn = document.getElementById('check-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const scoreEl = document.getElementById('score');
+            const streakEl = document.getElementById('streak');
+            const highScoreEl = document.getElementById('high-score');
+            const feedbackTextEl = document.getElementById('feedback-text');
+            const encouragementTextEl = document.getElementById('encouragement-text');
+            const helpBtn = document.getElementById('help-btn');
+            const helpModal = document.getElementById('help-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const confettiContainer = document.getElementById('confetti-container');
+            const toggleTermsSwitch = document.getElementById('toggle-terms');
+
+            // --- Game State ---
+            let state = {
+                score: 0,
+                streak: 0,
+                highScore: localStorage.getItem('coefficientQuestHighScore') || 0,
+                currentQuestionData: [],
+                isQuestionAnswered: false,
+                incorrectAttempts: 0,
+            };
+            
+            // --- Sound Effects using Tone.js ---
+            const correctSound = new Tone.Synth({
+                oscillator: { type: 'sine' },
+                envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
+            }).toDestination();
+
+            const incorrectSound = new Tone.Synth({
+                oscillator: { type: 'triangle' },
+                envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.5 }
+            }).toDestination();
+            
+            const celebrationSound = () => {
+                const now = Tone.now();
+                correctSound.triggerAttackRelease("C5", "8n", now);
+                correctSound.triggerAttackRelease("E5", "8n", now + 0.2);
+                correctSound.triggerAttackRelease("G5", "8n", now + 0.4);
+            };
+
+            // --- Encouragement Messages ---
+            const correctMessages = ["Fantastic!", "You got it!", "Brilliant work!", "Algebra Ace!", "Outstanding Job!", "Superb!", "Perfect!"];
+            const incorrectMessages = ["Keep trying!", "You're close!", "Don't give up!", "Review the terms carefully!", "Not quite, have another go!"];
+
+            // --- Core Game Logic ---
+
+            /**
+             * Generates a single, potentially complex algebraic term object.
+             * @returns {{termString: string, coefficient: number}}
+             */
+            const generateTerm = () => {
+                const variables = ['x', 'y', 'z', 'a', 'b', 'c'];
+                const powers = ['²', '³', '⁴', '⁵', '⁶']; // Extended powers
+                let coefficient;
+
+                // 35% chance for coefficient to be 1 or -1
+                const specialCoefficientChance = Math.random();
+                if (specialCoefficientChance < 0.175) {
+                    coefficient = 1;
+                } else if (specialCoefficientChance < 0.35) {
+                    coefficient = -1;
+                } else {
+                    // Generate other integers from -30 to 30, excluding 0
+                    do {
+                        coefficient = Math.floor(Math.random() * 61) - 30;
+                    } while (coefficient === 0);
+                }
+                
+                // 15% chance of a constant term
+                if (Math.random() < 0.15) { 
+                    return { termString: `${coefficient}`, coefficient };
+                } 
+                
+                // --- Generate the variable part of the term ---
+                let variablePart = '';
+                // 40% chance for multiple variables
+                if (Math.random() < 0.4) {
+                    // Multi-variable term
+                    const numVars = Math.random() < 0.7 ? 2 : 3; // 2 or 3 variables
+                    const shuffledVars = [...variables].sort(() => 0.5 - Math.random());
+                    
+                    for (let i = 0; i < numVars; i++) {
+                        const v = shuffledVars[i];
+                        let p = '';
+                        // 60% chance of a power on each variable
+                        if (Math.random() < 0.6) {
+                            p = powers[Math.floor(Math.random() * powers.length)];
+                        }
+                        variablePart += `${v}${p}`;
+                    }
+                } else {
+                    // Single variable term
+                    const variable = variables[Math.floor(Math.random() * variables.length)];
+                    let power = '';
+                    // 60% chance of a power
+                    if (Math.random() > 0.6) {
+                       power = powers[Math.floor(Math.random() * powers.length)];
+                    }
+                    variablePart = `${variable}${power}`;
+                }
+
+                // --- Combine coefficient and variable part into the final string ---
+                let termString = '';
+                if (coefficient === 1) {
+                    termString = variablePart;
+                } else if (coefficient === -1) {
+                    termString = `-${variablePart}`;
+                } else {
+                    termString = `${coefficient}${variablePart}`;
+                }
+                
+                return { termString, coefficient };
+            };
+
+            /**
+             * Generates a full algebraic expression.
+             */
+            const generateQuestion = () => {
+                const numTerms = Math.floor(Math.random() * 4) + 2; // 2 to 5 terms
+                state.currentQuestionData = [];
+                let expressionParts = [];
+
+                for (let i = 0; i < numTerms; i++) {
+                    const termData = generateTerm();
+                    state.currentQuestionData.push(termData);
+
+                    let displayTerm = termData.termString;
+                    if (i > 0 && termData.coefficient > 0) {
+                        displayTerm = `+ ${displayTerm}`; // Add plus for positive terms after the first
+                    } else if (i > 0) {
+                        displayTerm = `- ${displayTerm.substring(1)}`; // Add space for negative terms
+                    }
+                    expressionParts.push(displayTerm);
+                }
+                
+                renderQuestion(expressionParts);
+            };
+
+            /**
+             * Renders the generated question and input fields to the DOM.
+             * @param {string[]} expressionParts - The parts of the expression to display.
+             */
+            const renderQuestion = (expressionParts) => {
+                // Reset UI state
+                questionTextEl.textContent = '';
+                inputsContainer.innerHTML = '';
+                feedbackTextEl.textContent = '';
+                encouragementTextEl.textContent = '';
+                checkBtn.style.display = 'inline-block';
+                nextBtn.style.display = 'none';
+                checkBtn.disabled = false;
+                state.isQuestionAnswered = false;
+                state.incorrectAttempts = 0;
+                
+                // Create a single string for the top expression display
+                let fullExpressionString = expressionParts.join(' ').replace(/\+ -/g, '- ');
+                questionTextEl.textContent = fullExpressionString;
+
+
+                // Create and append elements for each term and input
+                state.currentQuestionData.forEach((termData, index) => {
+                    // This creates the input box below the visual expression
+                    const inputWrapper = document.createElement('div');
+                    inputWrapper.className = 'flex flex-col items-center';
+                    
+                    const termDisplay = document.createElement('div');
+                    termDisplay.textContent = termData.termString;
+                    // This is the term display that can be toggled
+                    termDisplay.className = 'term-display expression-term text-2xl md:text-3xl font-mono text-gray-700 mb-2';
+                    termDisplay.id = `term-display-${index}`;
+
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.className = 'coefficient-input';
+                    input.id = `input-${index}`;
+                    
+                    input.addEventListener('focus', () => {
+                        termDisplay.classList.add('term-highlight');
+                    });
+                     input.addEventListener('blur', () => {
+                        termDisplay.classList.remove('term-highlight');
+                    });
+                    
+                    inputWrapper.appendChild(termDisplay);
+                    inputWrapper.appendChild(input);
+                    inputsContainer.appendChild(inputWrapper);
+                });
+                
+                // Focus the first input field
+                document.getElementById('input-0').focus();
+            };
+            
+            /**
+             * Checks the user's answers against the correct coefficients.
+             */
+            const checkAnswer = () => {
+                if (state.isQuestionAnswered) return;
+
+                let allCorrect = true;
+                const inputs = inputsContainer.querySelectorAll('.coefficient-input');
+
+                state.currentQuestionData.forEach((termData, index) => {
+                    const input = inputs[index];
+                    const userAnswer = parseInt(input.value, 10);
+                    
+                    input.classList.remove('input-correct', 'input-incorrect');
+
+                    if (userAnswer === termData.coefficient) {
+                        input.classList.add('input-correct');
+                        input.disabled = true; // Lock correct answers
+                    } else {
+                        input.classList.add('input-incorrect');
+                        allCorrect = false;
+                    }
+                });
+
+                if (allCorrect) {
+                    handleCorrectAnswer();
+                } else {
+                    handleIncorrectAnswer();
+                }
+            };
+            
+            /**
+             * Handles the logic for a fully correct answer.
+             */
+            const handleCorrectAnswer = () => {
+                state.isQuestionAnswered = true;
+                state.score++;
+                state.streak++;
+                if (state.streak > state.highScore) {
+                    state.highScore = state.streak;
+                    localStorage.setItem('coefficientQuestHighScore', state.highScore);
+                }
+                
+                feedbackTextEl.textContent = correctMessages[Math.floor(Math.random() * correctMessages.length)];
+                feedbackTextEl.className = 'text-2xl font-bold text-green-600';
+                encouragementTextEl.textContent = "Great job!";
+                
+                updateScores();
+                celebrationSound();
+                showConfetti();
+                
+                checkBtn.style.display = 'none';
+                nextBtn.style.display = 'inline-block';
+                nextBtn.focus();
+            };
+
+            /**
+             * Handles the logic for an incorrect answer.
+             */
+            const handleIncorrectAnswer = () => {
+                state.streak = 0;
+                state.incorrectAttempts++;
+                updateScores();
+                incorrectSound.triggerAttackRelease("C3", "8n", Tone.now());
+
+                feedbackTextEl.textContent = 'Try again!';
+                feedbackTextEl.className = 'text-2xl font-bold text-red-600';
+                encouragementTextEl.textContent = incorrectMessages[Math.floor(Math.random() * incorrectMessages.length)];
+
+                if (state.incorrectAttempts >= 2) {
+                    showHelpModal();
+                }
+            };
+
+            /**
+             * Updates the score displays on the screen.
+             */
+            const updateScores = () => {
+                scoreEl.textContent = state.score;
+                streakEl.textContent = state.streak;
+                highScoreEl.textContent = state.highScore;
+            };
+
+            /**
+             * Resets the game to its initial state.
+             */
+            const resetGame = () => {
+                state.score = 0;
+                state.streak = 0;
+                updateScores();
+                generateQuestion();
+            };
+            
+            /**
+             * Shows the help modal.
+             */
+            const showHelpModal = () => {
+                helpModal.classList.remove('hidden');
+            };
+            
+            /**
+             * Hides the help modal.
+             */
+            const hideHelpModal = () => {
+                helpModal.classList.add('hidden');
+            };
+
+            /**
+             * Creates and animates confetti for celebration.
+             */
+            const showConfetti = () => {
+                const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6'];
+                for (let i = 0; i < 100; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.animationDuration = Math.random() * 3 + 2 + 's';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    confettiContainer.appendChild(confetti);
+
+                    // Remove confetti from DOM after animation
+                    setTimeout(() => confetti.remove(), 5000);
+                }
+            }
+
+
+            // --- Event Listeners ---
+            checkBtn.addEventListener('click', checkAnswer);
+            nextBtn.addEventListener('click', generateQuestion);
+            resetBtn.addEventListener('click', resetGame);
+            
+            // Listener for the new toggle switch
+            toggleTermsSwitch.addEventListener('change', () => {
+                if (toggleTermsSwitch.checked) {
+                    inputsContainer.classList.remove('terms-hidden');
+                    localStorage.setItem('coefficientQuestShowTerms', 'true');
+                } else {
+                    inputsContainer.classList.add('terms-hidden');
+                    localStorage.setItem('coefficientQuestShowTerms', 'false');
+                }
+            });
+            
+            // Enter key functionality
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Prevent form submission
+                    if (state.isQuestionAnswered) {
+                        nextBtn.click();
+                    } else {
+                        checkBtn.click();
+                    }
+                }
+            });
+
+            // Modal listeners
+            helpBtn.addEventListener('click', showHelpModal);
+            closeModalBtn.addEventListener('click', hideHelpModal);
+            helpModal.addEventListener('click', (e) => {
+                // Close modal if clicking on the background
+                if (e.target === helpModal) {
+                    hideHelpModal();
+                }
+            });
+
+            // --- Initialisation ---
+            
+            // Initialize toggle switch state from localStorage
+            const showTerms = localStorage.getItem('coefficientQuestShowTerms') !== 'false'; // Default to true
+            toggleTermsSwitch.checked = showTerms;
+            if (!showTerms) {
+                inputsContainer.classList.add('terms-hidden');
+            }
+
+            updateScores(); // Set initial high score display
+            generateQuestion();
+        });
+    </script>
+    <script src='../../site-nav.js'></script>
+</body>
+</html>
+

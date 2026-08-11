@@ -1,1 +1,579 @@
-﻿
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Circle Sniper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles to hide scrollbars and handle exact sizing */
+        body { margin: 0; overflow: hidden; background-color: #0f172a; }
+        .modal-enter { animation: modalFadeIn 0.3s ease-out forwards; }
+        .modal-exit { animation: modalFadeOut 0.2s ease-in forwards; }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes modalFadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.95); }
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            opacity: 0;
+        }
+        @keyframes fall {
+            0% { opacity: 1; transform: translateY(-100%) rotate(0deg); }
+            100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+        }
+    </style>
+</head>
+<body class="text-slate-100 font-sans h-screen flex flex-col relative select-none">
+
+    <!-- Top Bar -->
+    <header class="bg-slate-800 shadow-md p-4 flex flex-col gap-2 z-10 border-b border-slate-700">
+        <div class="flex justify-between items-center max-w-5xl w-full mx-auto">
+            <div class="text-xl font-bold flex items-center gap-2">
+                <span class="text-indigo-400">🎯 Sniper</span>
+                <span class="text-sm bg-slate-700 px-2 py-1 rounded">Round <span id="ui-round">1</span>/10</span>
+            </div>
+            
+            <div class="flex gap-3">
+                <button id="btn-help" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-sm transition-colors shadow">? Help</button>
+                <button id="btn-ranks" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-sm transition-colors shadow">🏆 Ranks</button>
+            </div>
+
+            <div class="text-xl font-bold">
+                Score: <span id="ui-score" class="text-emerald-400">0</span>
+            </div>
+        </div>
+
+        <!-- Timer Bar -->
+        <div class="max-w-5xl w-full mx-auto bg-slate-700 h-3 rounded-full overflow-hidden relative">
+            <div id="ui-timer-bar" class="absolute top-0 left-0 h-full w-full bg-emerald-500 transition-all duration-75 origin-left"></div>
+        </div>
+        <div class="max-w-5xl w-full mx-auto text-xs text-center text-slate-400 mt-1">
+            Potential Points: <span id="ui-potential">1000</span>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-1 relative flex flex-col items-center justify-center p-4">
+        
+        <!-- Target Display -->
+        <div class="text-center mb-4 z-10">
+            <h2 class="text-2xl text-slate-400 font-medium tracking-wider">TARGET ANGLE</h2>
+            <div id="ui-target-angle" class="text-5xl md:text-7xl font-extrabold text-yellow-400 drop-shadow-lg">0°</div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="relative bg-slate-800 rounded-full shadow-[0_0_40px_rgba(0,0,0,0.5)] border-4 border-slate-700 p-2 cursor-crosshair">
+            <canvas id="gameCanvas" width="500" height="500" class="rounded-full max-w-full max-h-[60vh] object-contain block"></canvas>
+        </div>
+
+        <div class="mt-6 text-slate-400 text-sm z-10">
+            Click on the circle to place the terminal ray!
+        </div>
+
+    </main>
+
+    <!-- ================= MODALS ================= -->
+    
+    <!-- Help Modal -->
+    <div id="modal-help" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-slate-800 border border-slate-600 rounded-xl max-w-md w-full p-6 shadow-2xl relative">
+            <h3 class="text-2xl font-bold text-indigo-400 mb-4 flex items-center gap-2">🧭 How to Play</h3>
+            <ul class="space-y-3 text-slate-300">
+                <li>• <strong>0°</strong> is the right-pointing horizontal axis (Positive X).</li>
+                <li>• <strong>Positive angles</strong> rotate <span class="text-emerald-400">counter-clockwise</span>.</li>
+                <li>• <strong>Negative angles</strong> rotate <span class="text-rose-400">clockwise</span>.</li>
+                <li>• One full circle is <strong>360°</strong>. Angles larger than 360° keep wrapping around!</li>
+                <li>• <strong>Scoring:</strong> You start each round with 1000 points. The timer drains them over <strong>20 seconds</strong>.</li>
+                <li>• <strong>Accuracy matters:</strong> <br>
+                    🎯 Bullseye (within 5°): Keep 100% of remaining points.<br>
+                    👌 Close (within 15°): Keep 50% of remaining points.<br>
+                    ❌ Miss (off by >15°): Lose 200 points from total score.
+                </li>
+            </ul>
+            <button class="mt-6 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition-colors close-modal">Got it!</button>
+        </div>
+    </div>
+
+    <!-- Ranks Modal -->
+    <div id="modal-ranks" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-slate-800 border border-slate-600 rounded-xl max-w-md w-full p-6 shadow-2xl relative text-center">
+            <h3 class="text-2xl font-bold text-yellow-400 mb-4">🏆 Titles & Ranks</h3>
+            <div class="space-y-4 text-left">
+                <div class="p-3 bg-slate-700/50 rounded border border-slate-600 flex justify-between items-center">
+                    <span class="font-bold text-yellow-400">Unit Circle Sniper 🎯🏆</span>
+                    <span class="text-slate-300">&gt; 8000 pts</span>
+                </div>
+                <div class="p-3 bg-slate-700/50 rounded border border-slate-600 flex justify-between items-center">
+                    <span class="font-bold text-emerald-400">Angle Aviator ✈️🧭</span>
+                    <span class="text-slate-300">5000 - 8000 pts</span>
+                </div>
+                <div class="p-3 bg-slate-700/50 rounded border border-slate-600 flex justify-between items-center">
+                    <span class="font-bold text-indigo-400">Quadrant Navigator 🗺️🚶</span>
+                    <span class="text-slate-300">2000 - 4999 pts</span>
+                </div>
+                <div class="p-3 bg-slate-700/50 rounded border border-slate-600 flex justify-between items-center">
+                    <span class="font-bold text-rose-400">Lost in the Plane 🌪️🤔</span>
+                    <span class="text-slate-300">&lt; 2000 pts</span>
+                </div>
+            </div>
+            <button class="mt-6 w-full bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded transition-colors close-modal">Close</button>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="modal-feedback" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-slate-800 border border-slate-600 rounded-xl max-w-md w-full p-6 shadow-2xl text-center">
+            <h3 id="fb-title" class="text-3xl font-bold mb-2">Result</h3>
+            <p id="fb-points" class="text-xl mb-4 font-mono font-bold"></p>
+            <div id="fb-msg" class="text-slate-300 bg-slate-700/50 p-4 rounded text-sm leading-relaxed mb-6">
+                Feedback message goes here.
+            </div>
+            <button id="btn-next" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg transition-colors text-lg shadow-lg">Next Round ➔</button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="modal-gameover" class="fixed inset-0 bg-slate-900/90 z-50 hidden flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-slate-800 border-2 border-indigo-500 rounded-2xl max-w-md w-full p-8 shadow-[0_0_50px_rgba(99,102,241,0.3)] text-center">
+            <h2 class="text-4xl font-black text-white mb-2">GAME OVER</h2>
+            <p class="text-slate-400 mb-6">You've completed all 10 rounds!</p>
+            
+            <div class="bg-slate-900 rounded-xl p-6 mb-6 shadow-inner border border-slate-700">
+                <div class="text-sm text-slate-400 uppercase tracking-widest mb-1">Final Score</div>
+                <div id="go-score" class="text-6xl font-black text-emerald-400 mb-4">0</div>
+                <div class="text-sm text-slate-400 uppercase tracking-widest mb-1">Your Title</div>
+                <div id="go-title" class="text-2xl font-bold text-yellow-400">Title</div>
+            </div>
+
+            <button id="btn-restart" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 px-4 rounded-xl transition-colors text-xl shadow-[0_0_15px_rgba(16,185,129,0.5)]">Play Again 🔄</button>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        (() => {
+            // --- STATE & CONFIG ---
+            const TOTAL_ROUNDS = 10;
+            const MAX_POINTS = 1000;
+            const TIME_LIMIT_MS = 20000; // Updated to 20 seconds
+            const TIMER_INTERVAL_MS = 50;
+
+            let state = {
+                score: 0,
+                round: 1,
+                targetAngle: 0,
+                normalizedTarget: 0,
+                timeLeft: TIME_LIMIT_MS,
+                timerId: null,
+                currentPoints: MAX_POINTS,
+                status: 'playing', // 'playing', 'feedback', 'gameover'
+                userAngle: null
+            };
+
+            // --- DOM ELEMENTS ---
+            const ui = {
+                score: document.getElementById('ui-score'),
+                round: document.getElementById('ui-round'),
+                targetAngle: document.getElementById('ui-target-angle'),
+                timerBar: document.getElementById('ui-timer-bar'),
+                potential: document.getElementById('ui-potential'),
+                canvas: document.getElementById('gameCanvas'),
+                ctx: document.getElementById('gameCanvas').getContext('2d'),
+                
+                // Modals
+                modals: {
+                    help: document.getElementById('modal-help'),
+                    ranks: document.getElementById('modal-ranks'),
+                    feedback: document.getElementById('modal-feedback'),
+                    gameover: document.getElementById('modal-gameover')
+                },
+                
+                // Feedback elements
+                fbTitle: document.getElementById('fb-title'),
+                fbPoints: document.getElementById('fb-points'),
+                fbMsg: document.getElementById('fb-msg'),
+                btnNext: document.getElementById('btn-next'),
+                
+                // Game Over elements
+                goScore: document.getElementById('go-score'),
+                goTitle: document.getElementById('go-title'),
+                btnRestart: document.getElementById('btn-restart'),
+                
+                // Triggers
+                btnHelp: document.getElementById('btn-help'),
+                btnRanks: document.getElementById('btn-ranks'),
+                closeButtons: document.querySelectorAll('.close-modal')
+            };
+
+            const cx = ui.canvas.width / 2;
+            const cy = ui.canvas.height / 2;
+            const radius = 200;
+
+            // --- MATH UTILS ---
+            function normalizeAngle(degrees) {
+                let res = degrees % 360;
+                if (res < 0) res += 360;
+                return res;
+            }
+
+            function angleDistance(a, b) {
+                let diff = Math.abs(a - b) % 360;
+                return diff > 180 ? 360 - diff : diff;
+            }
+
+            function getQuadrant(angle) {
+                let norm = normalizeAngle(angle);
+                if (norm >= 0 && norm < 90) return 1;
+                if (norm >= 90 && norm < 180) return 2;
+                if (norm >= 180 && norm < 270) return 3;
+                return 4;
+            }
+
+            // Convert math angle (0 is right, CCW) to Canvas coords for drawing
+            function getCanvasCoords(angleDeg, r = radius) {
+                const rad = angleDeg * Math.PI / 180;
+                return {
+                    x: cx + r * Math.cos(rad),
+                    y: cy - r * Math.sin(rad) // Minus because canvas Y goes down
+                };
+            }
+
+            // --- GAME LOGIC ---
+            function generateAngle() {
+                const isKeyAngle = Math.random() < 0.7;
+                let angle = 0;
+
+                if (isKeyAngle) {
+                    const bases = [0, 30, 45, 60, 90, 120, 135, 150, 180, 210, 225, 240, 270, 300, 315, 330, 360];
+                    angle = bases[Math.floor(Math.random() * bases.length)];
+                    // 50% chance to be negative
+                    if (Math.random() < 0.5 && angle !== 0) angle *= -1;
+                } else {
+                    // Challenge angles
+                    let base = Math.floor(Math.random() * 360);
+                    const modifiers = [-720, -360, 360, 720];
+                    let mod = modifiers[Math.floor(Math.random() * modifiers.length)];
+                    angle = base + mod;
+                }
+
+                // Ensure we don't repeat the exact same target back to back unless it's rare
+                if (angle === state.targetAngle && Math.random() < 0.8) {
+                    return generateAngle();
+                }
+                
+                return angle;
+            }
+
+            function initGame() {
+                state.score = 0;
+                state.round = 1;
+                ui.score.innerText = state.score;
+                startRound();
+            }
+
+            function startRound() {
+                state.status = 'playing';
+                state.targetAngle = generateAngle();
+                state.normalizedTarget = normalizeAngle(state.targetAngle);
+                state.userAngle = null;
+                
+                ui.round.innerText = state.round;
+                ui.targetAngle.innerText = `${state.targetAngle}°`;
+                
+                resetTimer();
+                drawCanvas();
+            }
+
+            function resetTimer() {
+                if (state.timerId) clearInterval(state.timerId);
+                state.timeLeft = TIME_LIMIT_MS;
+                state.currentPoints = MAX_POINTS;
+                updateTimerUI();
+
+                state.timerId = setInterval(() => {
+                    state.timeLeft -= TIMER_INTERVAL_MS;
+                    if (state.timeLeft <= 0) {
+                        state.timeLeft = 0;
+                        clearInterval(state.timerId);
+                        // Auto-fail if time runs out
+                        processClick(null);
+                    }
+                    state.currentPoints = Math.max(0, Math.floor(MAX_POINTS * (state.timeLeft / TIME_LIMIT_MS)));
+                    updateTimerUI();
+                }, TIMER_INTERVAL_MS);
+            }
+
+            function updateTimerUI() {
+                const percent = (state.timeLeft / TIME_LIMIT_MS) * 100;
+                ui.timerBar.style.width = `${percent}%`;
+                
+                // Color shift based on time
+                if (percent > 50) {
+                    ui.timerBar.className = "absolute top-0 left-0 h-full w-full bg-emerald-500 transition-all duration-75 origin-left";
+                } else if (percent > 20) {
+                    ui.timerBar.className = "absolute top-0 left-0 h-full w-full bg-yellow-400 transition-all duration-75 origin-left";
+                } else {
+                    ui.timerBar.className = "absolute top-0 left-0 h-full w-full bg-rose-500 transition-all duration-75 origin-left";
+                }
+                
+                ui.potential.innerText = state.currentPoints;
+            }
+
+            // --- CANVAS DRAWING ---
+            function drawCanvas() {
+                const ctx = ui.ctx;
+                ctx.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
+
+                // Draw Axes
+                ctx.beginPath();
+                ctx.strokeStyle = '#475569'; // slate-600
+                ctx.lineWidth = 2;
+                ctx.moveTo(0, cy); ctx.lineTo(ui.canvas.width, cy); // X axis
+                ctx.moveTo(cx, 0); ctx.lineTo(cx, ui.canvas.height); // Y axis
+                ctx.stroke();
+
+                // Draw Unit Circle
+                ctx.beginPath();
+                ctx.strokeStyle = '#94a3b8'; // slate-400
+                ctx.lineWidth = 3;
+                ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+                ctx.stroke();
+
+                // Origin dot
+                ctx.beginPath();
+                ctx.fillStyle = '#f8fafc';
+                ctx.arc(cx, cy, 5, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Ticks for common angles on axes
+                ctx.fillStyle = '#64748b';
+                ctx.font = '12px sans-serif';
+                ctx.fillText("0°", cx + radius + 10, cy + 4);
+                ctx.fillText("90°", cx - 10, cy - radius - 10);
+                ctx.fillText("180°", cx - radius - 30, cy + 4);
+                ctx.fillText("270°", cx - 12, cy + radius + 20);
+
+                // Draw Feedback specific stuff
+                if (state.status === 'feedback' && state.userAngle !== null) {
+                    // Draw Correct Ray (Green)
+                    let cTarget = getCanvasCoords(state.targetAngle);
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#10b981'; // emerald-500
+                    ctx.lineWidth = 4;
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(cTarget.x, cTarget.y);
+                    ctx.stroke();
+
+                    // Draw User Ray (Red)
+                    let cUser = getCanvasCoords(state.userAngle);
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#f43f5e'; // rose-500
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([5, 5]);
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(cUser.x, cUser.y);
+                    ctx.stroke();
+                    ctx.setLineDash([]); // reset
+
+                    // Draw dots on intersection
+                    ctx.beginPath(); ctx.fillStyle = '#10b981'; ctx.arc(cTarget.x, cTarget.y, 6, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.fillStyle = '#f43f5e'; ctx.arc(cUser.x, cUser.y, 6, 0, Math.PI*2); ctx.fill();
+                }
+            }
+
+            // --- INTERACTION ---
+            ui.canvas.addEventListener('mousedown', (e) => {
+                if (state.status !== 'playing') return;
+                
+                const rect = ui.canvas.getBoundingClientRect();
+                const scaleX = ui.canvas.width / rect.width;
+                const scaleY = ui.canvas.height / rect.height;
+                
+                const clickX = (e.clientX - rect.left) * scaleX;
+                const clickY = (e.clientY - rect.top) * scaleY;
+
+                // Math math angle from click
+                // canvas Y is down, so invert for math logic
+                let dy = -(clickY - cy);
+                let dx = clickX - cx;
+                
+                // Prevent clicking exactly on center (edge case)
+                if (dx === 0 && dy === 0) return;
+
+                let rad = Math.atan2(dy, dx);
+                let deg = rad * 180 / Math.PI;
+                let userAngle = normalizeAngle(deg);
+                
+                processClick(userAngle);
+            });
+
+            function processClick(userAngle) {
+                if (state.timerId) clearInterval(state.timerId);
+                state.status = 'feedback';
+                
+                if (userAngle === null) {
+                    // Time out
+                    state.userAngle = normalizeAngle(state.targetAngle + 180); // Just draw something opposite
+                    handleScoringAndFeedback(false, true);
+                } else {
+                    state.userAngle = userAngle;
+                    handleScoringAndFeedback(true, false);
+                }
+                
+                drawCanvas();
+            }
+
+            function handleScoringAndFeedback(clicked, timeout) {
+                let distance = clicked ? angleDistance(state.userAngle, state.normalizedTarget) : 999;
+                
+                let pointsEarned = 0;
+                let title = "";
+                let msg = "";
+                let fbColor = "";
+
+                if (timeout) {
+                    pointsEarned = -200;
+                    title = "Time's Up! ⏰";
+                    msg = `You ran out of time! You lost 200 points.`;
+                    fbColor = "text-rose-400";
+                } else if (distance <= 5) {
+                    pointsEarned = state.currentPoints;
+                    title = "Bullseye! 🎯";
+                    msg = `Spot on location for ${state.targetAngle}°. Outstanding precision!`;
+                    fbColor = "text-emerald-400";
+                    fireConfetti();
+                } else if (distance <= 15) {
+                    pointsEarned = Math.floor(state.currentPoints / 2);
+                    title = "Close! 👌";
+                    msg = `Very near the mark! You were off by roughly ${Math.round(distance)}°.`;
+                    fbColor = "text-yellow-400";
+                    fireConfetti();
+                } else {
+                    pointsEarned = -200;
+                    title = "Missed! ❌";
+                    fbColor = "text-rose-400";
+                    
+                    // Diagnostic Feedback
+                    let targetQuad = getQuadrant(state.normalizedTarget);
+                    let userQuad = getQuadrant(state.userAngle);
+                    
+                    let positiveEquivalent = (Math.abs(state.targetAngle) % 360);
+                    let distToPosEq = angleDistance(state.userAngle, positiveEquivalent);
+
+                    if (state.targetAngle < 0 && distToPosEq <= 15 && targetQuad !== userQuad) {
+                        msg = `Careful! Positive angles go counter-clockwise, but <strong>NEGATIVE</strong> angles go <strong>CLOCKWISE</strong>. You rotated the wrong direction!`;
+                    } else if (Math.abs(state.targetAngle) >= 360) {
+                        let base = state.targetAngle > 0 
+                            ? state.targetAngle - 360 * Math.floor(state.targetAngle/360) 
+                            : state.targetAngle + 360 * Math.ceil(Math.abs(state.targetAngle)/360);
+                        msg = `To find ${state.targetAngle}°, find its co-terminal base angle. ${state.targetAngle}° is in the exact same spot as <strong>${base}°</strong>.`;
+                    } else if (userQuad !== targetQuad) {
+                        msg = `Oops! You clicked in <strong>Quadrant ${userQuad}</strong>, but ${state.targetAngle}° is in <strong>Quadrant ${targetQuad}</strong>. Remember, each quadrant is 90°!`;
+                    } else {
+                        msg = `You are in the right quadrant, but your aim was off! Your click was near <strong>${Math.round(state.userAngle)}°</strong> instead of ${state.targetAngle}°.`;
+                    }
+                }
+
+                state.score += pointsEarned;
+                // prevent negative total score optionally, but let's allow it as a harsh penalty!
+                ui.score.innerText = state.score;
+
+                // Populate Modal
+                ui.fbTitle.innerText = title;
+                ui.fbTitle.className = `text-3xl font-bold mb-2 ${fbColor}`;
+                
+                ui.fbPoints.innerText = pointsEarned >= 0 ? `+${pointsEarned} Points` : `${pointsEarned} Points`;
+                ui.fbPoints.className = `text-xl mb-4 font-mono font-bold ${fbColor}`;
+                
+                ui.fbMsg.innerHTML = msg;
+
+                // Show modal after slight delay to see the canvas result
+                setTimeout(() => showModal(ui.modals.feedback), 600);
+            }
+
+            ui.btnNext.addEventListener('click', () => {
+                hideModal(ui.modals.feedback);
+                if (state.round < TOTAL_ROUNDS) {
+                    state.round++;
+                    startRound();
+                } else {
+                    endGame();
+                }
+            });
+
+            function endGame() {
+                state.status = 'gameover';
+                ui.goScore.innerText = state.score;
+                
+                let rank = "";
+                let color = "";
+                if (state.score > 8000) { rank = "Unit Circle Sniper 🎯🏆"; color = "text-yellow-400"; fireConfetti(50); }
+                else if (state.score >= 5000) { rank = "Angle Aviator ✈️🧭"; color = "text-emerald-400"; }
+                else if (state.score >= 2000) { rank = "Quadrant Navigator 🗺️🚶"; color = "text-indigo-400"; }
+                else { rank = "Lost in the Plane 🌪️🤔"; color = "text-rose-400"; }
+                
+                ui.goTitle.innerText = rank;
+                ui.goTitle.className = `text-2xl font-bold ${color}`;
+                
+                showModal(ui.modals.gameover);
+            }
+
+            ui.btnRestart.addEventListener('click', () => {
+                hideModal(ui.modals.gameover);
+                initGame();
+            });
+
+            // --- UI MODALS & FX ---
+            function showModal(modal) {
+                modal.classList.remove('hidden');
+                modal.classList.remove('modal-exit');
+                modal.classList.add('modal-enter');
+            }
+
+            function hideModal(modal) {
+                modal.classList.remove('modal-enter');
+                modal.classList.add('modal-exit');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 200);
+            }
+
+            ui.btnHelp.addEventListener('click', () => showModal(ui.modals.help));
+            ui.btnRanks.addEventListener('click', () => showModal(ui.modals.ranks));
+            
+            ui.closeButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    let modal = e.target.closest('.fixed');
+                    if (modal) hideModal(modal);
+                });
+            });
+
+            function fireConfetti(amount = 30) {
+                for (let i = 0; i < amount; i++) {
+                    let conf = document.createElement('div');
+                    conf.className = 'confetti';
+                    conf.style.left = Math.random() * 100 + 'vw';
+                    conf.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                    conf.style.animation = `fall ${Math.random() * 1.5 + 1}s linear forwards`;
+                    document.body.appendChild(conf);
+                    
+                    setTimeout(() => conf.remove(), 2500);
+                }
+            }
+
+            // Start Game
+            initGame();
+
+        })();
+    </script>
+    <script src='../../site-nav.js'></script>
+</body>
+</html>

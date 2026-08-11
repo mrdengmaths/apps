@@ -1,1 +1,518 @@
-﻿
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trig Side Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f8fafc;
+            touch-action: manipulation; /* Prevents double-tap zoom on mobile */
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            aspect-ratio: 1 / 1;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-guess {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .btn-guess:active {
+            transform: scale(0.95);
+        }
+
+        /* Modal animations */
+        .modal-enter {
+            animation: modalFadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.9) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .backdrop-enter {
+            animation: backdropFadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes backdropFadeIn {
+            from { opacity: 0; backdrop-filter: blur(0px); }
+            to { opacity: 1; backdrop-filter: blur(4px); }
+        }
+
+        /* Success glow animation */
+        @keyframes successGlow {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        .canvas-success {
+            animation: successGlow 1s ease-out;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white shadow-md p-4 sticky top-0 z-10">
+        <div class="max-w-3xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl md:text-2xl font-extrabold tracking-tight">📐 Trig Side Master</h1>
+            <button id="helpBtn" class="bg-indigo-500 hover:bg-indigo-400 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors shadow">
+                How to Play
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-grow flex flex-col items-center justify-start p-4 md:p-6 max-w-3xl mx-auto w-full">
+        
+        <!-- Score Board -->
+        <div class="flex justify-between w-full max-w-lg mb-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <div class="text-center">
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Score</p>
+                <p id="scoreDisplay" class="text-2xl font-black text-indigo-600">0</p>
+            </div>
+            <div class="text-center">
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Streak</p>
+                <p class="text-2xl font-black text-orange-500"><span id="streakDisplay">0</span> 🔥</p>
+            </div>
+        </div>
+
+        <!-- Prompt -->
+        <div class="text-center mb-4 px-2">
+            <h2 class="text-lg md:text-xl font-bold text-slate-700">Name the highlighted side!</h2>
+            <p class="text-sm text-slate-500">Look at its position relative to the reference angle <span class="font-bold text-indigo-600 text-base">θ</span>.</p>
+        </div>
+
+        <!-- Canvas -->
+        <div class="canvas-container mb-6">
+            <canvas id="gameCanvas" width="600" height="600"></canvas>
+        </div>
+
+        <!-- Controls -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg">
+            <button data-guess="Hypotenuse" class="btn-guess bg-blue-50 hover:bg-blue-100 border-2 border-blue-200 text-blue-700 py-4 px-2 rounded-xl font-bold text-lg shadow-sm">
+                Hypotenuse
+            </button>
+            <button data-guess="Opposite" class="btn-guess bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200 text-emerald-700 py-4 px-2 rounded-xl font-bold text-lg shadow-sm">
+                Opposite
+            </button>
+            <button data-guess="Adjacent" class="btn-guess bg-purple-50 hover:bg-purple-100 border-2 border-purple-200 text-purple-700 py-4 px-2 rounded-xl font-bold text-lg shadow-sm">
+                Adjacent
+            </button>
+        </div>
+    </main>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-enter" id="feedbackBackdrop"></div>
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden modal-enter flex flex-col">
+            <div id="feedbackHeader" class="p-6 text-center text-white font-extrabold text-2xl">
+                <!-- Title injected here -->
+            </div>
+            <div class="p-6 text-center">
+                <p id="feedbackMessage" class="text-slate-600 text-lg font-medium leading-relaxed mb-6">
+                    <!-- Message injected here -->
+                </p>
+                <button id="nextBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition-colors shadow-md">
+                    Next Triangle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help / Cheat Sheet Modal -->
+    <div id="helpModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-enter" id="helpBackdrop"></div>
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden modal-enter">
+            <div class="bg-indigo-600 p-4 flex justify-between items-center">
+                <h3 class="text-white font-extrabold text-xl">How to Play</h3>
+                <button id="closeHelpBtn" class="text-white/80 hover:text-white text-2xl font-bold">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-slate-600 text-sm">To identify the correct side, always look at the highlighted line relative to the marked angle <strong>θ (theta)</strong> and the <strong>right angle (square)</strong>.</p>
+                
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r-lg">
+                    <h4 class="font-bold text-blue-800 text-lg">Hypotenuse</h4>
+                    <p class="text-sm text-blue-900 mt-1">The longest side of the triangle. It is <strong>always directly opposite the right angle (90°)</strong> square.</p>
+                </div>
+
+                <div class="bg-emerald-50 border-l-4 border-emerald-400 p-3 rounded-r-lg">
+                    <h4 class="font-bold text-emerald-800 text-lg">Opposite</h4>
+                    <p class="text-sm text-emerald-900 mt-1">The side <strong>directly across the triangle from the marked angle θ</strong>. It does not touch angle θ at all.</p>
+                </div>
+
+                <div class="bg-purple-50 border-l-4 border-purple-400 p-3 rounded-r-lg">
+                    <h4 class="font-bold text-purple-800 text-lg">Adjacent</h4>
+                    <p class="text-sm text-purple-900 mt-1">The side that is <strong>"next to" or touching the marked angle θ</strong> (but is NOT the longest hypotenuse side).</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Use IIFE to safely scope variables and prevent cheating via console
+        (() => {
+            // --- State Variables ---
+            let score = 0;
+            let streak = 0;
+            let currentTriangle = null; // Holds mathematical state of the current level
+            let isModalOpen = false;
+
+            // --- DOM Elements ---
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            const streakDisplay = document.getElementById('streakDisplay');
+            const guessButtons = document.querySelectorAll('.btn-guess');
+            
+            // Feedback Modal
+            const feedbackModal = document.getElementById('feedbackModal');
+            const feedbackHeader = document.getElementById('feedbackHeader');
+            const feedbackMessage = document.getElementById('feedbackMessage');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            // Help Modal
+            const helpBtn = document.getElementById('helpBtn');
+            const helpModal = document.getElementById('helpModal');
+            const closeHelpBtn = document.getElementById('closeHelpBtn');
+            const helpBackdrop = document.getElementById('helpBackdrop');
+
+            // --- Vector / Math Utilities ---
+            const Vector = {
+                add: (a, b) => ({ x: a.x + b.x, y: a.y + b.y }),
+                sub: (a, b) => ({ x: a.x - b.x, y: a.y - b.y }),
+                mag: (v) => Math.sqrt(v.x * v.x + v.y * v.y),
+                norm: (v) => {
+                    const m = Vector.mag(v);
+                    return m === 0 ? {x: 0, y: 0} : { x: v.x / m, y: v.y / m };
+                },
+                mult: (v, s) => ({ x: v.x * s, y: v.y * s })
+            };
+
+            // --- Game Logic ---
+
+            function generateTriangle() {
+                // 1. Generate random base and height lengths
+                // Constrain sizes so they fit perfectly in the 600x600 canvas when rotated
+                const baseLength = Math.random() * 100 + 150; // 150 to 250
+                const heightLength = Math.random() * 100 + 150; // 150 to 250
+
+                // 2. Initial right triangle at origin
+                // Right angle at (0,0)
+                let V_R = { x: 0, y: 0 };
+                // Theta angle vertex (randomly assign to base or height)
+                let V_T = Math.random() > 0.5 ? { x: baseLength, y: 0 } : { x: 0, y: heightLength };
+                // Other acute vertex
+                let V_O = (V_T.x !== 0) ? { x: 0, y: heightLength } : { x: baseLength, y: 0 };
+
+                // 3. Center the triangle relative to its center of mass
+                const cx = (V_R.x + V_T.x + V_O.x) / 3;
+                const cy = (V_R.y + V_T.y + V_O.y) / 3;
+                
+                V_R = Vector.sub(V_R, {x: cx, y: cy});
+                V_T = Vector.sub(V_T, {x: cx, y: cy});
+                V_O = Vector.sub(V_O, {x: cx, y: cy});
+
+                // 4. Apply random flip/reflection
+                const flipX = Math.random() > 0.5 ? 1 : -1;
+                const flipY = Math.random() > 0.5 ? 1 : -1;
+                
+                const applyFlip = (v) => ({ x: v.x * flipX, y: v.y * flipY });
+                V_R = applyFlip(V_R);
+                V_T = applyFlip(V_T);
+                V_O = applyFlip(V_O);
+
+                // 5. Apply random rotation
+                const angle = Math.random() * Math.PI * 2;
+                const cosA = Math.cos(angle);
+                const sinA = Math.sin(angle);
+
+                const applyRotation = (v) => ({
+                    x: v.x * cosA - v.y * sinA,
+                    y: v.x * sinA + v.y * cosA
+                });
+
+                V_R = applyRotation(V_R);
+                V_T = applyRotation(V_T);
+                V_O = applyRotation(V_O);
+
+                // 6. Translate to Canvas Center
+                const canvasCenter = { x: canvas.width / 2, y: canvas.height / 2 };
+                V_R = Vector.add(V_R, canvasCenter);
+                V_T = Vector.add(V_T, canvasCenter);
+                V_O = Vector.add(V_O, canvasCenter);
+
+                // 7. Define Sides
+                const sides = {
+                    'Hypotenuse': { p1: V_T, p2: V_O }, // Opposite Right Angle
+                    'Opposite': { p1: V_R, p2: V_O },   // Opposite Theta
+                    'Adjacent': { p1: V_R, p2: V_T }    // Next to Theta (and Right Angle)
+                };
+
+                // 8. Select a random side to highlight
+                const sideNames = ['Hypotenuse', 'Opposite', 'Adjacent'];
+                const targetSide = sideNames[Math.floor(Math.random() * sideNames.length)];
+
+                currentTriangle = { V_R, V_T, V_O, sides, targetSide };
+                drawTriangle();
+            }
+
+            function drawTriangle() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const t = currentTriangle;
+
+                // Configure base style
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                // 1. Draw the Right Angle Square
+                const v1 = Vector.norm(Vector.sub(t.V_T, t.V_R));
+                const v2 = Vector.norm(Vector.sub(t.V_O, t.V_R));
+                const squareSize = 25;
+                
+                const p1 = Vector.add(t.V_R, Vector.mult(v1, squareSize));
+                const p2 = Vector.add(p1, Vector.mult(v2, squareSize));
+                const p3 = Vector.add(t.V_R, Vector.mult(v2, squareSize));
+
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.lineTo(p3.x, p3.y);
+                ctx.strokeStyle = '#64748b'; // slate-500
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                // 2. Draw the Theta Arc and Text
+                const u1 = Vector.norm(Vector.sub(t.V_R, t.V_T));
+                const u2 = Vector.norm(Vector.sub(t.V_O, t.V_T));
+                const radius = 35;
+
+                let a1 = Math.atan2(u1.y, u1.x);
+                let a2 = Math.atan2(u2.y, u2.x);
+                let diff = a2 - a1;
+                
+                // Normalize difference
+                while (diff <= -Math.PI) diff += 2 * Math.PI;
+                while (diff > Math.PI) diff -= 2 * Math.PI;
+
+                ctx.beginPath();
+                if (diff > 0) {
+                    ctx.arc(t.V_T.x, t.V_T.y, radius, a1, a2, false);
+                } else {
+                    ctx.arc(t.V_T.x, t.V_T.y, radius, a2, a1, false);
+                }
+                ctx.strokeStyle = '#4f46e5'; // indigo-600
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Draw 'θ' text
+                // Since it's a triangle, angle is < 180, so adding unit vectors gives exact bisector pointing inside
+                const bisector = Vector.norm(Vector.add(u1, u2));
+                const textPos = Vector.add(t.V_T, Vector.mult(bisector, radius + 20));
+                
+                ctx.font = 'bold 28px Nunito, sans-serif';
+                ctx.fillStyle = '#4f46e5'; // indigo-600
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('θ', textPos.x, textPos.y);
+
+                // 3. Draw standard (un-highlighted) sides
+                Object.keys(t.sides).forEach(sideName => {
+                    if (sideName !== t.targetSide) {
+                        const side = t.sides[sideName];
+                        ctx.beginPath();
+                        ctx.moveTo(side.p1.x, side.p1.y);
+                        ctx.lineTo(side.p2.x, side.p2.y);
+                        ctx.strokeStyle = '#334155'; // slate-700
+                        ctx.lineWidth = 4;
+                        ctx.stroke();
+                    }
+                });
+
+                // 4. Draw Highlighted Side on top
+                const highlighted = t.sides[t.targetSide];
+                ctx.beginPath();
+                ctx.moveTo(highlighted.p1.x, highlighted.p1.y);
+                ctx.lineTo(highlighted.p2.x, highlighted.p2.y);
+                
+                // Add glow effect for highlight
+                ctx.shadowColor = 'rgba(59, 130, 246, 0.5)';
+                ctx.shadowBlur = 15;
+                ctx.strokeStyle = '#3b82f6'; // blue-500
+                ctx.lineWidth = 10;
+                ctx.stroke();
+                
+                // Reset shadow
+                ctx.shadowBlur = 0;
+            }
+
+            function evaluateGuess(guess) {
+                if (isModalOpen) return;
+                
+                const actual = currentTriangle.targetSide;
+                
+                if (guess === actual) {
+                    handleCorrect(actual);
+                } else {
+                    handleIncorrect(guess, actual);
+                }
+            }
+
+            function handleCorrect(actualSide) {
+                // Update State
+                score += 10;
+                streak += 1;
+                updateDisplay();
+
+                // Visual Effects
+                triggerConfetti();
+                canvas.classList.remove('canvas-success');
+                void canvas.offsetWidth; // Trigger reflow to restart animation
+                canvas.classList.add('canvas-success');
+
+                // Show Success Modal
+                showFeedbackModal(
+                    true,
+                    "🎉 Spot on!", 
+                    `Great job identifying the <strong>${actualSide}</strong>. Keep it up!`
+                );
+            }
+
+            function handleIncorrect(guess, actual) {
+                // Update State (Score doesn't drop, but streak resets)
+                streak = 0;
+                updateDisplay();
+
+                // Pedagogical Feedback Logic
+                let message = "";
+                let title = "";
+
+                if (guess === 'Hypotenuse' && actual === 'Opposite') {
+                    title = "Not quite!";
+                    message = "Remember, the Hypotenuse is always the longest side directly across from the right angle. The highlighted side is directly across from the angle θ, which makes it the <strong>Opposite</strong> side.";
+                } 
+                else if (guess === 'Hypotenuse' && actual === 'Adjacent') {
+                    title = "Oops!";
+                    message = "The Hypotenuse is the longest side across from the 90° angle. The highlighted side is right next to the angle θ, so it's the <strong>Adjacent</strong> side.";
+                } 
+                else if (guess === 'Opposite' && actual === 'Hypotenuse') {
+                    title = "Close!";
+                    message = "The Opposite side is across from the angle θ. However, the highlighted side is the longest side across from the right angle square. That's the <strong>Hypotenuse</strong>!";
+                } 
+                else if (guess === 'Opposite' && actual === 'Adjacent') {
+                    title = "Careful!";
+                    message = "The Opposite side is completely across the triangle from angle θ. The highlighted side is touching angle θ (but isn't the longest side), making it the <strong>Adjacent</strong> side.";
+                } 
+                else if (guess === 'Adjacent' && actual === 'Hypotenuse') {
+                    title = "Not quite.";
+                    message = "While the Hypotenuse does touch angle θ, we specifically call the longest side across from the right angle the Hypotenuse. The 'Adjacent' side is the <em>other</em> side touching θ.";
+                } 
+                else if (guess === 'Adjacent' && actual === 'Opposite') {
+                    title = "Oops!";
+                    message = "The Adjacent side is the one right next to angle θ. The highlighted side is all the way on the other side of the triangle, making it the <strong>Opposite</strong> side!";
+                }
+
+                showFeedbackModal(false, title, message);
+            }
+
+            function updateDisplay() {
+                scoreDisplay.innerText = score;
+                streakDisplay.innerText = streak;
+            }
+
+            // --- Modal & UI Management ---
+
+            function showFeedbackModal(isCorrect, title, htmlMessage) {
+                isModalOpen = true;
+                
+                feedbackHeader.className = `p-6 text-center text-white font-extrabold text-2xl ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`;
+                feedbackHeader.innerHTML = title;
+                feedbackMessage.innerHTML = htmlMessage;
+                
+                feedbackModal.classList.remove('hidden');
+            }
+
+            function hideFeedbackModal() {
+                feedbackModal.classList.add('hidden');
+                isModalOpen = false;
+                generateTriangle(); // Load next level
+            }
+
+            function showHelpModal() {
+                helpModal.classList.remove('hidden');
+            }
+
+            function hideHelpModal() {
+                helpModal.classList.add('hidden');
+            }
+
+            // --- Confetti Effect Engine ---
+            function triggerConfetti() {
+                const colors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'];
+                const container = document.body;
+                
+                for(let i = 0; i < 40; i++) {
+                    const conf = document.createElement('div');
+                    conf.className = 'fixed w-3 h-3 rounded-sm z-[100] pointer-events-none opacity-90';
+                    conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    conf.style.left = '50%';
+                    conf.style.top = '40%';
+                    
+                    container.appendChild(conf);
+                    
+                    const tx = (Math.random() - 0.5) * window.innerWidth * 0.8;
+                    const ty = (Math.random() - 0.5) * window.innerHeight * 0.8 - 100;
+                    const rotation = Math.random() * 360 + 360;
+                    
+                    conf.animate([
+                        { transform: 'translate(-50%, -50%) scale(0) rotate(0deg)', opacity: 1 },
+                        { transform: `translate(calc(-50% + ${tx * 0.5}px), calc(-50% + ${ty}px)) scale(1.2) rotate(${rotation / 2}deg)`, opacity: 1, offset: 0.6 },
+                        { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty + 300}px)) scale(0.8) rotate(${rotation}deg)`, opacity: 0 }
+                    ], {
+                        duration: 1200 + Math.random() * 800,
+                        easing: 'cubic-bezier(.37,0,.23,1)'
+                    }).onfinish = () => conf.remove();
+                }
+            }
+
+            // --- Event Listeners ---
+            guessButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const guess = e.target.getAttribute('data-guess');
+                    evaluateGuess(guess);
+                });
+            });
+
+            nextBtn.addEventListener('click', hideFeedbackModal);
+            
+            helpBtn.addEventListener('click', showHelpModal);
+            closeHelpBtn.addEventListener('click', hideHelpModal);
+            helpBackdrop.addEventListener('click', hideHelpModal);
+
+            // Start the game!
+            generateTriangle();
+
+        })();
+    </script>
+    <script src='../../site-nav.js'></script>
+</body>
+</html>

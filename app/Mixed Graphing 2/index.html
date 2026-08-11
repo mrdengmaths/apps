@@ -1,1 +1,151 @@
-﻿
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Putting the Fun in Function</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Your Custom Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 text-slate-200">
+
+    <div id="confetti-container" class="absolute top-0 left-0 w-full h-full pointer-events-none z-50"></div>
+
+    <div class="main-container">
+        <header class="bg-slate-900/70 backdrop-blur-sm border-b border-slate-700 p-3 z-10">
+            <h1 class="text-xl md:text-2xl font-bold text-center text-slate-100">Putting the Fun in Function</h1>
+        </header>
+
+        <main class="content-wrapper p-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-7xl mx-auto">
+                
+                <!-- Left Panel: Question and Inputs -->
+                <div class="bg-slate-800/50 border border-slate-700 p-4 rounded-lg shadow-lg flex flex-col space-y-3">
+                    <div class="text-center">
+                        <div class="flex justify-center items-center gap-4 mb-1">
+                            <h2 class="text-lg font-semibold">Step 1: Key Features</h2>
+                        </div>
+                        <div id="question" class="bg-slate-900 border border-slate-700 p-3 rounded-md text-lg md:text-xl text-center">
+                            Loading question...
+                        </div>
+                    </div>
+                    
+                    <div class="flex-grow space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-400 mb-1">Your Working & Notes</label>
+                            <div id="working-canvas-container" class="handwriting-canvas-container">
+                                <canvas id="working-canvas" class="handwriting-canvas" contenteditable="false" inputmode="none"></canvas>
+                                <button id="undo-working-btn" class="handwriting-undo-btn">&#8634;</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-400 mb-1">X-Intercepts (enter numbers only)</label>
+                            <div id="x-intercepts-container" class="flex flex-wrap gap-2">
+                                <input type="number" step="any" class="x-intercept-input w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500">
+                                <input type="number" step="any" class="x-intercept-input w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500">
+                                <input type="number" step="any" class="x-intercept-input w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-400 mb-1">Y-Intercepts (enter numbers only)</label>
+                            <div id="y-intercepts-container" class="flex flex-wrap gap-2">
+                                <input type="number" step="any" class="y-intercept-input w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500">
+                                <input type="number" step="any" class="y-intercept-input w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                        </div>
+                        <div id="asymptotes-container" class="hidden">
+                            <label class="block text-sm font-medium text-slate-400 mb-1">Asymptotes (enter numbers only)</label>
+                            <div class="flex items-center flex-wrap gap-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono text-slate-400">x =</span>
+                                    <input type="number" step="any" id="asymptote-x" class="w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono text-slate-400">y =</span>
+                                    <input type="number" step="any" id="asymptote-y" class="w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                            </div>
+                        </div>
+                        <div id="key-point-container" class="hidden">
+                            <label id="key-point-label" class="block text-sm font-medium text-slate-400 mb-1">Key Point</label>
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono text-slate-400">(</span>
+                                <input type="number" step="any" id="key-point-x" class="w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500" placeholder="x">
+                                <span class="font-mono text-slate-400">,</span>
+                                <input type="number" step="any" id="key-point-y" class="w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500" placeholder="y">
+                                <span class="font-mono text-slate-400">)</span>
+                            </div>
+                        </div>
+                        <div id="center-radius-container" class="hidden">
+                            <label class="block text-sm font-medium text-slate-400 mb-1">Center (h, k) and Radius (r)</label>
+                            <div class="flex items-center flex-wrap gap-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono text-slate-400">Center: (</span>
+                                    <input type="number" step="any" id="center-x" class="w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500" placeholder="h">
+                                    <span class="font-mono text-slate-400">,</span>
+                                    <input type="number" step="any" id="center-y" class="w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500" placeholder="k">
+                                    <span class="font-mono text-slate-400">)</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono text-slate-400">Radius:</span>
+                                    <input type="number" step="any" id="radius" class="w-20 p-2 rounded-md focus:ring-2 focus:ring-indigo-500" placeholder="r">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="feedback-container">
+                        <div id="feedback" class="p-3 rounded-md text-center font-medium hidden"></div>
+                        <div class="flex justify-center items-center gap-4 mt-2">
+                            <button id="show-inputs-solution-btn" class="bg-amber-600 text-white font-bold py-1 px-4 text-sm rounded-lg hover:bg-amber-700 transition-colors duration-300 hidden btn-glow">Show Correct Values</button>
+                        </div>
+                        <div id="inputs-solution" class="p-3 mt-2 bg-slate-700/50 border border-slate-600 rounded-md text-sm text-left hidden prose prose-invert max-w-none"></div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-3 border-t border-slate-700">
+                        <button id="new-question-btn" class="w-full bg-slate-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-500 transition-colors duration-300">New Question</button>
+                        <button id="check-inputs-btn" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-2 px-4 rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 btn-glow">Check Values</button>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Drawing Canvas -->
+                <div class="bg-slate-800/50 border border-slate-700 p-4 rounded-lg shadow-lg relative">
+                    <h2 class="text-lg font-semibold mb-2 text-center">Step 2: The Sketch</h2>
+                    
+                    <div class="canvas-container bg-slate-900 border-2 border-slate-700 rounded-lg">
+                        <canvas id="drawing-canvas"></canvas>
+                        <canvas id="solution-canvas" class="hidden"></canvas>
+                    </div>
+                    <div id="shape-feedback" class="p-3 mt-4 rounded-md text-center font-medium hidden"></div>
+                    <div class="mt-2 text-center flex justify-center items-center gap-4">
+                        <div class="flex rounded-lg border border-slate-600 bg-slate-700">
+                           <button id="solid-btn" class="draw-tool-btn active py-2 px-4 rounded-l-lg transition-colors text-slate-300">Solid</button>
+                           <button id="dotted-btn" class="draw-tool-btn py-2 px-4 rounded-r-lg border-l border-slate-600 transition-colors text-slate-300">Dotted</button>
+                        </div>
+                        <button id="undo-btn" class="bg-slate-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-slate-500 transition-colors duration-300">Undo</button>
+                        <button id="check-shape-btn" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-2 px-6 rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 btn-glow">Check Sketch</button>
+                    </div>
+                     <div class="mt-4 text-center">
+                        <button id="show-solution-btn" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-300 btn-glow">Show Full Solution</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Your Custom JavaScript -->
+    <script src="script.js"></script>
+    <script src='../../site-nav.js'></script>
+</body>
+</html>
+
+

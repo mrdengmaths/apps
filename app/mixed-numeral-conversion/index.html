@@ -1,1 +1,669 @@
-﻿
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraction Form-Shifter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #4c1d95 100%);
+            color: #1e293b;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Hide number input arrows */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .fraction-line {
+            border-bottom: 4px solid #1e293b;
+        }
+        
+        .modal-bg {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+        }
+
+        /* Animations */
+        @keyframes pop {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes slideUp {
+            0% { transform: translateY(100%); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slideUp {
+            animation: slideUp 0.4s ease-out forwards;
+        }
+
+        @keyframes floatPoints {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+        }
+        .float-points {
+            animation: floatPoints 1s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center p-4 md:p-8 relative">
+
+    <!-- Confetti Canvas -->
+    <canvas id="confetti" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+    <!-- Top Bar -->
+    <header class="w-full max-w-4xl flex flex-col md:flex-row justify-between items-center bg-white/10 backdrop-blur-md text-white rounded-2xl p-4 mb-6 shadow-xl border border-white/20">
+        <div class="flex items-center gap-4 text-xl font-bold mb-4 md:mb-0">
+            <span class="bg-indigo-600 px-4 py-2 rounded-lg shadow-inner">Round: <span id="ui-round">1</span>/10</span>
+            <span class="bg-purple-600 px-4 py-2 rounded-lg shadow-inner">Score: <span id="ui-score">0</span></span>
+        </div>
+        
+        <!-- Timer Bar -->
+        <div class="w-full md:w-1/2 bg-slate-800 rounded-full h-8 p-1 relative shadow-inner overflow-hidden border border-slate-600">
+            <div id="timer-bar" class="bg-gradient-to-r from-emerald-400 to-green-500 h-full rounded-full w-full transition-all duration-100 ease-linear"></div>
+            <div class="absolute inset-0 flex items-center justify-center font-black text-sm text-white drop-shadow-md z-10">
+                <span id="ui-round-score">1000</span> pts
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Board -->
+    <main class="w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-pop border-4 border-indigo-200">
+        
+        <!-- Header area -->
+        <div class="bg-indigo-50 p-6 border-b border-indigo-100 flex justify-between items-center">
+            <h1 class="text-3xl font-black text-indigo-900 tracking-tight">Fraction Form-Shifter</h1>
+            <div class="flex gap-2">
+                <button onclick="Game.showModal('help-modal')" class="bg-amber-400 hover:bg-amber-300 text-amber-900 w-10 h-10 rounded-full font-black text-xl shadow-md transition-transform hover:scale-110">?</button>
+                <button onclick="Game.showModal('ranks-modal')" class="bg-sky-500 hover:bg-sky-400 text-white px-4 py-2 rounded-full font-bold shadow-md transition-transform hover:scale-105">Ranks</button>
+            </div>
+        </div>
+
+        <div class="p-8 md:p-16 flex flex-col items-center relative min-h-[400px] justify-center">
+            
+            <!-- Instructions -->
+            <h2 id="instruction-text" class="text-2xl font-bold text-slate-500 mb-8 text-center uppercase tracking-wider">Convert to an Improper Fraction!</h2>
+
+            <!-- Problem Zone -->
+            <div class="flex flex-wrap items-center justify-center gap-6 md:gap-12">
+                
+                <!-- Left Side: Source Fraction -->
+                <div id="source-container" class="flex items-center text-6xl font-black text-slate-800">
+                    <!-- Dynamic Source content goes here -->
+                </div>
+
+                <!-- Equals Sign -->
+                <span class="text-6xl font-black text-indigo-400">=</span>
+
+                <!-- Right Side: Target Inputs -->
+                <div id="target-container" class="flex items-center gap-4 bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-slate-300">
+                    <!-- Mode A: Mixed -> Improper (Inputs) -->
+                    <div id="input-improper" class="hidden flex-col items-center">
+                        <input id="in-imp-num" type="number" class="w-20 h-16 text-center text-4xl font-black text-indigo-700 bg-white border-4 border-indigo-200 rounded-xl focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-200 transition-all mb-2">
+                        <div class="w-full h-1 bg-slate-800 rounded-full mb-2"></div>
+                        <input id="in-imp-den" type="number" class="w-20 h-16 text-center text-4xl font-black text-indigo-700 bg-white border-4 border-indigo-200 rounded-xl focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-200 transition-all">
+                    </div>
+
+                    <!-- Mode B: Improper -> Mixed (Inputs) -->
+                    <div id="input-mixed" class="hidden flex items-center gap-4">
+                        <input id="in-mix-whole" type="number" class="w-24 h-24 text-center text-6xl font-black text-purple-700 bg-white border-4 border-purple-200 rounded-2xl focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-200 transition-all">
+                        <div class="flex flex-col items-center">
+                            <input id="in-mix-num" type="number" class="w-16 h-14 text-center text-3xl font-black text-purple-700 bg-white border-4 border-purple-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-200 transition-all mb-2">
+                            <div class="w-full h-1 bg-slate-800 rounded-full mb-2"></div>
+                            <input id="in-mix-den" type="number" class="w-16 h-14 text-center text-3xl font-black text-purple-700 bg-white border-4 border-purple-200 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-200 transition-all">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Point Animation Target -->
+            <div id="point-floater" class="absolute font-black text-5xl text-emerald-500 opacity-0 pointer-events-none drop-shadow-lg" style="top: 50%;">+1000</div>
+
+            <!-- Action Button -->
+            <button onclick="Game.checkAnswer()" class="mt-12 bg-gradient-to-b from-emerald-400 to-emerald-600 hover:from-emerald-300 hover:to-emerald-500 text-white text-3xl font-black py-4 px-12 rounded-full shadow-[0_8px_0_rgb(5,150,105)] hover:shadow-[0_4px_0_rgb(5,150,105)] hover:translate-y-1 transition-all">
+                TRANSFORM! ✨
+            </button>
+        </div>
+    </main>
+
+    <!-- Feedback Toast -->
+    <div id="feedback-toast" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-white rounded-2xl shadow-2xl border-4 p-6 hidden z-50 flex items-start gap-4 max-w-2xl w-[90%] md:w-full">
+        <div id="feedback-icon" class="text-4xl"></div>
+        <div>
+            <h3 id="feedback-title" class="text-xl font-black mb-1"></h3>
+            <p id="feedback-msg" class="text-slate-600 text-lg font-bold leading-tight"></p>
+        </div>
+        <button onclick="Game.hideFeedback()" class="ml-auto text-slate-400 hover:text-slate-600 text-2xl font-black">&times;</button>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="modal-bg fixed inset-0 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl">
+            <div class="bg-amber-400 text-amber-900 p-6 flex justify-between items-center">
+                <h2 class="text-3xl font-black">How to Transform 🧙‍♂️</h2>
+                <button onclick="Game.hideModal('help-modal')" class="text-amber-900 text-3xl font-black">&times;</button>
+            </div>
+            <div class="p-8 space-y-6 text-lg font-bold text-slate-700">
+                <div class="bg-indigo-50 p-6 rounded-2xl border-2 border-indigo-100">
+                    <h3 class="text-2xl text-indigo-800 font-black mb-2">Mixed to Improper</h3>
+                    <p class="mb-4">Use the <strong>M.A.D. method!</strong></p>
+                    <ol class="list-decimal pl-6 space-y-2">
+                        <li><strong>M</strong>ultiply the whole number by the bottom (denominator).</li>
+                        <li><strong>A</strong>dd the top number (numerator). That's your new top number!</li>
+                        <li><strong>D</strong>enominator stays the exact same!</li>
+                    </ol>
+                    <div class="mt-4 text-center font-black text-xl text-slate-500">
+                        Example: 3 ½ ➔ (3×2)+1 = 7 ➔ <span class="text-indigo-600">7/2</span>
+                    </div>
+                </div>
+                
+                <div class="bg-purple-50 p-6 rounded-2xl border-2 border-purple-100">
+                    <h3 class="text-2xl text-purple-800 font-black mb-2">Improper to Mixed</h3>
+                    <ol class="list-decimal pl-6 space-y-2">
+                        <li><strong>Divide</strong> the top by the bottom! The answer is your large whole number.</li>
+                        <li>The <strong>remainder</strong> (what's left over) is your new top number.</li>
+                        <li>The <strong>bottom stays the same!</strong></li>
+                    </ol>
+                    <div class="mt-4 text-center font-black text-xl text-slate-500">
+                        Example: 11/4 ➔ 11÷4 is 2 Remainder 3 ➔ <span class="text-purple-600">2 ¾</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ranks Modal -->
+    <div id="ranks-modal" class="modal-bg fixed inset-0 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="bg-sky-500 text-white p-6 flex justify-between items-center">
+                <h2 class="text-3xl font-black">Ranks & Titles 🏆</h2>
+                <button onclick="Game.hideModal('ranks-modal')" class="text-white text-3xl font-black">&times;</button>
+            </div>
+            <div class="p-8 space-y-4">
+                <div class="flex items-center gap-4 bg-amber-50 p-4 rounded-xl border border-amber-200">
+                    <span class="text-3xl">🐉✨</span>
+                    <div>
+                        <div class="font-black text-xl text-amber-600">Form-Shifter Supreme</div>
+                        <div class="text-slate-500 font-bold">> 8500 Points</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <span class="text-3xl">🛠️🧠</span>
+                    <div>
+                        <div class="font-black text-xl text-slate-700">Improper Innovator</div>
+                        <div class="text-slate-500 font-bold">6000 - 8500 Points</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 bg-orange-50 p-4 rounded-xl border border-orange-200">
+                    <span class="text-3xl">🎩🐇</span>
+                    <div>
+                        <div class="font-black text-xl text-orange-700">Mixed Numeral Magician</div>
+                        <div class="text-slate-500 font-bold">3000 - 5999 Points</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 bg-green-50 p-4 rounded-xl border border-green-200">
+                    <span class="text-3xl">📚🌱</span>
+                    <div>
+                        <div class="font-black text-xl text-green-700">Fraction Novice</div>
+                        <div class="text-slate-500 font-bold">< 3000 Points</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="modal-bg fixed inset-0 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl text-center border-8 border-indigo-500">
+            <div class="p-10">
+                <h2 class="text-5xl font-black text-indigo-900 mb-2">Game Over!</h2>
+                <p class="text-xl text-slate-500 font-bold mb-8">You survived 10 rounds of shifting.</p>
+                
+                <div class="bg-slate-50 p-6 rounded-2xl mb-8 border-2 border-slate-200">
+                    <div class="text-slate-500 font-bold uppercase tracking-widest text-sm mb-1">Final Score</div>
+                    <div id="go-score" class="text-6xl font-black text-emerald-500 mb-4">0</div>
+                    
+                    <div class="text-slate-500 font-bold uppercase tracking-widest text-sm mb-1">Your Title</div>
+                    <div id="go-title" class="text-3xl font-black text-purple-600">Novice</div>
+                </div>
+
+                <button onclick="Game.initGame(); Game.hideModal('game-over-modal')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-2xl font-black py-4 px-8 rounded-full shadow-[0_6px_0_rgb(67,56,202)] hover:shadow-[0_3px_0_rgb(67,56,202)] hover:translate-y-[3px] transition-all">
+                    PLAY AGAIN 🔄
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Use IIFE to encapsulate logic and prevent console cheating
+        const Game = (() => {
+            // Helper function to find the greatest common divisor
+            const gcd = (a, b) => b === 0 ? Math.abs(a) : gcd(b, a % b);
+
+            // State
+            let state = {
+                score: 0,
+                round: 1,
+                maxRounds: 10,
+                currentMode: 'A', // 'A' = Mixed -> Improper, 'B' = Improper -> Mixed
+                A: 0, B: 0, C: 0, X: 0, // Math variables
+                timerStart: 0,
+                timerDuration: 20000, // 20 seconds
+                penalties: 0,
+                isRoundActive: false,
+                animationFrameId: null
+            };
+
+            // Math State specifically:
+            // Mode A: A = whole, B = num, C = den, Target = (A*C+B)/C
+            // Mode B: X = total num, C = den, Target = A = Math.floor(X/C), B = X % C
+
+            // DOM Elements
+            const els = {
+                score: document.getElementById('ui-score'),
+                round: document.getElementById('ui-round'),
+                timerBar: document.getElementById('timer-bar'),
+                roundScore: document.getElementById('ui-round-score'),
+                
+                instText: document.getElementById('instruction-text'),
+                sourceContainer: document.getElementById('source-container'),
+                
+                inputImproper: document.getElementById('input-improper'),
+                inImpNum: document.getElementById('in-imp-num'),
+                inImpDen: document.getElementById('in-imp-den'),
+                
+                inputMixed: document.getElementById('input-mixed'),
+                inMixWhole: document.getElementById('in-mix-whole'),
+                inMixNum: document.getElementById('in-mix-num'),
+                inMixDen: document.getElementById('in-mix-den'),
+                
+                toast: document.getElementById('feedback-toast'),
+                toastIcon: document.getElementById('feedback-icon'),
+                toastTitle: document.getElementById('feedback-title'),
+                toastMsg: document.getElementById('feedback-msg'),
+                
+                floater: document.getElementById('point-floater')
+            };
+
+            // Initialization
+            const initGame = () => {
+                state.score = 0;
+                state.round = 1;
+                updateTopBar();
+                hideFeedback();
+                nextRound();
+            };
+
+            const nextRound = () => {
+                if (state.round > state.maxRounds) {
+                    endGame();
+                    return;
+                }
+                
+                // Reset inputs
+                els.inImpNum.value = ''; els.inImpDen.value = '';
+                els.inMixWhole.value = ''; els.inMixNum.value = ''; els.inMixDen.value = '';
+                hideFeedback();
+                updateTopBar();
+
+                // Setup round logic
+                state.penalties = 0;
+                generateProblem();
+                
+                // Visual resets
+                els.sourceContainer.classList.remove('animate-pop');
+                void els.sourceContainer.offsetWidth; // trigger reflow
+                els.sourceContainer.classList.add('animate-pop');
+
+                // Start Timer
+                state.isRoundActive = true;
+                state.timerStart = performance.now();
+                if (state.animationFrameId) cancelAnimationFrame(state.animationFrameId);
+                timerLoop();
+                
+                // Auto focus first input
+                setTimeout(() => {
+                    if (state.currentMode === 'A') els.inImpNum.focus();
+                    else els.inMixWhole.focus();
+                }, 100);
+            };
+
+            const generateProblem = () => {
+                // Randomize mode
+                state.currentMode = Math.random() > 0.5 ? 'A' : 'B';
+
+                if (state.currentMode === 'A') {
+                    // Mode A: Mixed to Improper
+                    state.A = Math.floor(Math.random() * 9) + 1; // 1-9
+                    state.C = Math.floor(Math.random() * 9) + 2; // 2-10
+                    state.B = Math.floor(Math.random() * (state.C - 1)) + 1; // 1 to C-1
+                    state.X = (state.A * state.C) + state.B;
+
+                    els.instText.textContent = "Convert to an Improper Fraction!";
+                    els.instText.className = "text-2xl font-bold text-indigo-500 mb-8 text-center uppercase tracking-wider";
+                    
+                    els.sourceContainer.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="text-7xl font-extrabold text-indigo-900">${state.A}</span>
+                            <div class="flex flex-col items-center justify-center ml-1">
+                                <span class="fraction-line px-2 pb-1 text-5xl font-bold text-indigo-800">${state.B}</span>
+                                <span class="px-2 pt-1 text-5xl font-bold text-indigo-800">${state.C}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    els.inputImproper.classList.remove('hidden');
+                    els.inputImproper.classList.add('flex');
+                    els.inputMixed.classList.add('hidden');
+                    els.inputMixed.classList.remove('flex');
+                } else {
+                    // Mode B: Improper to Mixed
+                    state.C = Math.floor(Math.random() * 9) + 2; // 2-10
+                    state.A = Math.floor(Math.random() * 9) + 1; // 1-9
+                    state.B = Math.floor(Math.random() * (state.C - 1)) + 1; // 1 to C-1
+                    state.X = (state.A * state.C) + state.B;
+
+                    els.instText.textContent = "Convert to a Mixed Numeral!";
+                    els.instText.className = "text-2xl font-bold text-purple-500 mb-8 text-center uppercase tracking-wider";
+
+                    els.sourceContainer.innerHTML = `
+                        <div class="flex flex-col items-center justify-center">
+                            <span class="fraction-line px-3 pb-1 text-7xl font-extrabold text-purple-900">${state.X}</span>
+                            <span class="px-3 pt-1 text-7xl font-extrabold text-purple-900">${state.C}</span>
+                        </div>
+                    `;
+
+                    els.inputMixed.classList.remove('hidden');
+                    els.inputMixed.classList.add('flex');
+                    els.inputImproper.classList.add('hidden');
+                    els.inputImproper.classList.remove('flex');
+                }
+            };
+
+            const timerLoop = (now) => {
+                if (!state.isRoundActive) return;
+                
+                if (!now) now = performance.now();
+                const elapsed = now - state.timerStart;
+                let progress = Math.max(0, 1 - (elapsed / state.timerDuration));
+                
+                // Calculate score
+                let baseScore = Math.floor(progress * 1000);
+                if (baseScore < 100) baseScore = 100; // Floor 100 for time
+                
+                let currentPts = Math.max(0, baseScore - (state.penalties * 100)); // allow drop to 0 after penalty
+                
+                // Colors change based on time
+                if (progress > 0.5) els.timerBar.className = "bg-gradient-to-r from-emerald-400 to-green-500 h-full rounded-full transition-all duration-100 ease-linear";
+                else if (progress > 0.25) els.timerBar.className = "bg-gradient-to-r from-amber-400 to-amber-500 h-full rounded-full transition-all duration-100 ease-linear";
+                else els.timerBar.className = "bg-gradient-to-r from-red-500 to-rose-600 h-full rounded-full transition-all duration-100 ease-linear";
+                
+                els.timerBar.style.width = `${progress * 100}%`;
+                els.roundScore.textContent = currentPts;
+
+                state.animationFrameId = requestAnimationFrame(timerLoop);
+            };
+
+            const getPotentialScore = () => {
+                const elapsed = performance.now() - state.timerStart;
+                let progress = Math.max(0, 1 - (elapsed / state.timerDuration));
+                let baseScore = Math.floor(progress * 1000);
+                if (baseScore < 100) baseScore = 100;
+                return Math.max(0, baseScore - (state.penalties * 100));
+            };
+
+            const checkAnswer = () => {
+                if (!state.isRoundActive) return;
+
+                if (state.currentMode === 'A') {
+                    // Checking Mode A: User inputted Improper Fraction
+                    const uNum = parseInt(els.inImpNum.value, 10);
+                    const uDen = parseInt(els.inImpDen.value, 10);
+
+                    if (isNaN(uNum) || isNaN(uDen)) {
+                        showFeedback('error', "Missing Numbers!", "Please fill in both the top and bottom boxes.");
+                        return;
+                    }
+
+                    // Check if mathematically equivalent
+                    const isEquivalent = (uNum * state.C === state.X * uDen);
+
+                    if (isEquivalent) {
+                        if (gcd(uNum, uDen) === 1) {
+                            handleCorrect();
+                        } else {
+                            handleWrong("Almost there! Your fraction is mathematically correct, but it needs to be simplified. Reduce your numerator and denominator to their lowest terms.");
+                        }
+                    } else {
+                        // Error Diagnosis Mode A
+                        let msg = "";
+                        if (uDen !== state.C && gcd(state.X, state.C) === 1) {
+                            msg = `Oops! The denominator tells us the size of the slices. When changing to an improper fraction, the denominator usually stays the same: ${state.C} (unless you are simplifying!).`;
+                        } else if (uNum === (state.A * state.C)) {
+                            msg = `Almost! You multiplied the whole number by the denominator (${state.A} x ${state.C} = ${state.A * state.C}), but you forgot to ADD the original numerator (${state.B}) to it! The top number should be ${state.A * state.C} + ${state.B}.`;
+                        } else {
+                            msg = `Not quite! Remember the MAD method: MULTIPLY the whole number by the bottom, then ADD the top.`;
+                        }
+                        handleWrong(msg);
+                    }
+
+                } else {
+                    // Checking Mode B: User inputted Mixed Numeral
+                    const uWhole = parseInt(els.inMixWhole.value, 10);
+                    const uNum = parseInt(els.inMixNum.value, 10);
+                    const uDen = parseInt(els.inMixDen.value, 10);
+
+                    if (isNaN(uWhole) || isNaN(uNum) || isNaN(uDen)) {
+                        showFeedback('error', "Missing Numbers!", "Please fill in all three boxes for the mixed numeral.");
+                        return;
+                    }
+
+                    // Calculate total value of the inputted mixed numeral
+                    const userImproperNum = (uWhole * uDen) + uNum;
+                    const isEquivalent = (userImproperNum * state.C === state.X * uDen);
+
+                    if (isEquivalent) {
+                        if (uNum >= uDen) {
+                            handleWrong("Your fraction part is improper! Make sure the numerator is smaller than the denominator by pulling out all the whole numbers.");
+                        } else if (gcd(uNum, uDen) === 1) {
+                            handleCorrect();
+                        } else {
+                            handleWrong("Almost there! Your mixed numeral is correct, but the fraction part needs to be simplified. Reduce the numerator and denominator to their lowest terms.");
+                        }
+                    } else {
+                        // Error Diagnosis Mode B
+                        let msg = "";
+                        if (uDen !== state.C && gcd(state.X, state.C) === 1) {
+                            msg = `Watch out! The size of the fraction slices doesn't change, so the denominator usually stays exactly the same: ${state.C} (unless you are simplifying!).`;
+                        } else if (uWhole !== state.A) {
+                            msg = `Careful division! How many full times does ${state.C} go into ${state.X}? ${state.C} goes into ${state.X} exactly ${state.A} times, so ${state.A} is your whole number.`;
+                        } else if (uNum !== state.B) {
+                            msg = `You got the whole number right! But let's check the remainder. ${state.A} times ${state.C} is ${state.A * state.C}. To get to ${state.X}, you have ${state.X - (state.A * state.C)} left over. That leftover is your new numerator!`;
+                        } else {
+                            msg = "Check your math again! Divide the top by the bottom.";
+                        }
+                        handleWrong(msg);
+                    }
+                }
+            };
+
+            const handleCorrect = () => {
+                state.isRoundActive = false;
+                cancelAnimationFrame(state.animationFrameId);
+                
+                const pointsEarned = getPotentialScore();
+                state.score += pointsEarned;
+                updateTopBar();
+                
+                showFeedback('success', "Spot on!", "Great transformation!");
+                fireConfetti();
+                
+                // Point floater animation
+                els.floater.textContent = `+${pointsEarned}`;
+                els.floater.classList.remove('float-points');
+                void els.floater.offsetWidth; // reset anim
+                els.floater.classList.add('float-points');
+
+                setTimeout(() => {
+                    state.round++;
+                    nextRound();
+                }, 2500);
+            };
+
+            const handleWrong = (message) => {
+                state.penalties++;
+                showFeedback('error', "Let's diagnose...", message);
+                
+                // Shake container
+                els.targetContainer = document.getElementById('target-container');
+                els.targetContainer.classList.add('border-red-400', 'bg-red-50');
+                setTimeout(() => {
+                    els.targetContainer.classList.remove('border-red-400', 'bg-red-50');
+                }, 800);
+            };
+
+            const showFeedback = (type, title, msg) => {
+                els.toastTitle.textContent = title;
+                els.toastMsg.textContent = msg;
+                
+                els.toast.classList.remove('hidden', 'border-red-500', 'border-emerald-500');
+                
+                if (type === 'success') {
+                    els.toastIcon.innerHTML = "✨";
+                    els.toast.classList.add('border-emerald-500', 'bg-emerald-50');
+                    els.toastTitle.className = "text-xl font-black mb-1 text-emerald-700";
+                } else {
+                    els.toastIcon.innerHTML = "🤔";
+                    els.toast.classList.add('border-red-500', 'bg-rose-50');
+                    els.toastTitle.className = "text-xl font-black mb-1 text-red-700";
+                }
+
+                els.toast.classList.remove('animate-slideUp');
+                void els.toast.offsetWidth;
+                els.toast.classList.add('animate-slideUp');
+            };
+
+            const hideFeedback = () => {
+                els.toast.classList.add('hidden');
+            };
+
+            const updateTopBar = () => {
+                els.score.textContent = state.score;
+                els.round.textContent = state.round > state.maxRounds ? state.maxRounds : state.round;
+            };
+
+            const endGame = () => {
+                let title = "";
+                let titleColor = "";
+                let emoji = "";
+
+                if (state.score > 8500) {
+                    title = "Form-Shifter Supreme"; emoji = "🐉✨"; titleColor = "text-amber-600";
+                } else if (state.score >= 6000) {
+                    title = "Improper Innovator"; emoji = "🛠️🧠"; titleColor = "text-slate-700";
+                } else if (state.score >= 3000) {
+                    title = "Mixed Numeral Magician"; emoji = "🎩🐇"; titleColor = "text-orange-600";
+                } else {
+                    title = "Fraction Novice"; emoji = "📚🌱"; titleColor = "text-green-600";
+                }
+
+                document.getElementById('go-score').textContent = state.score;
+                document.getElementById('go-title').className = `text-4xl font-black mt-2 ${titleColor}`;
+                document.getElementById('go-title').innerHTML = `${title} <br><span class="text-5xl">${emoji}</span>`;
+                
+                showModal('game-over-modal');
+                fireConfetti(100);
+            };
+
+            // Utilities: Modals
+            const showModal = (id) => document.getElementById(id).classList.remove('hidden');
+            const hideModal = (id) => document.getElementById(id).classList.add('hidden');
+
+            // Simple Particle Confetti System
+            const fireConfetti = (amount = 50) => {
+                const canvas = document.getElementById('confetti');
+                const ctx = canvas.getContext('2d');
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                
+                const particles = [];
+                const colors = ['#34d399', '#fbbf24', '#60a5fa', '#f472b6', '#a78bfa'];
+                
+                for(let i=0; i<amount; i++) {
+                    particles.push({
+                        x: canvas.width/2,
+                        y: canvas.height/2 + 100,
+                        r: Math.random() * 6 + 4,
+                        dx: Math.random() * 20 - 10,
+                        dy: Math.random() * -20 - 10,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        gravity: 0.5 + Math.random() * 0.5,
+                        rotation: Math.random() * 360,
+                        rotationSpeed: Math.random() * 10 - 5
+                    });
+                }
+
+                const animateConfetti = () => {
+                    ctx.clearRect(0,0, canvas.width, canvas.height);
+                    let active = false;
+                    
+                    particles.forEach(p => {
+                        p.dy += p.gravity;
+                        p.x += p.dx;
+                        p.y += p.dy;
+                        p.rotation += p.rotationSpeed;
+                        
+                        if (p.y < canvas.height) active = true;
+
+                        ctx.save();
+                        ctx.translate(p.x, p.y);
+                        ctx.rotate(p.rotation * Math.PI / 180);
+                        ctx.fillStyle = p.color;
+                        ctx.fillRect(-p.r/2, -p.r/2, p.r, p.r);
+                        ctx.restore();
+                    });
+
+                    if(active) requestAnimationFrame(animateConfetti);
+                    else ctx.clearRect(0,0, canvas.width, canvas.height);
+                };
+                
+                animateConfetti();
+            };
+
+            // Input handlers to allow "Enter" key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && state.isRoundActive) {
+                    checkAnswer();
+                }
+            });
+
+            // Expose public methods
+            return {
+                initGame, checkAnswer, showModal, hideModal, hideFeedback
+            };
+        })();
+
+        // Start game on load
+        window.onload = Game.initGame;
+    </script>
+    <script src='../../site-nav.js'></script>
+</body>
+</html>

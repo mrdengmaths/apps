@@ -1,1 +1,1024 @@
-﻿
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation Vector Game</title>
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Load Tone.js for audio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+
+    <!-- Configure Tailwind to use 'Inter' font -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'confetti-fall': 'confetti-fall 3s linear forwards',
+                    },
+                    keyframes: {
+                        'confetti-fall': {
+                            '0%': { transform: 'translateY(-10vh) rotateZ(0deg)', opacity: 1 },
+                            '100%': { transform: 'translateY(110vh) rotateZ(720deg)', opacity: 0 },
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+    
+    <!-- Custom Styles -->
+    <style>
+        /* Manually include Inter font from Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Style for number inputs (hide arrows) */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        /* Custom Switch Styles */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 120px;
+            height: 34px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #3b82f6; /* Blue */
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #8b5cf6; /* Purple */
+        }
+        input:checked + .slider:before {
+            transform: translateX(86px);
+        }
+        /* Labels for the switch */
+        .slider:after {
+            content: 'Input';
+            color: white;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            left: 70%;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        input:checked + .slider:after {
+            content: 'Drag';
+            left: 30%;
+        }
+
+        #gameCanvas.dragging {
+            cursor: grabbing;
+        }
+        #gameCanvas.draggable {
+            cursor: grab;
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <!-- Confetti Container -->
+    <div id="confettiContainer" class="fixed inset-0 pointer-events-none z-50 overflow-hidden"></div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg relative">
+            <button id="closeModalButton" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            <h3 class="text-2xl font-bold text-blue-700 mb-4">How to Play</h3>
+            
+            <!-- Instructions for Input Mode -->
+            <div id="helpInputMode">
+                <p class="mb-4">Your goal is to find the <strong>translation vector</strong> that moves the <span class="font-semibold text-blue-600">Original (A)</span> shape to the <span class="font-semibold text-purple-600">Image (A')</span> shape.</p>
+                <div class="bg-gray-100 p-4 rounded-lg text-center mb-4">
+                    <p class="text-lg font-medium">A vector is written as:</p>
+                    <div class="inline-flex flex-row items-center justify-center space-x-1">
+                        <span class="text-7xl font-mono text-gray-400 select-none -mt-2">(</span>
+                        <div class="flex flex-col items-center space-y-1">
+                            <span class="text-3xl font-bold font-mono text-red-600">x</span>
+                            <span class="text-3xl font-bold font-mono text-green-600">y</span>
+                        </div>
+                        <span class="text-7xl font-mono text-gray-400 select-none -mt-2">)</span>
+                    </div>
+                    <ul class="text-left list-disc list-inside space-y-2 mt-2">
+                        <li><strong class="text-red-600">Top number (x)</strong> is the <strong>horizontal shift</strong>.
+                            <ul class="list-none ml-6">
+                                <li><strong>Positive (+)</strong> = Move to the <strong>Right</strong></li>
+                                <li><strong>Negative (-)</strong> = Move to the <strong>Left</strong></li>
+                            </ul>
+                        </li>
+                        <li><strong class="text-green-600">Bottom number (y)</strong> is the <strong>vertical shift</strong>.
+                            <ul class="list-none ml-6">
+                                <li><strong>Positive (+)</strong> = Move <strong>Up</strong></li>
+                                <li><strong>Negative (-)</strong> = Move <strong>Down</strong></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+                <p>Count the grid squares to find the horizontal (x) and vertical (y) shifts.</p>
+            </div>
+
+            <!-- Instructions for Drag Mode -->
+            <div id="helpDragMode" class="hidden">
+                <p class="mb-4">You will be given a <strong>translation vector</strong>.</p>
+                <p class="mb-4">The <span class="font-semibold text-blue-600">Original (A)</span> and <span class="font-semibold text-purple-600">Image (A')</span> shapes will start in the same place.</p>
+                <p class="mb-4">Your goal is to <strong>drag the purple (A') shape</strong> to its correct new position, based on the vector given. The shape will snap to the grid.</p>
+                <p>Let go of the mouse to check your answer!</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="bg-white rounded-xl shadow-2xl p-6 md:p-8 w-full max-w-5xl">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-3xl font-bold text-gray-800">Translation Vector Game</h1>
+            <div class="flex items-center gap-4">
+                <!-- Mode Switch -->
+                <label class="switch">
+                    <input type="checkbox" id="modeSwitch">
+                    <span class="slider"></span>
+                </label>
+                <button id="helpButton" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
+                    How to Play
+                </button>
+            </div>
+        </div>
+
+        <!-- Scoreboard -->
+        <div class="flex gap-8 mb-6 bg-gray-100 p-4 rounded-lg">
+            <div>
+                <span class="text-sm font-medium text-gray-500">QUESTIONS SOLVED</span>
+                <p id="scoreDisplay" class="text-3xl font-bold text-blue-600">0</p>
+            </div>
+            <div>
+                <span class="text-sm font-medium text-gray-500">CURRENT STREAK</span>
+                <p id="streakDisplay" class="text-3xl font-bold text-green-600">0</p>
+            </div>
+        </div>
+
+        <!-- Main Content (Canvas + Input) -->
+        <div class="flex flex-col md:flex-row gap-6 md:gap-8">
+            
+            <!-- Canvas Area -->
+            <div id="canvasContainer" class="flex-1 bg-white border-2 border-gray-300 rounded-lg overflow-hidden" style="aspect-ratio: 1 / 1;">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+
+            <!-- Input & Control Area -->
+            <div id="inputControlArea" class="w-full md:w-1/3 flex flex-col justify-center items-center">
+                <h2 id="controlAreaTitle" class="text-xl font-semibold text-gray-700 mb-4">Find the Translation Vector</h2>
+                
+                <!-- Given Vector Display (for Drag Mode) -->
+                <div id="givenVectorDisplay" class="hidden flex flex-row items-center justify-center space-x-2 mb-4">
+                    <span class="text-9xl font-mono text-gray-400 select-none -mt-2">(</span>
+                    <div class="flex flex-col items-center space-y-2">
+                        <span id="givenX" class="w-28 text-center text-3xl font-bold font-mono p-3 border-4 border-gray-200 rounded-lg bg-gray-100"></span>
+                        <span id="givenY" class="w-28 text-center text-3xl font-bold font-mono p-3 border-4 border-gray-200 rounded-lg bg-gray-100"></span>
+                    </div>
+                    <span class="text-9xl font-mono text-gray-400 select-none -mt-2">)</span>
+                </div>
+
+                <!-- Vector Input (for Input Mode) -->
+                <div id="vectorInput" class="flex flex-row items-center justify-center space-x-2">
+                    <span class="text-9xl font-mono text-gray-400 select-none -mt-2">(</span>
+                    <div class="flex flex-col items-center space-y-2">
+                        <input type="number" id="xInput" placeholder="x" maxlength="3" class="w-28 text-center text-3xl font-bold font-mono p-3 border-4 border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" id="yInput" placeholder="y" maxlength="3" class="w-28 text-center text-3xl font-bold font-mono p-3 border-4 border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <span class="text-9xl font-mono text-gray-400 select-none -mt-2">)</span>
+                </div>
+
+                <!-- Feedback Message -->
+                <div id="feedbackContainer" class="h-24 mt-4 text-center">
+                    <p id="feedbackMessage" class="text-lg font-semibold text-gray-600 px-2"></p>
+                </div>
+
+                <!-- Submit Button -->
+                <button id="submitButton" class="w-full bg-blue-600 text-white text-xl font-bold py-4 rounded-lg shadow-md hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Check Vector
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const canvasContainer = document.getElementById('canvasContainer');
+            
+            const xInput = document.getElementById('xInput');
+            const yInput = document.getElementById('yInput');
+            const submitButton = document.getElementById('submitButton');
+            const feedbackMessage = document.getElementById('feedbackMessage');
+            
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            const streakDisplay = document.getElementById('streakDisplay');
+            
+            const helpButton = document.getElementById('helpButton');
+            const helpModal = document.getElementById('helpModal');
+            const closeModalButton = document.getElementById('closeModalButton');
+            const helpInputMode = document.getElementById('helpInputMode');
+            const helpDragMode = document.getElementById('helpDragMode');
+            const confettiContainer = document.getElementById('confettiContainer');
+
+            const modeSwitch = document.getElementById('modeSwitch');
+            const inputControlArea = document.getElementById('inputControlArea');
+            const controlAreaTitle = document.getElementById('controlAreaTitle');
+            const givenVectorDisplay = document.getElementById('givenVectorDisplay');
+            const givenX = document.getElementById('givenX');
+            const givenY = document.getElementById('givenY');
+            const vectorInput = document.getElementById('vectorInput');
+
+            // --- Game State ---
+            let canvasSize = 500;
+            let origin = { x: 0, y: 0 };
+            let gridSize = 25;
+            const gridMin = -10;
+            const gridMax = 10;
+            
+            let originalShape = []; // Blue, static in drag mode
+            let imageShape = []; // Purple target (hidden in drag mode, visible in input mode)
+            let animatedShape = []; // Blue in input mode, Purple in drag mode
+            let translation = { dx: 0, dy: 0 };
+            
+            let score = 0;
+            let streak = 0;
+            let isSolved = false;
+            let audioInitialized = false;
+            let currentGameMode = 'input'; // 'input' or 'drag'
+
+            // Dragging state
+            let isDragging = false;
+            let dragOffset = { x: 0, y: 0 }; // Offset from shape[0] to click point
+            let currentDragShape = []; // The shape being dragged
+
+            // --- Audio Synths (Tone.js) ---
+            let correctSynth, wrongSynth;
+
+            function initAudio() {
+                if (audioInitialized) return;
+                Tone.start();
+                correctSynth = new Tone.Synth({
+                    oscillator: { type: 'sine' },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.2 }
+                }).toDestination();
+                
+                wrongSynth = new Tone.FMSynth({
+                    harmonicity: 8,
+                    modulationIndex: 2,
+                    oscillator: { type: "sine" },
+                    envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.1 },
+                    modulation: { type: "square" },
+                    modulationEnvelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.1 }
+                }).toDestination();
+                audioInitialized = true;
+            }
+
+            function playCorrectSound() {
+                if (!audioInitialized) initAudio();
+                correctSynth.triggerAttackRelease('C5', '8n', Tone.now());
+                correctSynth.triggerAttackRelease('G5', '8n', Tone.now() + 0.1);
+            }
+
+            function playWrongSound() {
+                if (!audioInitialized) initAudio();
+                wrongSynth.triggerAttackRelease('C3', '4n');
+            }
+
+            // --- Canvas & Drawing ---
+
+            function resizeCanvas() {
+                const { width } = canvasContainer.getBoundingClientRect();
+                canvasSize = width;
+                canvas.width = canvasSize;
+                canvas.height = canvasSize;
+                origin = { x: canvasSize / 2, y: canvasSize / 2 };
+                gridSize = canvasSize / (gridMax - gridMin + 2); // +2 for padding
+                drawCanvas();
+            }
+
+            // Helper to map grid coordinates to canvas pixels
+            function mapCoords(x, y) {
+                return {
+                    cx: origin.x + x * gridSize,
+                    cy: origin.y - y * gridSize // Y-axis is inverted
+                };
+            }
+            
+            // Helper to map canvas pixels to grid coordinates (with snap)
+            function getGridCoords(cx, cy) {
+                return {
+                    x: Math.round((cx - origin.x) / gridSize),
+                    y: Math.round((origin.y - cy) / gridSize)
+                };
+            }
+            
+            // Helper to get mouse/touch position relative to canvas
+            function getMousePos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                
+                if (e.touches) {
+                    return {
+                        x: (e.touches[0].clientX - rect.left) * scaleX,
+                        y: (e.touches[0].clientY - rect.top) * scaleY
+                    };
+                }
+                return {
+                    x: (e.clientX - rect.left) * scaleX,
+                    y: (e.clientY - rect.top) * scaleY
+                };
+            }
+
+            function drawGrid() {
+                ctx.strokeStyle = '#e0e0e0'; // Light gray grid
+                ctx.lineWidth = 1;
+
+                // Vertical lines
+                for (let x = gridMin; x <= gridMax; x++) {
+                    const { cx } = mapCoords(x, 0);
+                    ctx.beginPath();
+                    ctx.moveTo(cx, 0);
+                    ctx.lineTo(cx, canvasSize);
+                    ctx.stroke();
+                }
+                // Horizontal lines
+                for (let y = gridMin; y <= gridMax; y++) {
+                    const { cy } = mapCoords(0, y);
+                    ctx.beginPath();
+                    ctx.moveTo(0, cy);
+                    ctx.lineTo(canvasSize, cy);
+                    ctx.stroke();
+                }
+            }
+            
+            function drawAxes() {
+                ctx.strokeStyle = '#333'; // Dark axes
+                ctx.lineWidth = 2;
+
+                // X-Axis
+                const { cy: yOrigin } = mapCoords(0, 0);
+                ctx.beginPath();
+                ctx.moveTo(0, yOrigin);
+                ctx.lineTo(canvasSize, yOrigin);
+                ctx.stroke();
+
+                // Y-Axis
+                const { cx: xOrigin } = mapCoords(0, 0);
+                ctx.beginPath();
+                ctx.moveTo(xOrigin, 0);
+                ctx.lineTo(xOrigin, canvasSize);
+                ctx.stroke();
+                
+                // Axis Labels
+                ctx.fillStyle = '#555';
+                ctx.font = `${gridSize * 0.6}px Inter`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                for (let i = gridMin; i <= gridMax; i++) {
+                    if (i === 0) continue;
+                    // X-axis numbers
+                    const { cx } = mapCoords(i, 0);
+                    ctx.fillText(i, cx, yOrigin + gridSize * 0.8);
+                    // Y-axis numbers
+                    const { cy } = mapCoords(0, i);
+                    ctx.fillText(i, xOrigin - gridSize * 0.8, cy);
+                }
+            }
+
+            function drawShape(shape, color, label) {
+                if (!shape || shape.length === 0) return;
+
+                const fill = `${color}60`; // Add alpha transparency
+                ctx.fillStyle = fill;
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+
+                ctx.beginPath();
+                const startPoint = mapCoords(shape[0].x, shape[0].y);
+                ctx.moveTo(startPoint.cx, startPoint.cy);
+
+                for (let i = 1; i < shape.length; i++) {
+                    const point = mapCoords(shape[i].x, shape[i].y);
+                    ctx.lineTo(point.cx, point.cy);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                
+                // Draw Label
+                ctx.fillStyle = color;
+                ctx.font = `bold ${gridSize * 0.8}px Inter`;
+                ctx.textAlign = 'center';
+                
+                // Calculate centroid for better label placement
+                let centroid = shape.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
+                centroid.x /= shape.length;
+                centroid.y /= shape.length;
+                
+                const labelPos = mapCoords(centroid.x, centroid.y);
+                
+                // Position label
+                ctx.fillText(label, labelPos.cx, labelPos.cy - gridSize);
+            }
+
+            function drawCanvas() {
+                ctx.clearRect(0, 0, canvasSize, canvasSize);
+                drawGrid();
+                drawAxes();
+                
+                if (currentGameMode === 'input') {
+                    // Always draw the target image
+                    drawShape(imageShape, '#8b5cf6', "Image (A')"); // Purple
+                    // Draw the animated shape at its current position
+                    drawShape(animatedShape, '#3b82f6', "Original (A)"); // Blue
+                } else {
+                    // 'drag' mode
+                    drawShape(originalShape, '#3b82f6', "Original (A)"); // Blue, static
+                    drawShape(animatedShape, '#8b5cf6', "Image (A')"); // Purple, draggable
+                }
+            }
+
+            // --- Animation ---
+            function animateTranslation(startShape, endShape, onComplete) {
+                const duration = 500; // 500ms animation
+                let startTime = null;
+
+                function animationLoop(timestamp) {
+                    if (!startTime) startTime = timestamp;
+                    const progress = Math.min((timestamp - startTime) / duration, 1);
+
+                    // Interpolate each point
+                    animatedShape = startShape.map((startPoint, index) => {
+                        const endPoint = endShape[index];
+                        const currentX = startPoint.x + (endPoint.x - startPoint.x) * progress;
+                        const currentY = startPoint.y + (endPoint.y - startPoint.y) * progress;
+                        return { x: currentX, y: currentY };
+                    });
+
+                    drawCanvas(); // Redraw at each frame
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animationLoop);
+                    } else {
+                        // Ensure final state is exact
+                        animatedShape = JSON.parse(JSON.stringify(endShape));
+                        drawCanvas();
+                        if (onComplete) onComplete(); // Call the callback when animation finishes
+                    }
+                }
+
+                requestAnimationFrame(animationLoop);
+            }
+
+            // --- Game Logic ---
+
+            function getRandomInt(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            function generateShape() {
+                // Generate a base point within a safe central area
+                const baseX = getRandomInt(-5, 5);
+                const baseY = getRandomInt(-5, 5);
+                
+                const shapeType = Math.random() > 0.5 ? 'triangle' : 'quad';
+                let points = [{ x: baseX, y: baseY }];
+
+                // Add 2 or 3 more points relative to the base
+                const numPoints = shapeType === 'triangle' ? 2 : 3;
+                for (let i = 0; i < numPoints; i++) {
+                    points.push({
+                        x: baseX + getRandomInt(-3, 3),
+                        y: baseY + getRandomInt(-3, 3)
+                    });
+                }
+                
+                // De-duplicate points just in case
+                const uniquePoints = [...new Map(points.map(p => [`${p.x},${p.y}`, p])).values()];
+                
+                // Ensure we have at least 3 unique points for a triangle
+                if (uniquePoints.length < 3) return generateShape();
+                
+                originalShape = uniquePoints;
+                // animatedShape is set in newQuestion() based on mode
+            }
+            
+            function generateTranslation() {
+                let dx = 0;
+                let dy = 0;
+                // Ensure non-zero translation
+                while (dx === 0 && dy === 0) {
+                    dx = getRandomInt(-5, 5);
+                    dy = getRandomInt(-5, 5);
+                }
+                translation = { dx, dy };
+            }
+            
+            function calculateImageShape() {
+                imageShape = originalShape.map(p => ({
+                    x: p.x + translation.dx,
+                    y: p.y + translation.dy
+                }));
+            }
+            
+            function checkBounds() {
+                const allPoints = [...originalShape, ...imageShape];
+                for (const point of allPoints) {
+                    if (point.x < gridMin || point.x > gridMax || point.y < gridMin || point.y > gridMax) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            function newQuestion() {
+                isSolved = false;
+                isDragging = false;
+                
+                // Keep generating until we get a valid, in-bounds question
+                do {
+                    generateShape();
+                    generateTranslation();
+                    calculateImageShape();
+                } while (!checkBounds());
+
+                // Configure UI based on mode
+                if (currentGameMode === 'input') {
+                    // Deep copy original to animatedShape (blue)
+                    animatedShape = JSON.parse(JSON.stringify(originalShape));
+                    
+                    // Show/Hide UI elements
+                    vectorInput.classList.remove('hidden');
+                    givenVectorDisplay.classList.add('hidden');
+                    submitButton.classList.remove('hidden');
+                    
+                    controlAreaTitle.textContent = 'Find the Translation Vector';
+                    feedbackMessage.textContent = 'Enter the vector that moves A to A\'.';
+                    
+                    resetInputs();
+                    submitButton.disabled = true;
+                    xInput.focus();
+                    
+                    canvas.classList.remove('draggable', 'dragging');
+
+                } else {
+                    // 'drag' mode
+                    // Deep copy original to animatedShape (purple, draggable)
+                    animatedShape = JSON.parse(JSON.stringify(originalShape));
+                    
+                    // Show/Hide UI elements
+                    vectorInput.classList.add('hidden');
+                    givenVectorDisplay.classList.remove('hidden');
+                    submitButton.classList.add('hidden'); // Hide button until solved
+                    
+                    controlAreaTitle.textContent = 'Use the Given Vector';
+                    givenX.textContent = translation.dx;
+                    givenY.textContent = translation.dy;
+                    feedbackMessage.textContent = 'Drag the purple shape (A\') to the correct spot.';
+                    
+                    canvas.classList.add('draggable');
+                    canvas.classList.remove('dragging');
+                }
+
+                drawCanvas();
+                updateScoreboard();
+                
+                submitButton.textContent = 'Check Vector';
+                submitButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+                submitButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            }
+
+            function resetInputs() {
+                xInput.value = '';
+                yInput.value = '';
+                xInput.disabled = false;
+                yInput.disabled = false;
+                
+                const styleClasses = ['border-red-500', 'bg-red-100', 'border-green-500', 'bg-green-100'];
+                xInput.classList.remove(...styleClasses);
+                yInput.classList.remove(...styleClasses);
+                xInput.classList.add('border-gray-300');
+                yInput.classList.add('border-gray-300');
+            }
+
+            function checkInputsEnabled() {
+                if (currentGameMode !== 'input') return;
+
+                const xVal = xInput.value.trim();
+                const yVal = yInput.value.trim();
+                
+                // Allow negative sign
+                const isXNumeric = xVal === '-' || (xVal !== '' && !isNaN(Number(xVal)));
+                const isYNumeric = yVal === '-' || (yVal !== '' && !isNaN(Number(yVal)));
+
+                if (isSolved) {
+                    submitButton.disabled = false;
+                } else {
+                    // Only enable if both are valid, non-empty numbers
+                    submitButton.disabled = xVal === '' || xVal === '-' || isNaN(Number(xVal)) ||
+                                          yVal === '' || yVal === '-' || isNaN(Number(yVal));
+                }
+            }
+            
+            function updateScoreboard() {
+                scoreDisplay.textContent = score;
+                streakDisplay.textContent = streak;
+            }
+            
+            // --- Input Mode Logic ---
+            function checkAnswer() {
+                if (isSolved) { // Button now means "Next Question"
+                    newQuestion();
+                    return;
+                }
+                
+                if (currentGameMode !== 'input') return; // Should not happen
+
+                const userX = parseInt(xInput.value) || 0;
+                const userY = parseInt(yInput.value) || 0;
+                
+                // Disable UI during animation
+                submitButton.disabled = true;
+                xInput.disabled = true;
+                yInput.disabled = true;
+
+                // We always animate from the original shape position
+                const startShape = JSON.parse(JSON.stringify(originalShape));
+                const targetShape = originalShape.map(p => ({
+                    x: p.x + userX,
+                    y: p.y + userY
+                }));
+
+                // Animate the translation, then run the feedback logic in the callback
+                animateTranslation(startShape, targetShape, () => {
+                    let isXCorrect = userX === translation.dx;
+                    let isYCorrect = userY === translation.dy;
+                    let feedback = '';
+
+                    // Reset styles
+                    xInput.classList.remove('border-red-500', 'bg-red-100', 'border-green-500', 'bg-green-100');
+                    yInput.classList.remove('border-red-500', 'bg-red-100', 'border-green-500', 'bg-green-100');
+                    
+                    if (isXCorrect && isYCorrect) {
+                        // --- SUCCESS ---
+                        isSolved = true;
+                        score++;
+                        streak++;
+                        feedbackMessage.textContent = 'Correct! Well done!';
+                        feedbackMessage.className = 'text-lg font-bold text-green-600 px-2';
+                        
+                        xInput.classList.add('border-green-500', 'bg-green-100');
+                        yInput.classList.add('border-green-500', 'bg-green-100');
+                        xInput.disabled = true; // Stays disabled
+                        yInput.disabled = true; // Stays disabled
+
+                        submitButton.textContent = 'Next Question';
+                        submitButton.disabled = false;
+                        submitButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                        submitButton.classList.add('bg-green-600', 'hover:bg-green-700');
+                        
+                        playCorrectSound();
+                        showConfetti();
+                        
+                    } else {
+                        // --- INCORRECT ---
+                        streak = 0;
+                        playWrongSound();
+                        feedbackMessage.className = 'text-lg font-semibold text-red-600 px-2';
+
+                        // Check for specific errors
+                        if (userX === -translation.dx && userY === -translation.dy && !isXCorrect && !isYCorrect) {
+                            feedback = 'Check your signs! Remember: Right/Up is positive (+), Left/Down is negative (-).';
+                        } else if (!isXCorrect && !isYCorrect) {
+                            feedback = 'Check both the horizontal (x) and vertical (y) shifts. Count the units carefully.';
+                        } else if (!isXCorrect) {
+                            feedback = 'Check the horizontal shift! Did the figure move left (negative) or right (positive)?';
+                        } else {
+                            feedback = 'Check the vertical shift! Did the figure move up (positive) or down (negative)?';
+                        }
+                        feedbackMessage.textContent = feedback;
+                        
+                        // Style inputs based on correctness, but keep them disabled during the reset pause
+                        if (isXCorrect) {
+                            xInput.classList.add('border-green-500', 'bg-green-100');
+                            xInput.disabled = true; // Lock correct answer
+                        } else {
+                            xInput.classList.add('border-red-500', 'bg-red-100');
+                            xInput.disabled = true; // Keep disabled
+                        }
+                        
+                        if (isYCorrect) {
+                            yInput.classList.add('border-green-500', 'bg-green-100');
+                            yInput.disabled = true; // Lock correct answer
+                        } else {
+                            yInput.classList.add('border-red-500', 'bg-red-100');
+                            yInput.disabled = true; // Keep disabled
+                        }
+                        
+                        // Set a timeout to animate back to the start
+                        setTimeout(() => {
+                            // Animate from the wrong position (targetShape) back to the original (startShape)
+                            animateTranslation(targetShape, startShape, () => {
+                                // After reset animation, re-enable only the incorrect inputs
+                                if (!isXCorrect) {
+                                    xInput.disabled = false;
+                                    // Focus on the first incorrect input
+                                    if(document.activeElement !== yInput) xInput.focus();
+                                }
+                                if (!isYCorrect) {
+                                    yInput.disabled = false;
+                                    // If x was correct, focus on y
+                                    if(isXCorrect) yInput.focus();
+                                }
+                                
+                                // Re-check if submit button should be enabled
+                                checkInputsEnabled();
+                            });
+                        }, 3000); // 3-second delay
+                    }
+                    
+                    updateScoreboard();
+                });
+            }
+            
+            function handleEnterKey(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!submitButton.disabled && currentGameMode === 'input') {
+                        checkAnswer();
+                    } else if (isSolved) { // Allow Enter for "Next Question" in both modes
+                        newQuestion();
+                    }
+                }
+            }
+            
+            // --- Drag Mode Logic ---
+            
+            function getShapeBoundingBox(shape) {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                shape.forEach(p => {
+                    minX = Math.min(minX, p.x);
+                    minY = Math.min(minY, p.y);
+                    maxX = Math.max(maxX, p.x);
+                    maxY = Math.max(maxY, p.y);
+                });
+                return { minX, minY, maxX, maxY };
+            }
+
+            function isPointInShape(gridX, gridY, shape) {
+                // Use bounding box for hit detection
+                const box = getShapeBoundingBox(shape);
+                return gridX >= box.minX && gridX <= box.maxX && gridY >= box.minY && gridY <= box.maxY;
+            }
+
+            function handleDragStart(e) {
+                if (currentGameMode !== 'drag' || isSolved || isDragging) return;
+                
+                const pos = getMousePos(e);
+                const gridCoords = getGridCoords(pos.x, pos.y);
+
+                // Check if the click is on the draggable shape
+                if (isPointInShape(gridCoords.x, gridCoords.y, animatedShape)) {
+                    if (audioInitialized) Tone.start();
+                    isDragging = true;
+                    canvas.classList.add('dragging');
+                    canvas.classList.remove('draggable');
+                    
+                    // Store the shape being dragged
+                    currentDragShape = JSON.parse(JSON.stringify(animatedShape));
+                    
+                    // Calculate offset from the click to the shape's first point
+                    dragOffset = {
+                        x: gridCoords.x - currentDragShape[0].x,
+                        y: gridCoords.y - currentDragShape[0].y
+                    };
+
+                    e.preventDefault();
+                }
+            }
+
+            function handleDragMove(e) {
+                if (currentGameMode !== 'drag' || !isDragging) return;
+                e.preventDefault();
+
+                const pos = getMousePos(e);
+                const gridCoords = getGridCoords(pos.x, pos.y);
+
+                // Calculate new base point (shape[0])
+                const newBaseX = gridCoords.x - dragOffset.x;
+                const newBaseY = gridCoords.y - dragOffset.y;
+
+                // Calculate offset from old base point
+                const dx = newBaseX - currentDragShape[0].x;
+                const dy = newBaseY - currentDragShape[0].y;
+
+                // Apply this delta to all points in the shape
+                animatedShape = currentDragShape.map(p => ({
+                    x: p.x + dx,
+                    y: p.y + dy
+                }));
+
+                drawCanvas();
+            }
+
+            function handleDragEnd(e) {
+                if (currentGameMode !== 'drag' || !isDragging) return;
+                e.preventDefault();
+                
+                isDragging = false;
+                canvas.classList.remove('dragging');
+                canvas.classList.add('draggable');
+
+                // Check the answer
+                // Compare the first point (and all others, implicitly)
+                const isCorrect = animatedShape.every((point, index) => 
+                    point.x === imageShape[index].x && point.y === imageShape[index].y
+                );
+
+                if (isCorrect) {
+                    // --- DRAG SUCCESS ---
+                    isSolved = true;
+                    score++;
+                    streak++;
+                    feedbackMessage.textContent = 'Correct! Well done!';
+                    feedbackMessage.className = 'text-lg font-bold text-green-600 px-2';
+                    
+                    // Show "Next Question" button
+                    submitButton.textContent = 'Next Question';
+                    submitButton.disabled = false;
+                    submitButton.classList.remove('hidden');
+                    submitButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    submitButton.classList.add('bg-green-600', 'hover:bg-green-700');
+
+                    playCorrectSound();
+                    showConfetti();
+                } else {
+                    // --- DRAG INCORRECT ---
+                    streak = 0;
+                    playWrongSound();
+                    feedbackMessage.textContent = 'Not quite! Try that translation again.';
+                    feedbackMessage.className = 'text-lg font-semibold text-red-600 px-2';
+                    
+                    // Animate from current (wrong) position back to start
+                    const wrongShape = JSON.parse(JSON.stringify(animatedShape));
+                    const startShape = JSON.parse(JSON.stringify(originalShape));
+                    
+                    // Disable canvas interaction during reset
+                    canvas.classList.remove('draggable');
+                    
+                    setTimeout(() => {
+                        animateTranslation(wrongShape, startShape, () => {
+                            // Re-enable dragging
+                            if (!isSolved) {
+                                canvas.classList.add('draggable');
+                            }
+                        });
+                    }, 1000); // 1-second pause before resetting
+                }
+                updateScoreboard();
+            }
+
+            // --- Confetti Animation ---
+            function showConfetti() {
+                confettiContainer.innerHTML = '';
+                const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
+                for (let i = 0; i < 100; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'absolute';
+                    confetti.style.width = `${getRandomInt(5, 15)}px`;
+                    confetti.style.height = `${getRandomInt(5, 15)}px`;
+                    confetti.style.backgroundColor = colors[i % colors.length];
+                    confetti.style.left = `${Math.random() * 100}vw`;
+                    confetti.style.animation = `confetti-fall ${getRandomInt(2, 4)}s linear ${Math.random()}s forwards`;
+                    confetti.style.opacity = '0';
+                    confettiContainer.appendChild(confetti);
+                }
+            }
+            
+            // --- Modal Logic ---
+            function showHelp() {
+                if (audioInitialized) Tone.start(); // Ensure audio context is ready on user interaction
+                
+                // Show help text based on current mode
+                if (currentGameMode === 'input') {
+                    helpInputMode.classList.remove('hidden');
+                    helpDragMode.classList.add('hidden');
+                } else {
+                    helpInputMode.classList.add('hidden');
+                    helpDragMode.classList.remove('hidden');
+                }
+                
+                helpModal.classList.remove('hidden');
+            }
+            
+            function hideHelp() {
+                helpModal.classList.add('hidden');
+            }
+
+            // --- Event Listeners ---
+            submitButton.addEventListener('click', () => {
+                if (audioInitialized) Tone.start(); // Ensure audio context is ready
+                
+                if (isSolved) {
+                    newQuestion();
+                } else if (currentGameMode === 'input') {
+                    checkAnswer();
+                }
+            });
+            
+            helpButton.addEventListener('click', showHelp);
+            closeModalButton.addEventListener('click', hideHelp);
+            
+            // Close modal if clicking outside of it
+            helpModal.addEventListener('click', (e) => {
+                if (e.target === helpModal) {
+                    hideHelp();
+                }
+            });
+            
+            // Enable/disable button based on input
+            xInput.addEventListener('input', checkInputsEnabled);
+            yInput.addEventListener('input', checkInputsEnabled);
+            
+            // Handle Enter key
+            document.addEventListener('keydown', handleEnterKey);
+            
+            // Canvas resize listener
+            new ResizeObserver(resizeCanvas).observe(canvasContainer);
+
+            // Mode Switch Listener
+            modeSwitch.addEventListener('change', (e) => {
+                currentGameMode = e.target.checked ? 'drag' : 'input';
+                newQuestion();
+            });
+
+            // Drag Event Listeners
+            canvas.addEventListener('mousedown', handleDragStart);
+            canvas.addEventListener('mousemove', handleDragMove);
+            canvas.addEventListener('mouseup', handleDragEnd);
+            canvas.addEventListener('mouseleave', handleDragEnd); // Stop dragging if mouse leaves canvas
+
+            canvas.addEventListener('touchstart', handleDragStart, { passive: false });
+            canvas.addEventListener('touchmove', handleDragMove, { passive: false });
+            canvas.addEventListener('touchend', handleDragEnd);
+
+            // --- Initial Game Setup ---
+            resizeCanvas(); // Initial draw
+            newQuestion(); // Load first question
+        });
+    </script>
+
+    <script src='../../site-nav.js'></script>
+</body>
+</html>
