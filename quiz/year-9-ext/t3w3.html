@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Year 9 Extension T3W3 Quiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Slab:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../shared/modern-quiz.css">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script><script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner"><div class="topbar-brand"><h1 class="topbar-title">Mr Deng Maths</h1><nav class="topbar-nav" aria-label="Primary navigation"><a href="../../" class="topbar-link">Apps</a><a href="../" class="topbar-link">Quiz</a><a href="./" class="topbar-link active">Year 9 Ext</a></nav></div></div></header>
+<div class="quiz-container">
+<h1>Year 9 Extension - Week 3</h1><p class="subtitle">Trigonometry, bearings, and algebra review.</p>
+<form id="quiz-form">
+<div class="question-block" data-key="q1"><div class="question-text"><span class="question-number">1.</span><div>A tree is 7 m tall and casts a 24 m shadow. Find the angle of elevation \(\theta\).</div></div><input class="student-input" type="text" name="q1" placeholder="Enter angle in degrees"><div class="correct-answer-display" id="ans-q1">Correct Answer: 16.26</div><div class="rationale" id="rat-q1">\(\theta=\tan^{-1}(7/24)\approx16.26^\circ\).</div></div>
+<div class="question-block" data-key="q2"><div class="question-text"><span class="question-number">2.</span><div>A plane heads on \(051^\circ\)T. What is the return bearing?</div></div><ul class="options"><li><label><input type="radio" name="q2" value="a">A.&nbsp;\(129^\circ\)</label></li><li><label><input type="radio" name="q2" value="b">B.&nbsp;\(231^\circ\)</label></li><li><label><input type="radio" name="q2" value="c">C.&nbsp;\(249^\circ\)</label></li><li><label><input type="radio" name="q2" value="d">D.&nbsp;\(309^\circ\)</label></li></ul><div class="correct-answer-display" id="ans-q2">Correct Answer: B</div><div class="rationale" id="rat-q2">Add 180 degrees.</div></div>
+<div class="question-block" data-key="q3"><div class="question-text"><span class="question-number">3.</span><div>Factorise \(3x^2 - 48\) completely.</div></div><input class="student-input" type="text" name="q3" placeholder="Enter factorised form"><div class="correct-answer-display" id="ans-q3">Correct Answer: 3(x-4)(x+4)</div><div class="rationale" id="rat-q3">Take out 3, then difference of squares.</div></div>
+<div class="question-block" data-key="q4"><div class="question-text"><span class="question-number">4.</span><div>Solve \(5(2x + 5) = 2x + 13\).</div></div><input class="student-input" type="text" name="q4" placeholder="Enter x"><div class="correct-answer-display" id="ans-q4">Correct Answer: -3/2</div><div class="rationale" id="rat-q4">\(10x+25=2x+13\Rightarrow8x=-12\Rightarrow x=-\frac32\).</div></div>
+<div class="question-block" data-key="q5"><div class="question-text"><span class="question-number">5.</span><div>Challenge: Solve simultaneously \(y=x^2-2x-3\) and \(y=2x+2\). Enter both points.</div></div><textarea class="student-textarea" name="q5" placeholder="Format: (-1,0),(5,12)"></textarea><div class="correct-answer-display" id="ans-q5">Correct Answer: (-1,0),(5,12)</div><div class="rationale" id="rat-q5">Set equations equal, solve quadratic, then substitute.</div></div>
+<button id="submit-btn" class="primary-btn" type="button" onclick="submitQuiz()">Submit Quiz</button>
+</form>
+<div id="results"><h2>Your Results</h2><p id="score-display">You scored <span id="score">0</span> out of 5.</p><p id="feedback-summary"></p><p><strong>Topics you did well in:</strong></p><ul id="strengths-list"></ul><p><strong>Topics to revise from missed questions:</strong></p><ul id="improvement-list"></ul><p>Review the highlighted answers above.</p><button class="primary-btn" type="button" id="download-wrong-pdf">Download Wrong Questions PDF</button></div>
+</div>
+<button class="primary-btn" type="button" id="back-to-feedback-btn">Back to Feedback</button>
+<script>
+window.quizConfig = { pdfTitle: 'Year 9 Extension Week 3 Quiz', pdfFilePrefix: 'year9ext-t3w3', questions: {
+q1: { number: 1, type: 'text', answers: ['16.26','16.3'], topic: 'Right-angle trigonometry' },
+q2: { number: 2, type: 'mcq', correct: 'b', topic: 'Reverse bearings' },
+q3: { number: 3, type: 'text', answers: ['3(x-4)(x+4)'], topic: 'Factorising difference of squares' },
+q4: { number: 4, type: 'text', answers: ['-3/2','-1.5'], topic: 'Linear equations' },
+q5: { number: 5, type: 'text', answers: ['(-1,0),(5,12)','(5,12),(-1,0)'], topic: 'Simultaneous equations with quadratics' }
+}};
+</script>
+<script src="../shared/modern-quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Year 9 Extension T3W2 Quiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Slab:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../shared/modern-quiz.css">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <header class="topbar"><div class="topbar-inner"><div class="topbar-brand"><h1 class="topbar-title">Mr Deng Maths</h1><nav class="topbar-nav" aria-label="Primary navigation"><a href="../../" class="topbar-link">Apps</a><a href="../" class="topbar-link">Quiz</a><a href="./" class="topbar-link active">Year 9 Ext</a></nav></div></div></header>
+    <div class="quiz-container">
+        <h1>Year 9 Extension - Week 2</h1>
+        <p class="subtitle">Weekly Problems and Challenge with instant feedback.</p>
+        <form id="quiz-form">
+            <div class="question-block" data-key="q1"><div class="question-text"><span class="question-number">1.</span><div>Solve: \(3 + \frac{t}{11} = 5\).</div></div><input class="student-input" type="text" name="q1" placeholder="Enter t"><div class="correct-answer-display" id="ans-q1">Correct Answer: 22</div><div class="rationale" id="rat-q1">\(\frac{t}{11}=2\Rightarrow t=22\).</div></div>
+            <div class="question-block" data-key="q2"><div class="question-text"><span class="question-number">2.</span><div>Solve: \(3(v+5) + 4 = 37\).</div></div><ul class="options"><li><label><input type="radio" name="q2" value="a">A.&nbsp;\(v=4\)</label></li><li><label><input type="radio" name="q2" value="b">B.&nbsp;\(v=5\)</label></li><li><label><input type="radio" name="q2" value="c">C.&nbsp;\(v=6\)</label></li><li><label><input type="radio" name="q2" value="d">D.&nbsp;\(v=7\)</label></li></ul><div class="correct-answer-display" id="ans-q2">Correct Answer: C</div><div class="rationale" id="rat-q2">\(3v+19=37\Rightarrow 3v=18\Rightarrow v=6\).</div></div>
+            <div class="question-block" data-key="q3"><div class="question-text"><span class="question-number">3.</span><div>Factorise \(x^2 + 8x + 16\).</div></div><input class="student-input" type="text" name="q3" placeholder="Enter factorised form"><div class="correct-answer-display" id="ans-q3">Correct Answer: (x+4)^2</div><div class="rationale" id="rat-q3">Perfect square trinomial.</div></div>
+            <div class="question-block" data-key="q4"><div class="question-text"><span class="question-number">4.</span><div>Express as a single fraction: \(\frac{x-3}{4} + \frac{x+4}{2}\).</div></div><input class="student-input" type="text" name="q4" placeholder="Enter simplified fraction"><div class="correct-answer-display" id="ans-q4">Correct Answer: (3x+5)/4</div><div class="rationale" id="rat-q4">Use denominator 4.</div></div>
+            <div class="question-block" data-key="q5"><div class="question-text"><span class="question-number">5.</span><div>Challenge: Solve \(\frac{2x^2 + 5x - 3}{x^2 - 2x - 15} \div \frac{2x^2 - 7x + 3}{x^2 - 3x - 10}\).</div></div><textarea class="student-textarea" name="q5" placeholder="Enter final simplified expression"></textarea><div class="correct-answer-display" id="ans-q5">Correct Answer: (x+3)/(x-1)</div><div class="rationale" id="rat-q5">Factor each quadratic and cancel common factors carefully.</div></div>
+            <button id="submit-btn" class="primary-btn" type="button" onclick="submitQuiz()">Submit Quiz</button>
+        </form>
+        <div id="results"><h2>Your Results</h2><p id="score-display">You scored <span id="score">0</span> out of 5.</p><p id="feedback-summary"></p><p><strong>Topics you did well in:</strong></p><ul id="strengths-list"></ul><p><strong>Topics to revise from missed questions:</strong></p><ul id="improvement-list"></ul><p>Review the highlighted answers above.</p><button class="primary-btn" type="button" id="download-wrong-pdf">Download Wrong Questions PDF</button></div>
+    </div>
+    <button class="primary-btn" type="button" id="back-to-feedback-btn">Back to Feedback</button>
+    <script>
+        window.quizConfig = { pdfTitle: 'Year 9 Extension Week 2 Quiz', pdfFilePrefix: 'year9ext-t3w2', questions: {
+            q1: { number: 1, type: 'text', answers: ['22'], topic: 'Linear equations with fractions' },
+            q2: { number: 2, type: 'mcq', correct: 'c', topic: 'Expand and solve equations' },
+            q3: { number: 3, type: 'text', answers: ['(x+4)^2'], topic: 'Factorising perfect squares' },
+            q4: { number: 4, type: 'text', answers: ['(3x+5)/4'], topic: 'Algebraic fractions' },
+            q5: { number: 5, type: 'text', answers: ['(x+3)/(x-1)'], topic: 'Algebraic fraction division' }
+        }};
+    </script>
+    <script src="../shared/modern-quiz.js"></script>
+</body>
+</html>

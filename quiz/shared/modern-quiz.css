@@ -1,0 +1,331 @@
+:root {
+    --primary-color: #005b94;
+    --background-color: #f0f4f8;
+    --text-color: #333;
+    --header-color: #002d4a;
+    --card-bg: #ffffff;
+    --border-radius: 10px;
+    --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 2rem;
+    padding-top: 140px;
+    line-height: 1.6;
+}
+
+.topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    z-index: 1000;
+    padding: 0.9rem 1rem;
+}
+
+.topbar-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.topbar-title {
+    font-family: 'Roboto Slab', serif;
+    font-size: 1.25rem;
+    color: var(--header-color);
+    margin: 0;
+    white-space: nowrap;
+}
+
+.topbar-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.topbar-link {
+    text-decoration: none;
+    color: #334155;
+    font-weight: 600;
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.topbar-link:hover,
+.topbar-link.active {
+    background-color: var(--primary-color);
+    color: #ffffff;
+}
+
+.quiz-container {
+    max-width: 900px;
+    margin: auto;
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    text-align: center;
+    color: #566;
+    margin-bottom: 26px;
+}
+
+.question-block {
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.question-block:last-child {
+    border-bottom: none;
+}
+
+.question-text {
+    font-size: 1.05em;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.question-number {
+    font-size: 1.15em;
+}
+
+.options {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.options li {
+    margin-bottom: 10px;
+}
+
+label {
+    display: flex;
+    align-items: flex-start;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+label:hover {
+    background-color: #f0f8ff;
+}
+
+input[type="radio"] {
+    margin-right: 15px;
+    margin-top: 4px;
+}
+
+.student-input,
+.student-textarea {
+    width: 100%;
+    border: 1px solid #bfd4e6;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.98rem;
+    font-family: 'Poppins', sans-serif;
+    background: #fbfdff;
+    box-sizing: border-box;
+}
+
+.student-input,
+.student-textarea {
+    display: none;
+}
+
+.mathquill-host {
+    margin-top: 2px;
+}
+
+.math-keyboard {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.math-key-btn {
+    border: 1px solid #9bbcd6;
+    background: #f4faff;
+    color: #154c79;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1.2;
+}
+
+.math-key-btn:hover {
+    background: #e8f3ff;
+}
+
+.math-key-btn:disabled,
+.math-keyboard.disabled .math-key-btn {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Revert any preflight styles inside MathQuill containers */
+.mathquill-editable * {
+    all: revert;
+}
+
+/* Match algebra-app input bar visual style */
+.mathquill-editable {
+    width: 100%;
+    min-height: 40px;
+    padding: 10px;
+    border: 2px solid #0000ff;
+    border-radius: 5px;
+    box-sizing: border-box;
+    background-color: #ffffff;
+    text-align: left;
+}
+
+.mathquill-editable.mq-focused {
+    border-color: #0000ff !important;
+    box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.1) !important;
+    outline: none !important;
+}
+
+.mathquill-editable.mq-locked {
+    pointer-events: none;
+    opacity: 0.9;
+    background-color: #f7fafc;
+}
+
+.student-input:focus,
+.student-textarea:focus {
+    outline: 2px solid #90caf9;
+    border-color: #64b5f6;
+}
+
+.student-textarea {
+    min-height: 86px;
+    resize: vertical;
+}
+
+.answer-hint {
+    margin-top: 8px;
+    color: #607d8b;
+    font-size: 0.9em;
+}
+
+button.primary-btn {
+    display: block;
+    width: 200px;
+    margin: 30px auto;
+    padding: 10px;
+    font-size: 1.05em;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button.primary-btn:hover {
+    background-color: #2980b9;
+}
+
+#download-wrong-pdf {
+    display: none;
+    margin-top: 12px;
+    background-color: #2e7d32;
+}
+
+#download-wrong-pdf:hover {
+    background-color: #1b5e20;
+}
+
+#results {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #e8f5e9;
+    border-left: 5px solid #4caf50;
+    display: none;
+}
+
+#feedback-summary {
+    font-weight: bold;
+    color: #1b5e20;
+}
+
+#strengths-list,
+#improvement-list {
+    margin: 8px 0 0 20px;
+    padding: 0;
+}
+
+#improvement-list li {
+    margin-bottom: 6px;
+}
+
+#improvement-list a {
+    color: #0d47a1;
+    text-decoration: underline;
+}
+
+#back-to-feedback-btn {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 1200;
+    width: auto;
+    margin: 0;
+    padding: 10px 14px;
+    font-size: 0.95em;
+    background-color: #1565c0;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+    display: none;
+}
+
+#back-to-feedback-btn:hover {
+    background-color: #0d47a1;
+}
+
+.correct-answer-display {
+    color: #d32f2f;
+    font-weight: bold;
+    margin-top: 10px;
+    display: none;
+}
+
+.rationale {
+    color: #555;
+    font-size: 0.9em;
+    margin-top: 5px;
+    display: none;
+}

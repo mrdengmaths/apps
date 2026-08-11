@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Year 8 New Algebraic Techniques Quiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Slab:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../shared/modern-quiz.css">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="topbar-brand">
+                <h1 class="topbar-title">Mr Deng Maths</h1>
+                <nav class="topbar-nav" aria-label="Primary navigation">
+                    <a href="../../" class="topbar-link">Apps</a>
+                    <a href="../" class="topbar-link">Quiz</a>
+                    <a href="./" class="topbar-link active">Year 8</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <div class="quiz-container">
+        <h1>Year 8 New Algebraic Techniques</h1>
+        <p class="subtitle">Mixed response mode: multiple choice and short-answer entry.</p>
+
+        <form id="quiz-form">
+            <div class="question-block" data-key="q1">
+                <div class="question-text"><span class="question-number">1.</span><div>Simplify \(9 - 4(2x - 3)\).</div></div>
+                <ul class="options">
+                    <li><label><input type="radio" name="q1" value="a">A.&nbsp;\(21 - 8x\)</label></li>
+                    <li><label><input type="radio" name="q1" value="b">B.&nbsp;\(-3 - 8x\)</label></li>
+                    <li><label><input type="radio" name="q1" value="c">C.&nbsp;\(6 - 8x\)</label></li>
+                    <li><label><input type="radio" name="q1" value="d">D.&nbsp;\(12 - 8x\)</label></li>
+                </ul>
+                <div class="correct-answer-display" id="ans-q1">Correct Answer: A</div>
+                <div class="rationale" id="rat-q1">Distribute then collect terms.</div>
+            </div>
+
+            <div class="question-block" data-key="q2">
+                <div class="question-text"><span class="question-number">2.</span><div>Simplify \(5x^2 + 3xy - 8x - 2x^2 - 7xy\).</div></div>
+                <input class="student-input" type="text" name="q2" placeholder="Type simplified expression">
+                <div class="correct-answer-display" id="ans-q2">Correct Answer: 3x^2-4xy-8x</div>
+                <div class="rationale" id="rat-q2">Collect \(x^2\), \(xy\), and \(x\) terms separately.</div>
+            </div>
+
+            <div class="question-block" data-key="q3">
+                <div class="question-text"><span class="question-number">3.</span><div>Factorise completely: \(12xy + 18y^2\).</div></div>
+                <input class="student-input" type="text" name="q3" placeholder="Type factorised form">
+                <div class="correct-answer-display" id="ans-q3">Correct Answer: 6y(2x+3y)</div>
+                <div class="rationale" id="rat-q3">Common factor is \(6y\).</div>
+            </div>
+
+            <div class="question-block" data-key="q4">
+                <div class="question-text"><span class="question-number">4.</span><div>Simplify using index laws: \((3a^2b)^3 \times 2ab^4\).</div></div>
+                <ul class="options">
+                    <li><label><input type="radio" name="q4" value="a">A.&nbsp;\(54a^7b^7\)</label></li>
+                    <li><label><input type="radio" name="q4" value="b">B.&nbsp;\(6a^6b^7\)</label></li>
+                    <li><label><input type="radio" name="q4" value="c">C.&nbsp;\(54a^6b^7\)</label></li>
+                    <li><label><input type="radio" name="q4" value="d">D.&nbsp;\(18a^7b^4\)</label></li>
+                </ul>
+                <div class="correct-answer-display" id="ans-q4">Correct Answer: A</div>
+                <div class="rationale" id="rat-q4">\((3a^2b)^3=27a^6b^3\), then multiply by \(2ab^4\).</div>
+            </div>
+
+            <div class="question-block" data-key="q5">
+                <div class="question-text"><span class="question-number">5.</span><div>Simplify \(3(a+2b)-2(4a-b)\).</div></div>
+                <input class="student-input" type="text" name="q5" placeholder="Type simplified expression">
+                <div class="correct-answer-display" id="ans-q5">Correct Answer: -5a+8b</div>
+                <div class="rationale" id="rat-q5">Expand both brackets then combine like terms.</div>
+            </div>
+
+            <button id="submit-btn" class="primary-btn" type="button" onclick="submitQuiz()">Submit Quiz</button>
+        </form>
+
+        <div id="results">
+            <h2>Your Results</h2>
+            <p id="score-display">You scored <span id="score">0</span> out of 5.</p>
+            <p id="feedback-summary"></p>
+            <p><strong>Topics you did well in:</strong></p>
+            <ul id="strengths-list"></ul>
+            <p><strong>Topics to revise from missed questions:</strong></p>
+            <ul id="improvement-list"></ul>
+            <p>Review the highlighted answers above.</p>
+            <button class="primary-btn" type="button" id="download-wrong-pdf">Download Wrong Questions PDF</button>
+        </div>
+    </div>
+
+    <button class="primary-btn" type="button" id="back-to-feedback-btn">Back to Feedback</button>
+
+    <script>
+        window.quizConfig = {
+            pdfTitle: 'Year 8 New Algebraic Techniques Quiz',
+            pdfFilePrefix: 'year8-algebra',
+            questions: {
+                q1: { number: 1, type: 'mcq', correct: 'a', topic: 'Expand one bracket' },
+                q2: { number: 2, type: 'text', answers: ['3x^2-4xy-8x'], topic: 'Collect like terms' },
+                q3: { number: 3, type: 'text', answers: ['6y(2x+3y)'], topic: 'Factorise with HCF' },
+                q4: { number: 4, type: 'mcq', correct: 'a', topic: 'Index laws' },
+                q5: { number: 5, type: 'text', answers: ['-5a+8b'], topic: 'Multi-step simplification' }
+            }
+        };
+    </script>
+    <script src="../shared/modern-quiz.js"></script>
+</body>
+</html>
