@@ -41,11 +41,19 @@
             display: flex;
             align-items: flex-start;
             gap: 0.75rem;
-            line-height: 1.7;
+            line-height: 1.8;
         }
         .question-text > div {
             flex: 1;
             min-width: 0;
+        }
+        .question-text .math-inline,
+        .question-text .math-display,
+        .question-text p,
+        .question-text strong,
+        .question-text br {
+            margin-top: 0;
+            margin-bottom: 0;
         }
         .question-number {
             margin-right: 0;
@@ -206,9 +214,9 @@
                 </div>
             </div>
             <ul class="options">
-                <li><label><input type="radio" name="q1" value="a"> A. &nbsp;&nbsp; \(f(x)\) has no horizontal asymptote.</label></li>
-                <li><label><input type="radio" name="q1" value="b"> B. &nbsp;&nbsp; \(f(x)\) is decreasing for all \(x > 0\).</label></li>
-                <li><label><input type="radio" name="q1" value="c"> C. &nbsp;&nbsp; \(f'(2) < 0\)</label></li>
+                <li><label><input type="radio" name="q1" value="a"> A. &nbsp;&nbsp; \(f(x)\) has 2 horizontal asymptotes.</label></li>
+                <li><label><input type="radio" name="q1" value="b"> B. &nbsp;&nbsp; \(f(x)\) is decreasing for \(x > 0\) and \(x < -3\).</label></li>
+                <li><label><input type="radio" name="q1" value="c"> C. &nbsp;&nbsp; \(f'(-2) > 0\)</label></li>
                 <li><label><input type="radio" name="q1" value="d"> D. &nbsp;&nbsp; \(f(-3) = f(3) = 5\)</label></li>
             </ul>
             <div class="correct-answer-display" id="ans-q1">Correct Answer: D</div>
