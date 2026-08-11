@@ -156,6 +156,29 @@
             margin: 8px 0 0 20px;
             padding: 0;
         }
+        #improvement-list li {
+            margin-bottom: 6px;
+        }
+        #improvement-list a {
+            color: #0d47a1;
+            text-decoration: underline;
+        }
+        #back-to-feedback-btn {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            z-index: 1200;
+            width: auto;
+            margin: 0;
+            padding: 10px 14px;
+            font-size: 0.95em;
+            background-color: #1565c0;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+            display: none;
+        }
+        #back-to-feedback-btn:hover {
+            background-color: #0d47a1;
+        }
         .correct-answer-display {
             color: #d32f2f;
             font-weight: bold;
@@ -498,6 +521,8 @@
     </div>
 </div>
 
+<button type="button" id="back-to-feedback-btn">Back to Feedback</button>
+
 <script>
     let quizSubmitted = false;
     let wrongQuestionData = [];
@@ -562,6 +587,32 @@
             li.textContent = topic;
             list.appendChild(li);
         });
+    }
+
+    function populateMissedQuestionList(items) {
+        const list = document.getElementById('improvement-list');
+        list.innerHTML = '';
+
+        if (items.length === 0) {
+            const li = document.createElement('li');
+            li.textContent = 'Excellent. No missed topics to revise.';
+            list.appendChild(li);
+            return;
+        }
+
+        items.forEach(item => {
+            const li = document.createElement('li');
+            const link = document.createElement('a');
+            link.href = `#question-${item.key}`;
+            link.textContent = `Q${item.number} - ${item.topic}`;
+            li.appendChild(link);
+            list.appendChild(li);
+        });
+    }
+
+    function scrollToFeedback() {
+        const results = document.getElementById('results');
+        results.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function getCorrectOptionText(questionKey, optionValue) {
@@ -707,7 +758,6 @@
         const form = document.getElementById('quiz-form');
         const totalQuestions = Object.keys(correctAnswers).length;
         const strengthsSet = new Set();
-        const improvementSet = new Set();
         wrongQuestionData = [];
         quizSubmitted = true;
 
@@ -719,6 +769,11 @@
             const selected = form.querySelector(`input[name="${q}"]:checked`);
             const answerDisplay = document.getElementById(`ans-${q}`);
             const rationaleDisplay = document.getElementById(`rat-${q}`);
+            const questionBlock = form.querySelector(`input[name="${q}"]`)?.closest('.question-block');
+
+            if (questionBlock) {
+                questionBlock.id = `question-${q}`;
+            }
 
             answerDisplay.style.display = 'block';
             rationaleDisplay.style.display = 'block';
@@ -730,7 +785,6 @@
                     answerDisplay.style.color = '#388e3c'; // Green for correct
                     answerDisplay.innerHTML = '✓ ' + answerDisplay.innerHTML;
                 } else {
-                    improvementSet.add(questionMeta[q].topic);
                     wrongQuestionData.push({
                         key: q,
                         number: questionMeta[q].number,
@@ -743,7 +797,6 @@
                     answerDisplay.innerHTML = '✗ ' + answerDisplay.innerHTML + ` (You chose ${selected.value.toUpperCase()})`;
                 }
             } else {
-                improvementSet.add(questionMeta[q].topic);
                 wrongQuestionData.push({
                     key: q,
                     number: questionMeta[q].number,
@@ -765,18 +818,17 @@
             Array.from(strengthsSet),
             'No fully-correct topics this time. Keep practising and try another attempt.'
         );
-
-        populateTopicList(
-            'improvement-list',
-            Array.from(improvementSet),
-            'Excellent. No missed topics to revise.'
-        );
+        populateMissedQuestionList(wrongQuestionData);
 
         const pdfButton = document.getElementById('download-wrong-pdf');
         if (wrongQuestionData.length > 0) {
             pdfButton.style.display = 'block';
             pdfButton.onclick = downloadWrongQuestionsPdf;
         }
+
+        const backToFeedbackButton = document.getElementById('back-to-feedback-btn');
+        backToFeedbackButton.style.display = 'block';
+        backToFeedbackButton.onclick = scrollToFeedback;
 
         document.getElementById('results').style.display = 'block';
 
