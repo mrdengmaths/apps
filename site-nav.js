@@ -22,7 +22,7 @@
 
     const prefixes = (() => {
         if (inApp) {
-            const depth = Math.max(0, segments.length - appIndex - 2);
+            const depth = Math.max(0, segments.length - appIndex - 1);
             const up = '../'.repeat(depth);
             return {
                 home: `${up}../`,
@@ -33,7 +33,7 @@
         }
 
         if (inQuiz) {
-            const depth = Math.max(0, segments.length - quizIndex - 2);
+            const depth = Math.max(0, segments.length - quizIndex - 1);
             const up = '../'.repeat(depth);
             return {
                 home: `${up}../`,
@@ -56,6 +56,11 @@
         { href: prefixes.apps, label: 'Apps', key: 'apps' },
         { href: prefixes.quiz, label: 'Quiz', key: 'quiz' }
     ];
+
+    const existingSearch = document.getElementById('appSearch');
+    const searchMarkup = existingSearch
+        ? `<input id="appSearch" class="mr-deng-global-nav__search" type="search" placeholder="${existingSearch.getAttribute('placeholder') || 'Search apps...'}" aria-label="${existingSearch.getAttribute('aria-label') || 'Search apps'}">`
+        : '';
 
     const style = document.createElement('style');
     style.id = styleId;
@@ -160,6 +165,24 @@
             flex-wrap: wrap;
         }
 
+        .${navClass}__search {
+            width: min(520px, 100%);
+            border: 1px solid #d1d5db;
+            border-radius: 999px;
+            padding: 0.78rem 1.05rem;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            color: #1f2937;
+            background: #f8fafc;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+        }
+
+        .${navClass}__search:focus {
+            outline: none;
+            border-color: #2563eb;
+            background-color: #ffffff;
+        }
+
         .${navClass}__links--fallback {
             display: flex;
             align-items: center;
@@ -198,6 +221,10 @@
             .${navClass}__links--fallback {
                 justify-content: center;
             }
+
+            .${navClass}__search {
+                width: 100%;
+            }
         }
     `;
     document.head.appendChild(style);
@@ -226,6 +253,7 @@
             <nav class="${navLinksClass}" aria-label="Primary navigation">
                 ${linkMarkup}
             </nav>
+            ${searchMarkup}
         </div>
     `;
 
@@ -241,6 +269,11 @@
         element.style.background = 'rgba(255, 255, 255, 0.8)';
         element.style.backdropFilter = 'blur(16px)';
         element.style.boxShadow = '0 10px 30px rgba(16, 36, 58, 0.08)';
+
+        const bodyPaddingTop = parseFloat(window.getComputedStyle(document.body).paddingTop || '0');
+        if (!Number.isNaN(bodyPaddingTop) && bodyPaddingTop >= 100) {
+            document.body.style.paddingTop = '2rem';
+        }
     };
 
     if (existingNav) {
