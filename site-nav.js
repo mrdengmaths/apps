@@ -5,6 +5,8 @@
     const navLinkActiveClass = 'mr-deng-global-nav__link--active';
     const navBrandClass = 'mr-deng-global-nav__brand';
     const navBrandLinkClass = 'mr-deng-global-nav__brand-link';
+    const navInnerClass = 'mr-deng-global-nav__inner';
+    const navLinksClass = 'mr-deng-global-nav__links';
 
     if (document.getElementById(styleId)) {
         return;
@@ -137,7 +139,8 @@
             color: #ffffff !important;
         }
 
-        .${navClass}__links {
+        .${navClass}__links,
+        .${navLinksClass} {
             display: flex;
             align-items: center;
             gap: 0.3rem;
@@ -190,30 +193,46 @@
         .map((link) => `<a href="${link.href}" class="${navLinkClass}${prefixes.active === link.key ? ` ${navLinkActiveClass}` : ''}">${link.label}</a>`)
         .join('');
 
+    const buildNavMarkup = () => `
+        <div class="${navInnerClass}">
+            <div class="${navBrandClass}">
+                <div class="${navClass}__brand-mark" aria-hidden="true">∑</div>
+                <a href="${prefixes.home}" class="${navBrandLinkClass}">Mr Deng Maths</a>
+            </div>
+            <nav class="${navLinksClass}" aria-label="Primary navigation">
+                ${linkMarkup}
+            </nav>
+        </div>
+    `;
+
+    const applyFloatingHeaderStyles = (element) => {
+        element.style.position = 'sticky';
+        element.style.top = '0.75rem';
+        element.style.zIndex = '1000';
+        element.style.width = 'min(1180px, calc(100% - 2rem))';
+        element.style.margin = '0.75rem auto 1rem';
+        element.style.padding = '0.9rem 1rem';
+        element.style.border = '1px solid rgba(255, 255, 255, 0.65)';
+        element.style.borderRadius = '999px';
+        element.style.background = 'rgba(255, 255, 255, 0.8)';
+        element.style.backdropFilter = 'blur(16px)';
+        element.style.boxShadow = '0 10px 30px rgba(16, 36, 58, 0.08)';
+    };
+
     if (existingNav) {
         const existingHeader = existingNav.closest('header') || existingNav.parentElement;
-        const brandTarget = existingHeader && existingHeader.querySelector('.topbar-title, .brand-copy h1, h1');
-        if (brandTarget) {
-            brandTarget.outerHTML = `<a href="${prefixes.home}" class="${navBrandLinkClass}">${brandTarget.textContent || 'Mr Deng Maths'}</a>`;
+        if (existingHeader) {
+            applyFloatingHeaderStyles(existingHeader);
+            existingHeader.classList.add(navClass);
+            existingHeader.innerHTML = buildNavMarkup();
+            return;
         }
-        existingNav.innerHTML = linkMarkup;
-        return;
     }
 
     const fallback = document.createElement('header');
     fallback.className = navClass;
     fallback.setAttribute('aria-label', 'Primary navigation');
-    fallback.innerHTML = `
-        <div class="${navClass}__inner">
-            <div class="${navClass}__brand">
-                <div class="${navClass}__brand-mark" aria-hidden="true">∑</div>
-                <a href="${prefixes.home}" class="${navBrandLinkClass}">Mr Deng Maths</a>
-            </div>
-            <nav class="${navClass}__links--fallback" aria-label="Primary navigation">
-                ${linkMarkup}
-            </nav>
-        </div>
-    `;
+    fallback.innerHTML = buildNavMarkup();
 
     document.body.insertBefore(fallback, document.body.firstChild);
 })();
