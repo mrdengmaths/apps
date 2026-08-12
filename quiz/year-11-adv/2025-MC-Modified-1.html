@@ -773,6 +773,8 @@
         const totalQuestions = Object.keys(correctAnswers).length;
         const strengthsSet = new Set();
         wrongQuestionData = [];
+        window.wrongQuestionData = wrongQuestionData;
+        window.currentQuizScore = 0;
         quizSubmitted = true;
 
         // Disable all inputs after submission
@@ -824,6 +826,7 @@
             }
         }
 
+        window.currentQuizScore = score;
         document.getElementById('score').innerText = score;
         document.getElementById('feedback-summary').innerText = getFeedbackMessage(score, totalQuestions);
 

@@ -451,6 +451,7 @@
 <script>
     let quizSubmitted = false;
     let wrongQuestionData = [];
+    window.wrongQuestionData = wrongQuestionData;
 
     const correctAnswers = {
         q1: 'd',
@@ -477,6 +478,8 @@
         q9: { number: 9, topic: 'Gradient of a line', text: 'Find the gradient between two points.' },
         q10: { number: 10, topic: 'Piecewise function evaluation', text: 'Evaluate a piecewise rule at specific values.' }
     };
+    window.correctAnswers = correctAnswers;
+    window.questionMeta = questionMeta;
 
     function getFeedbackMessage(score, total) {
         const percent = (score / total) * 100;
@@ -687,6 +690,7 @@
         const totalQuestions = Object.keys(correctAnswers).length;
         const strengthsSet = new Set();
         wrongQuestionData = [];
+        window.wrongQuestionData = wrongQuestionData;
         quizSubmitted = true;
 
         const inputs = form.querySelectorAll('input[type="radio"]');
@@ -720,6 +724,7 @@
                         correctAnswer: correctAnswers[q].toUpperCase(),
                         correctAnswerText: getCorrectOptionText(q, correctAnswers[q])
                     });
+                    window.wrongQuestionData = wrongQuestionData;
                     answerDisplay.style.color = '#d32f2f';
                     answerDisplay.innerHTML = '✗ ' + answerDisplay.innerHTML + ` (You chose ${selected.value.toUpperCase()})`;
                 }
@@ -732,6 +737,7 @@
                     correctAnswer: correctAnswers[q].toUpperCase(),
                     correctAnswerText: getCorrectOptionText(q, correctAnswers[q])
                 });
+                window.wrongQuestionData = wrongQuestionData;
                 answerDisplay.style.color = '#f57c00';
                 answerDisplay.innerHTML = '⚠ Unanswered. ' + answerDisplay.innerHTML;
             }
@@ -768,8 +774,10 @@
         document.getElementById('results').style.display = 'block';
         document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
         document.querySelector('button[onclick="submitQuiz()"]').style.display = 'none';
+        window.wrongQuestionData = wrongQuestionData;
     }
 </script>
+<script src="../shared/progress-tracker.js"></script>
 
 </body>
 </html>

@@ -1,5 +1,6 @@
 let quizSubmitted = false;
 let wrongQuestionData = [];
+window.wrongQuestionData = wrongQuestionData;
 let mqFields = {};
 let mqKeyboards = {};
 
@@ -405,6 +406,7 @@ function submitQuiz() {
     const totalQuestions = questionKeys.length;
     const strengthsSet = new Set();
     wrongQuestionData = [];
+    window.wrongQuestionData = wrongQuestionData;
     quizSubmitted = true;
 
     document.querySelectorAll('input, textarea').forEach((el) => {
@@ -468,6 +470,7 @@ function submitQuiz() {
         }
     });
 
+    window.currentQuizScore = score;
     document.getElementById('score').innerText = score;
     document.getElementById('feedback-summary').innerText = getFeedbackMessage(score, totalQuestions);
 
@@ -477,6 +480,8 @@ function submitQuiz() {
         'No fully-correct topics this time. Keep practising and try another attempt.'
     );
     populateMissedQuestionList(wrongQuestionData);
+
+    window.wrongQuestionData = wrongQuestionData;
 
     const pdfButton = document.getElementById('download-wrong-pdf');
     if (wrongQuestionData.length > 0) {
