@@ -5,16 +5,10 @@ let mqFields = {};
 let mqKeyboards = {};
 
 const MATH_KEYS = [
-    { label: 'x^2', action: 'cmd', value: '^2' },
-    { label: 'x^n', action: 'cmd', value: '^' },
-    { label: 'frac', action: 'cmd', value: '\\frac' },
     { label: 'sqrt', action: 'cmd', value: '\\sqrt' },
-    { label: '( )', action: 'write', value: '()' },
     { label: 'pi', action: 'write', value: '\\pi' },
     { label: 'theta', action: 'write', value: '\\theta' },
-    { label: 'times', action: 'write', value: '\\times' },
-    { label: '/', action: 'write', value: '/' },
-    { label: '-', action: 'write', value: '-' }
+    { label: 'times', action: 'write', value: '\\times' }
 ];
 
 function latexToComparable(value) {
@@ -179,6 +173,12 @@ function createMathKeyboard(field, inputName) {
     });
 
     root.insertAdjacentElement('afterend', keyboard);
+
+    const hint = document.createElement('div');
+    hint.className = 'math-input-hint';
+    hint.innerHTML = 'Powers: <span class="dcg">^</span> (<span class="dcg">shift</span><span class="dcg">6</span>), e.g. x^2';
+    keyboard.insertAdjacentElement('afterend', hint);
+
     return keyboard;
 }
 

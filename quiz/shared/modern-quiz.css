@@ -197,6 +197,25 @@ input[type="radio"] {
     cursor: not-allowed;
 }
 
+.math-input-hint {
+    margin-top: 6px;
+    font-size: 0.82rem;
+    color: #64748b;
+}
+
+/* Keycap badge, matching the instruction style in app/algebra-app */
+.math-input-hint .dcg {
+    display: inline-block;
+    padding: 2px 6px;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+    background: #f8fafc;
+    color: #334155;
+    font-weight: 600;
+    line-height: 1.6;
+    margin: 0 1px;
+}
+
 /* Revert any preflight styles inside MathQuill containers */
 .mathquill-editable * {
     all: revert;
