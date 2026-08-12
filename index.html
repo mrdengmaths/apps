@@ -62,64 +62,42 @@
             flex-wrap: wrap;
         }
 
-        .brand {
+        .topbar-brand {
             display: flex;
             align-items: center;
-            gap: 0.8rem;
-            min-width: 0;
-        }
-
-        .brand-mark {
-            width: 2.8rem;
-            height: 2.8rem;
-            border-radius: 14px;
-            display: grid;
-            place-items: center;
-            font-size: 1.35rem;
-            background: linear-gradient(135deg, var(--blue), var(--cyan));
-            color: white;
-            box-shadow: 0 10px 24px rgba(11, 110, 168, 0.25);
-        }
-
-        .brand-copy h1 {
-            margin: 0;
-            font-family: 'Roboto Slab', serif;
-            font-size: 1.2rem;
-            line-height: 1.1;
-        }
-
-        .brand-copy p {
-            margin: 0.2rem 0 0;
-            color: var(--muted);
-            font-size: 0.9rem;
-        }
-
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            gap: 1rem;
             flex-wrap: wrap;
         }
 
-        .nav-links a {
-            text-decoration: none;
-            padding: 0.6rem 1rem;
-            border-radius: 999px;
-            font-weight: 700;
-            transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
-        }
-
-        .nav-links a:hover { transform: translateY(-1px); }
-
-        .nav-links .primary {
-            background: linear-gradient(135deg, var(--blue), var(--cyan));
-            color: #fff;
-            box-shadow: 0 10px 24px rgba(11, 110, 168, 0.18);
-        }
-
-        .nav-links .ghost {
-            background: rgba(16, 36, 58, 0.06);
+        .topbar-title {
+            font-family: 'Roboto Slab', serif;
+            font-size: 1.25rem;
             color: var(--ink);
+            margin: 0;
+            white-space: nowrap;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .topbar-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .topbar-link {
+            text-decoration: none;
+            color: #334155;
+            font-weight: 600;
+            padding: 0.45rem 0.8rem;
+            border-radius: 999px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .topbar-link:hover,
+        .topbar-link.active {
+            background-color: var(--blue);
+            color: #ffffff;
         }
 
         .hero {
@@ -492,17 +470,13 @@
     <div class="shell">
         <header class="topbar" aria-label="Main navigation">
             <div class="topbar-inner">
-                <div class="brand">
-                    <div class="brand-mark" aria-hidden="true">∑</div>
-                    <div class="brand-copy">
-                        <h1>Mr Deng Maths</h1>
-                        <p>Quick links, featured learning, and fun tools.</p>
-                    </div>
+                <div class="topbar-brand">
+                    <a href="./" class="topbar-title">Mr Deng Maths</a>
+                    <nav class="topbar-nav" aria-label="Primary navigation">
+                        <a class="topbar-link" href="./app/">Apps</a>
+                        <a class="topbar-link" href="./quiz/">Quiz</a>
+                    </nav>
                 </div>
-                <nav class="nav-links">
-                    <a class="primary" href="./app/">Apps page</a>
-                    <a class="ghost" href="./quiz/">Quiz page</a>
-                </nav>
             </div>
         </header>
 

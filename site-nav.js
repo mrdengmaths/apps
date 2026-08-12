@@ -1,12 +1,13 @@
 (() => {
     const styleId = 'mr-deng-global-nav-style';
-    const navClass = 'mr-deng-global-nav';
-    const navLinkClass = 'mr-deng-global-nav__link';
-    const navLinkActiveClass = 'mr-deng-global-nav__link--active';
-    const navBrandClass = 'mr-deng-global-nav__brand';
-    const navBrandLinkClass = 'mr-deng-global-nav__brand-link';
-    const navInnerClass = 'mr-deng-global-nav__inner';
-    const navLinksClass = 'mr-deng-global-nav__links';
+    const navClass = 'topbar';
+    const navInnerClass = 'topbar-inner';
+    const navBrandClass = 'topbar-brand';
+    const navTitleClass = 'topbar-title';
+    const navLinksClass = 'topbar-nav';
+    const navLinkClass = 'topbar-link';
+    const navLinkActiveClass = 'active';
+    const navBrandLinkClass = 'topbar-title';
     const faviconId = 'mr-deng-favicon-link';
 
     if (document.getElementById(styleId)) {
@@ -245,14 +246,11 @@
     const buildNavMarkup = () => `
         <div class="${navInnerClass}">
             <div class="${navBrandClass}">
-                <a href="${prefixes.home}" class="${navBrandLinkClass}">
-                    <div class="${navClass}__brand-mark" aria-hidden="true">Δ</div>
-                    <span>Mr Deng Maths</span>
-                </a>
+                <a href="${prefixes.home}" class="${navBrandLinkClass}">Mr Deng Maths</a>
+                <nav class="${navLinksClass}" aria-label="Primary navigation">
+                    ${linkMarkup}
+                </nav>
             </div>
-            <nav class="${navLinksClass}" aria-label="Primary navigation">
-                ${linkMarkup}
-            </nav>
             ${searchMarkup}
         </div>
     `;
