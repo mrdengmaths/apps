@@ -8,6 +8,7 @@ const excludedDirs = new Set(['.git', 'node_modules']);
 
 const appMeta = {
   'algebra app': { icon: '🧮', description: 'Practice algebra with interactive questions.', keywords: 'algebra equations expressions variables simplify linear quadratic solving factor expand substitute evaluate polynomial constant coefficient' },
+  'angle mastery': { icon: '📏', description: 'Name angles and find complementary, supplementary and vertically opposite angles.', keywords: 'angle naming complementary supplementary vertically opposite angles year 7 angle relationships' },
   'calculus cricket': { icon: '🏏', description: 'Explore calculus through a game.', keywords: 'calculus derivative integration limits area motion graph rate change antiderivative function curve' },
   'collecting like terms': { icon: '➕', description: 'Simplify expressions by collecting like terms.', keywords: 'like terms simplify algebra expressions combine collect polynomial term expand contract' },
   'congruency crunch': { icon: '🔺', description: 'Test triangle congruence with quick problems.', keywords: 'congruence triangles congruent sides angles sss sas asa aas rhs geometry proof' },
