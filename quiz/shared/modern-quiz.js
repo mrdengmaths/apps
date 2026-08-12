@@ -31,12 +31,40 @@ function latexToComparable(value) {
         .replace(/\s+/g, '');
 }
 
+function ensureJQueryAsset() {
+    if (typeof window.jQuery !== 'undefined') {
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+        const scriptId = 'jquery-js-shared';
+        const existing = document.getElementById(scriptId);
+        if (existing) {
+            if (typeof window.jQuery !== 'undefined') {
+                resolve();
+                return;
+            }
+            existing.addEventListener('load', () => resolve());
+            existing.addEventListener('error', () => reject(new Error('jQuery failed to load')));
+            return;
+        }
+
+        const jqScript = document.createElement('script');
+        jqScript.id = scriptId;
+        jqScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js';
+        jqScript.onload = () => resolve();
+        jqScript.onerror = () => reject(new Error('jQuery failed to load'));
+        document.head.appendChild(jqScript);
+    });
+}
+
 function ensureMathQuillAssets() {
     if (typeof window.MathQuill !== 'undefined') {
         return Promise.resolve();
     }
 
-    return new Promise((resolve, reject) => {
+    // MathQuill 0.10.1 expects jQuery to already be on the page, same as app/algebra-app.
+    return ensureJQueryAsset().then(() => new Promise((resolve, reject) => {
         const cssId = 'mq-css-shared';
         if (!document.getElementById(cssId)) {
             const mqCss = document.createElement('link');
@@ -64,7 +92,7 @@ function ensureMathQuillAssets() {
         mqScript.onload = () => resolve();
         mqScript.onerror = () => reject(new Error('MathQuill failed to load'));
         document.head.appendChild(mqScript);
-    });
+    }));
 }
 
 function initMathInputs() {
@@ -89,11 +117,18 @@ function initMathInputs() {
         }
 
         const host = document.createElement('div');
-        host.className = 'mathquill-host';
+        host.className = 'mathquill-host mathquill-editable';
         el.insertAdjacentElement('afterend', host);
         el.classList.add('mq-source-input');
 
         const field = MQ.MathField(host, {
+            spaceBehavesLikeTab: true,
+            leftRightIntoCmdGoes: 'up',
+            restrictMismatchedBrackets: true,
+            supSubsRequireOperand: true,
+            charsThatBreakOutOfSupSub: '+-=<>',
+            autoSubscriptNumerals: false,
+            autoCommands: 'pi theta sqrt nthroot',
             handlers: {
                 edit: () => {
                     el.value = field.latex();

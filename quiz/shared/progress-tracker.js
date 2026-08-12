@@ -36,7 +36,7 @@
     }
 
     function getQuizName() {
-        const heading = document.querySelector('h1');
+        const heading = document.querySelector('h1:not(.topbar-title)') || document.querySelector('h1');
         return (heading ? heading.textContent.trim() : document.title || 'Quiz').replace(/\s+/g, ' ');
     }
 
@@ -69,7 +69,11 @@
     }
 
     function getQuestionTotal() {
-        if (typeof window.correctAnswers === 'object') {
+        if (window.quizConfig && typeof window.quizConfig.questions === 'object' && window.quizConfig.questions) {
+            return Object.keys(window.quizConfig.questions).length;
+        }
+
+        if (typeof window.correctAnswers === 'object' && window.correctAnswers) {
             return Object.keys(window.correctAnswers).length;
         }
 
@@ -157,7 +161,7 @@
         style.textContent = `
             #${TOGGLE_ID} {
                 position: fixed;
-                right: 20px;
+                left: 20px;
                 bottom: 20px;
                 z-index: 2000;
                 border: none;
@@ -180,7 +184,7 @@
 
             #${TRACKER_ID} {
                 position: fixed;
-                right: 20px;
+                left: 20px;
                 bottom: 86px;
                 width: min(360px, calc(100vw - 28px));
                 max-height: 70vh;
