@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angle Mastery: Year 7 Maths</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Nunito:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0fdfa;
+            background-image: radial-gradient(#14b8a6 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        h1, h2, h3, .btn-text {
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        .canvas-container {
+            position: relative;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 4px solid #0f766e;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.9); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .pop-in {
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .feedback-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.85);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 10;
+            backdrop-filter: blur(2px);
+        }
+
+        .feedback-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 text-slate-800">
+
+    <div class="max-w-3xl w-full bg-white/95 backdrop-blur rounded-3xl shadow-2xl p-6 sm:p-10 border border-teal-100">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl sm:text-5xl font-bold text-teal-600 mb-2 drop-shadow-sm">Angle Mastery!</h1>
+            <p class="text-lg text-slate-500 font-semibold">Year 7 Geometry Challenge</p>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="text-center space-y-6">
+            <div class="bg-teal-50 p-6 rounded-2xl border border-teal-100 inline-block mb-4">
+                <p class="text-lg mb-2">Test your knowledge of:</p>
+                <ul class="text-left list-disc list-inside text-teal-800 font-semibold grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                    <li>Vertically Opposite</li>
+                    <li>Complementary</li>
+                    <li>Supplementary</li>
+                    <li>Naming specific angles (e.g., ∠ABC)</li>
+                </ul>
+            </div>
+            <p class="text-xl font-bold text-slate-700">10 Questions per round.</p>
+            <button onclick="startGame()" class="btn-text mt-6 bg-teal-500 hover:bg-teal-600 text-white text-2xl py-4 px-12 rounded-full shadow-[0_6px_0_#0f766e] hover:shadow-[0_2px_0_#0f766e] hover:translate-y-1 transition-all active:shadow-none active:translate-y-2">
+                Play Now!
+            </button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <div class="text-lg font-bold text-teal-600 bg-teal-50 px-4 py-2 rounded-lg">
+                    Question: <span id="q-number" class="text-2xl">1</span>/10
+                </div>
+                <div class="text-lg font-bold text-amber-500 bg-amber-50 px-4 py-2 rounded-lg">
+                    Score: <span id="score" class="text-2xl">0</span>
+                </div>
+            </div>
+
+            <div class="mb-6 text-center">
+                <h2 id="question-text" class="text-xl sm:text-2xl font-semibold text-slate-700">What is the relationship between the marked angles?</h2>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="canvas-container w-full aspect-video sm:aspect-[2/1] mb-6 flex justify-center items-center bg-slate-50">
+                <canvas id="geometry-canvas" width="600" height="300" class="max-w-full max-h-full"></canvas>
+                
+                <!-- In-canvas Feedback -->
+                <div id="feedback-overlay" class="feedback-overlay">
+                    <div id="feedback-content" class="text-center p-6 bg-white rounded-2xl shadow-xl border-4 border-white">
+                        <span id="feedback-icon" class="text-6xl block mb-2"></span>
+                        <h3 id="feedback-title" class="text-3xl font-bold mb-2">Correct!</h3>
+                        <p id="feedback-msg" class="text-lg text-slate-600 font-semibold"></p>
+                        <button id="next-btn" onclick="nextQuestion()" class="mt-4 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Next</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center w-full max-w-lg mx-auto">
+                <div class="relative w-full flex gap-2">
+                    <button id="angle-symbol-btn" onclick="insertAngleSymbol()" type="button" class="hidden bg-slate-100 hover:bg-slate-200 text-teal-700 text-2xl font-bold py-3 px-5 rounded-xl shadow-[0_4px_0_#cbd5e1] active:shadow-none active:translate-y-1 transition-all border border-slate-300">
+                        ∠
+                    </button>
+                    <input type="text" id="answer-input" placeholder="Type your answer here..." 
+                        class="w-full text-lg p-4 rounded-xl border-2 border-slate-300 focus:border-teal-500 focus:outline-none focus:ring-4 focus:ring-teal-100 transition-all font-semibold text-center sm:text-left shadow-inner"
+                        autocomplete="off">
+                </div>
+                <button onclick="checkAnswer()" id="submit-btn" class="w-full sm:w-auto btn-text bg-amber-400 hover:bg-amber-500 text-slate-900 text-xl py-4 px-8 rounded-xl shadow-[0_4px_0_#b45309] hover:shadow-[0_2px_0_#b45309] hover:translate-y-[2px] transition-all active:shadow-none active:translate-y-1">
+                    Check
+                </button>
+            </div>
+            <p class="text-center text-sm text-slate-400 mt-3 font-semibold">* Spelling counts. <span id="symbol-hint" class="hidden text-teal-600">Use the ∠ button for naming angles!</span></p>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="hidden text-center space-y-6">
+            <h2 class="text-4xl font-bold text-teal-600">Round Complete!</h2>
+            <div class="bg-slate-50 p-8 rounded-3xl inline-block border-2 border-slate-100">
+                <p class="text-2xl text-slate-600 mb-2">Your final score is</p>
+                <p class="text-6xl font-black text-amber-500 drop-shadow-md"><span id="final-score">0</span>/10</p>
+            </div>
+            <p id="end-message" class="text-xl font-semibold text-slate-700"></p>
+            <div class="pt-6">
+                <button onclick="resetGame()" class="btn-text bg-teal-500 hover:bg-teal-600 text-white text-xl py-3 px-10 rounded-full shadow-[0_5px_0_#0f766e] transition-all active:shadow-none active:translate-y-1">
+                    Play Again
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('geometry-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let currentQuestion = 0;
+        let score = 0;
+        const totalQuestions = 10;
+        let currentQuestionData = null;
+        let questionCounts = { comp: 0, supp: 0 };
+
+        // Ensure canvas scales well on mobile
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const isMobile = window.innerWidth < 640;
+            const targetWidth = container.clientWidth;
+            const targetHeight = isMobile ? targetWidth / (16/9) : targetWidth / 2;
+            
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            
+            if (currentQuestionData) drawQuestion(currentQuestionData);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // --- Geometry Helpers ---
+        function getRandomLetter(exclude = []) {
+            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            let l;
+            do { l = letters[Math.floor(Math.random() * letters.length)]; } while (exclude.includes(l));
+            return l;
+        }
+
+        function getArcAngles(vertex, p1, p2) {
+            let a1 = Math.atan2(p1.y - vertex.y, p1.x - vertex.x);
+            let a2 = Math.atan2(p2.y - vertex.y, p2.x - vertex.x);
+            a1 = (a1 + Math.PI * 2) % (Math.PI * 2);
+            a2 = (a2 + Math.PI * 2) % (Math.PI * 2);
+            let diff = a2 - a1;
+            if (diff < 0) diff += Math.PI * 2;
+            // Always return the smaller interior angle
+            if (diff > Math.PI) return { start: a2, end: a1 };
+            return { start: a1, end: a2 };
+        }
+
+        function getIntersection(p1, p2, p3, p4) {
+            const num = (p1.x*p2.y - p1.y*p2.x)*(p3.x - p4.x) - (p1.x - p2.x)*(p3.x*p4.y - p3.y*p4.x);
+            const den = (p1.x - p2.x)*(p3.y - p4.y) - (p1.y - p2.y)*(p3.x - p4.x);
+            const numY = (p1.x*p2.y - p1.y*p2.x)*(p3.y - p4.y) - (p1.y - p2.y)*(p3.x*p4.y - p3.y*p4.x);
+            return {x: num/den, y: numY/den};
+        }
+
+        function generateConvexQuad(cx, cy, scale) {
+            const angles = [
+                Math.random() * Math.PI/2,
+                Math.PI/2 + Math.random() * Math.PI/2,
+                Math.PI + Math.random() * Math.PI/2,
+                Math.PI*1.5 + Math.random() * Math.PI/2
+            ];
+            const A = {x: cx + Math.cos(angles[0])*scale, y: cy + Math.sin(angles[0])*scale, name: getRandomLetter()};
+            const B = {x: cx + Math.cos(angles[1])*scale, y: cy + Math.sin(angles[1])*scale, name: getRandomLetter([A.name])};
+            const C = {x: cx + Math.cos(angles[2])*scale, y: cy + Math.sin(angles[2])*scale, name: getRandomLetter([A.name, B.name])};
+            const D = {x: cx + Math.cos(angles[3])*scale, y: cy + Math.sin(angles[3])*scale, name: getRandomLetter([A.name, B.name, C.name])};
+            return {A, B, C, D};
+        }
+
+        // Helper to find the best angle to place a label without overlapping lines
+        function getLabelOffsetAngle(pt, lines) {
+            let incidentAngles = [];
+            if (lines) {
+                lines.forEach(l => {
+                    if (Math.hypot(l[0].x - pt.x, l[0].y - pt.y) < 1) incidentAngles.push(Math.atan2(l[1].y - pt.y, l[1].x - pt.x));
+                    if (Math.hypot(l[1].x - pt.x, l[1].y - pt.y) < 1) incidentAngles.push(Math.atan2(l[0].y - pt.y, l[0].x - pt.x));
+                });
+            }
+            if (incidentAngles.length === 0) return -Math.PI / 4; 
+            if (incidentAngles.length === 1) return incidentAngles[0] + Math.PI; 
+
+            incidentAngles.sort((a, b) => a - b);
+            let maxGap = 0;
+            let bestAngle = 0;
+            for (let i = 0; i < incidentAngles.length; i++) {
+                let a1 = incidentAngles[i];
+                let a2 = incidentAngles[(i + 1) % incidentAngles.length];
+                let gap = a2 - a1;
+                if (gap <= 0) gap += Math.PI * 2; 
+                if (gap > maxGap) {
+                    maxGap = gap;
+                    bestAngle = a1 + gap / 2;
+                }
+            }
+            return bestAngle;
+        }
+
+        // --- Data & Geometry Generators ---
+        
+        function generateQuestion() {
+            // Heavily favor naming angles over vertically opposite
+            let availableTypes = [
+                'name_angle', 'name_angle', 'name_angle', 'name_angle', 'name_angle', 'name_angle',
+                'vertically_opposite'
+            ];
+            
+            if (questionCounts.comp < 1) availableTypes.push('complementary');
+            if (questionCounts.supp < 1) availableTypes.push('supplementary');
+            
+            const type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+            if (type === 'complementary') questionCounts.comp++;
+            if (type === 'supplementary') questionCounts.supp++;
+            
+            const baseRotation = (Math.random() - 0.5) * Math.PI / 6; 
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const scale = Math.min(canvas.width, canvas.height) * 0.4;
+
+            let data = { 
+                type: type, rotation: baseRotation, 
+                lines: [], rays: [], infiniteLines: [], pointsToDraw: [], anglesToMark: [] 
+            };
+
+            if (type === 'vertically_opposite') {
+                data.questionText = "What is the relationship between the two marked angles?";
+                data.answers = ['verticallyopposite']; // Requires strictly these words
+                
+                if (Math.random() > 0.4) {
+                    // Shape with crossing lines
+                    const q = generateConvexQuad(cx, cy, scale);
+                    const E = getIntersection(q.A, q.C, q.B, q.D);
+                    data.lines = [[q.A, q.B], [q.B, q.C], [q.C, q.D], [q.D, q.A], [q.A, q.C], [q.B, q.D]];
+                    data.anglesToMark = [
+                        { p: E, a: getArcAngles(E, q.A, q.B), adjacentPts: [q.A, q.B] }, 
+                        { p: E, a: getArcAngles(E, q.C, q.D), adjacentPts: [q.C, q.D] }
+                    ];
+                } else {
+                    // Standard isolated cross
+                    const a1 = (Math.random() * Math.PI/2) - Math.PI/4; 
+                    const a2 = a1 + Math.PI/2 + (Math.random() * Math.PI/4); 
+                    const center = {x: cx, y: cy};
+                    const p1 = {x: cx + Math.cos(a1)*scale, y: cy + Math.sin(a1)*scale};
+                    const p2 = {x: cx + Math.cos(a2)*scale, y: cy + Math.sin(a2)*scale};
+                    data.infiniteLines = [[center, p1], [center, p2]];
+                    
+                    if (Math.random() > 0.5) {
+                        data.anglesToMark = [
+                            { p: center, a: {start: a1, end: a2} },
+                            { p: center, a: {start: a1 + Math.PI, end: a2 + Math.PI} }
+                        ];
+                    } else {
+                        data.anglesToMark = [
+                            { p: center, a: {start: a2, end: a1 + Math.PI} },
+                            { p: center, a: {start: a2 + Math.PI, end: a1 + Math.PI*2} }
+                        ];
+                    }
+                }
+            }
+            else if (type === 'complementary' || type === 'supplementary') {
+                data.questionText = "What is the relationship between the two marked angles?";
+                data.answers = [type];
+                
+                const startAngle = (Math.random() * Math.PI*2);
+                const totalAngle = type === 'complementary' ? Math.PI/2 : Math.PI;
+                const splitFactor = 0.3 + Math.random() * 0.4; 
+                const midAngle = startAngle + (totalAngle * splitFactor);
+                const endAngle = startAngle + totalAngle;
+
+                const center = {x: cx, y: cy};
+                data.rays = [
+                    {p: center, angle: startAngle, len: scale * 1.2},
+                    {p: center, angle: midAngle, len: scale * 1.2},
+                    {p: center, angle: endAngle, len: scale * 1.2}
+                ];
+                
+                data.anglesToMark = [
+                    { p: center, a: {start: startAngle, end: midAngle} },
+                    { p: center, a: {start: midAngle, end: endAngle} }
+                ];
+                data.compSuppData = { type: type, center: center, start: startAngle, end: endAngle };
+            }
+            else if (type === 'name_angle') {
+                data.questionText = "Name the marked angle using 3 letters (e.g., ∠ABC)";
+                data.rotation = 0; // Don't rotate shapes with text
+                
+                const subType = ['isolated', 'triangle', 'quad', 'quad_diag', 'multi_ray', 'adjacent_triangles'][Math.floor(Math.random() * 6)];
+                const s = scale * 0.9;
+
+                if (subType === 'isolated') {
+                    const a1 = Math.random() * Math.PI * 2;
+                    let diff = Math.PI/6 + Math.random() * (Math.PI*2/3);
+                    if (Math.random() > 0.5) diff = -diff;
+                    const a2 = a1 + diff;
+                    
+                    const p2 = {x: cx, y: cy, name: getRandomLetter()}; 
+                    const p1 = {x: cx + Math.cos(a1)*s, y: cy + Math.sin(a1)*s, name: getRandomLetter([p2.name])};
+                    const p3 = {x: cx + Math.cos(a2)*s, y: cy + Math.sin(a2)*s, name: getRandomLetter([p2.name, p1.name])};
+                    
+                    data.lines = [[p1, p2], [p2, p3]];
+                    data.pointsToDraw = [p1, p2, p3];
+                    data.anglesToMark = [{ p: p2, a: getArcAngles(p2, p1, p3), adjacentPts: [p1, p3] }];
+                    data.answers = [p1.name + p2.name + p3.name, p3.name + p2.name + p1.name];
+                } 
+                else if (subType === 'triangle') {
+                    const A = {x: cx - s*0.8, y: cy + s*0.6, name: getRandomLetter()};
+                    const B = {x: cx, y: cy - s*0.7, name: getRandomLetter([A.name])};
+                    const C = {x: cx + s*0.8, y: cy + s*0.6, name: getRandomLetter([A.name, B.name])};
+                    
+                    data.lines = [[A, B], [B, C], [C, A]];
+                    data.pointsToDraw = [A, B, C];
+                    // Pick a random vertex to mark
+                    const pts = [A, B, C];
+                    const vIdx = Math.floor(Math.random() * 3);
+                    const v = pts[vIdx];
+                    const p1 = pts[(vIdx+1)%3];
+                    const p2 = pts[(vIdx+2)%3];
+                    
+                    data.anglesToMark = [{ p: v, a: getArcAngles(v, p1, p2), adjacentPts: [p1, p2] }];
+                    data.answers = [p1.name + v.name + p2.name, p2.name + v.name + p1.name];
+                }
+                else if (subType === 'quad') {
+                    const q = generateConvexQuad(cx, cy, s);
+                    data.lines = [[q.A, q.B], [q.B, q.C], [q.C, q.D], [q.D, q.A]];
+                    data.pointsToDraw = [q.A, q.B, q.C, q.D];
+                    
+                    data.anglesToMark = [{ p: q.B, a: getArcAngles(q.B, q.A, q.C), adjacentPts: [q.A, q.C] }];
+                    data.answers = [q.A.name + q.B.name + q.C.name, q.C.name + q.B.name + q.A.name];
+                }
+                else if (subType === 'quad_diag') {
+                    const q = generateConvexQuad(cx, cy, s);
+                    const E = getIntersection(q.A, q.C, q.B, q.D);
+                    E.name = getRandomLetter([q.A.name, q.B.name, q.C.name, q.D.name]);
+                    
+                    data.lines = [[q.A, q.B], [q.B, q.C], [q.C, q.D], [q.D, q.A], [q.A, q.C], [q.B, q.D]];
+                    data.pointsToDraw = [q.A, q.B, q.C, q.D, E];
+                    
+                    data.anglesToMark = [{ p: E, a: getArcAngles(E, q.A, q.B), adjacentPts: [q.A, q.B] }];
+                    data.answers = [q.A.name + E.name + q.B.name, q.B.name + E.name + q.A.name];
+                }
+                else if (subType === 'multi_ray') {
+                    const numRays = 3 + Math.floor(Math.random() * 3); // 3, 4, or 5 rays
+                    const O = {x: cx, y: cy + s*0.4, name: getRandomLetter()};
+                    data.pointsToDraw = [O];
+                    data.lines = [];
+                    
+                    let baseAngle = -Math.PI + Math.PI/8;
+                    let angleStep = (Math.PI - Math.PI/4) / (numRays - 1);
+                    let rays = [];
+                    let usedLetters = [O.name];
+                    
+                    for(let i=0; i<numRays; i++) {
+                        let a = baseAngle + i * angleStep + (Math.random()*0.2 - 0.1);
+                        let pt = { x: O.x + Math.cos(a)*s, y: O.y + Math.sin(a)*s, name: getRandomLetter(usedLetters) };
+                        usedLetters.push(pt.name);
+                        data.pointsToDraw.push(pt);
+                        data.lines.push([O, pt]);
+                        rays.push(pt);
+                    }
+                    
+                    const rIdx = Math.floor(Math.random() * (numRays - 1));
+                    const p1 = rays[rIdx];
+                    const p2 = rays[rIdx+1];
+                    
+                    data.anglesToMark = [{ p: O, a: getArcAngles(O, p1, p2), adjacentPts: [p1, p2] }];
+                    data.answers = [p1.name + O.name + p2.name, p2.name + O.name + p1.name];
+                }
+                else if (subType === 'adjacent_triangles') {
+                    const A = {x: cx - s*0.6, y: cy + (Math.random()*s*0.2 - s*0.1), name: getRandomLetter()};
+                    const C = {x: cx + s*0.6, y: cy + (Math.random()*s*0.2 - s*0.1), name: getRandomLetter([A.name])};
+                    const B = {x: cx + (Math.random()*s*0.4 - s*0.2), y: cy - s*0.7, name: getRandomLetter([A.name, C.name])};
+                    const D = {x: cx + (Math.random()*s*0.4 - s*0.2), y: cy + s*0.7, name: getRandomLetter([A.name, C.name, B.name])};
+
+                    data.lines = [[A, B], [B, C], [C, A], [A, D], [C, D]];
+                    data.pointsToDraw = [A, B, C, D];
+
+                    const targetVertex = Math.random() > 0.5 ? A : C;
+                    let p1, p2;
+                    if (targetVertex === A) {
+                        if (Math.random() > 0.5) { p1 = B; p2 = C; } else { p1 = C; p2 = D; }
+                    } else {
+                        if (Math.random() > 0.5) { p1 = B; p2 = A; } else { p1 = A; p2 = D; }
+                    }
+
+                    data.anglesToMark = [{ p: targetVertex, a: getArcAngles(targetVertex, p1, p2), adjacentPts: [p1, p2] }];
+                    data.answers = [p1.name + targetVertex.name + p2.name, p2.name + targetVertex.name + p1.name];
+                }
+            }
+
+            return data;
+        }
+
+        function drawQuestion(data) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            
+            if (data.rotation) {
+                ctx.translate(canvas.width/2, canvas.height/2);
+                ctx.rotate(data.rotation);
+                ctx.translate(-canvas.width/2, -canvas.height/2);
+            }
+
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#334155';
+
+            // Draw regular finite lines
+            if (data.lines) {
+                data.lines.forEach(l => {
+                    ctx.beginPath();
+                    ctx.moveTo(l[0].x, l[0].y);
+                    ctx.lineTo(l[1].x, l[1].y);
+                    ctx.stroke();
+                });
+            }
+
+            // Draw rays with arrows
+            if (data.rays) {
+                data.rays.forEach(r => {
+                    const endX = r.p.x + Math.cos(r.angle) * r.len;
+                    const endY = r.p.y + Math.sin(r.angle) * r.len;
+                    ctx.beginPath();
+                    ctx.moveTo(r.p.x, r.p.y);
+                    ctx.lineTo(endX, endY);
+                    ctx.stroke();
+                    drawArrowHead(endX, endY, r.angle);
+                });
+            }
+
+            // Draw infinite lines (crossing lines)
+            if (data.infiniteLines) {
+                data.infiniteLines.forEach(l => {
+                    const dx = l[1].x - l[0].x;
+                    const dy = l[1].y - l[0].y;
+                    const len = Math.sqrt(dx*dx + dy*dy);
+                    const ex = dx / len * 1000;
+                    const ey = dy / len * 1000;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(l[0].x - ex, l[0].y - ey);
+                    ctx.lineTo(l[1].x + ex, l[1].y + ey);
+                    ctx.stroke();
+
+                    drawArrowHead(l[0].x - ex * 0.4, l[0].y - ey * 0.4, Math.atan2(dy, dx) + Math.PI);
+                    drawArrowHead(l[1].x + ex * 0.4, l[1].y + ey * 0.4, Math.atan2(dy, dx));
+                });
+            }
+
+            // Draw special markers for comp/supp
+            if (data.compSuppData) {
+                const cd = data.compSuppData;
+                if (cd.type === 'complementary') {
+                    ctx.save();
+                    ctx.translate(cd.center.x, cd.center.y);
+                    ctx.rotate(cd.start);
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0); ctx.lineTo(25, 0); ctx.lineTo(25, 25); ctx.lineTo(0, 25);
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    ctx.restore();
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(cd.center.x, cd.center.y, 15, cd.start, cd.end);
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+
+            // Draw Marked Angles
+            if (data.anglesToMark) {
+                const colors = ['#f59e0b', '#3b82f6'];
+                const defScale = Math.min(canvas.width, canvas.height) * 0.4;
+                
+                data.anglesToMark.forEach((am, i) => {
+                    // Dynamically size the arc so it never extends past the shortest line
+                    let radius = defScale * 0.35;
+                    if (am.adjacentPts) {
+                        const d1 = Math.hypot(am.adjacentPts[0].x - am.p.x, am.adjacentPts[0].y - am.p.y);
+                        const d2 = Math.hypot(am.adjacentPts[1].x - am.p.x, am.adjacentPts[1].y - am.p.y);
+                        radius = Math.min(d1, d2) * 0.4;
+                        radius = Math.max(15, Math.min(radius, 45)); // Clamp size
+                    }
+
+                    ctx.beginPath();
+                    ctx.moveTo(am.p.x, am.p.y);
+                    ctx.arc(am.p.x, am.p.y, radius, am.a.start, am.a.end, false);
+                    ctx.lineTo(am.p.x, am.p.y);
+                    
+                    ctx.fillStyle = colors[i % colors.length] + '66';
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.arc(am.p.x, am.p.y, radius, am.a.start, am.a.end, false);
+                    ctx.strokeStyle = colors[i % colors.length];
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                });
+            }
+
+            // Draw Points and Labels with smart offset
+            if (data.pointsToDraw && data.pointsToDraw.length > 0) {
+                data.pointsToDraw.forEach(pt => {
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, 6, 0, Math.PI*2);
+                    ctx.fillStyle = '#14b8a6';
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Smart placement based on incident lines
+                    let labelAngle = getLabelOffsetAngle(pt, data.lines);
+                    const off = 28;
+                    
+                    ctx.font = 'bold 24px Fredoka';
+                    ctx.fillStyle = '#0f172a';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(pt.name, pt.x + Math.cos(labelAngle)*off, pt.y + Math.sin(labelAngle)*off);
+                });
+            }
+
+            ctx.restore();
+        }
+
+        function drawArrowHead(x, y, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0); ctx.lineTo(-15, -6); ctx.lineTo(-15, 6);
+            ctx.closePath();
+            ctx.fillStyle = '#334155';
+            ctx.fill();
+            ctx.restore();
+        }
+
+
+        // --- Game Flow Logic ---
+
+        function startGame() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            score = 0;
+            currentQuestion = 0;
+            questionCounts = { comp: 0, supp: 0 }; // Reset counters
+            updateScore();
+            resizeCanvas();
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            currentQuestion++;
+            if (currentQuestion > totalQuestions) {
+                endGame();
+                return;
+            }
+
+            document.getElementById('q-number').innerText = currentQuestion;
+            document.getElementById('answer-input').value = '';
+            document.getElementById('answer-input').focus();
+            
+            document.getElementById('answer-input').classList.remove('border-red-500', 'border-green-500', 'shake');
+            document.getElementById('feedback-overlay').classList.remove('active');
+            
+            currentQuestionData = generateQuestion();
+            document.getElementById('question-text').innerText = currentQuestionData.questionText;
+            
+            // Adjust UI for specific question types
+            if(currentQuestionData.type === 'name_angle') {
+                document.getElementById('angle-symbol-btn').classList.remove('hidden');
+                document.getElementById('symbol-hint').classList.remove('hidden');
+                document.getElementById('answer-input').placeholder = "e.g. ∠ABC";
+            } else {
+                document.getElementById('angle-symbol-btn').classList.add('hidden');
+                document.getElementById('symbol-hint').classList.add('hidden');
+                document.getElementById('answer-input').placeholder = "Relationship...";
+            }
+
+            drawQuestion(currentQuestionData);
+        }
+        
+        function insertAngleSymbol() {
+            const inputEl = document.getElementById('answer-input');
+            inputEl.value = '∠' + inputEl.value.replace(/∠/g, ''); // Ensure only one at start
+            inputEl.focus();
+        }
+
+        function checkAnswer() {
+            if (document.getElementById('feedback-overlay').classList.contains('active')) return;
+
+            const inputEl = document.getElementById('answer-input');
+            let rawAnswer = inputEl.value.trim();
+            if (rawAnswer === '') return;
+
+            let isCorrect = false;
+            let missingSymbol = false;
+
+            if (currentQuestionData.type === 'name_angle') {
+                const upperAns = rawAnswer.toUpperCase();
+                if (!upperAns.startsWith('∠') && !upperAns.startsWith('ANGLE')) {
+                    missingSymbol = true; // They forgot the symbol
+                } else {
+                    let lettersOnly = upperAns.replace(/[^A-Z]/g, '');
+                    if (currentQuestionData.answers.includes(lettersOnly)) {
+                        isCorrect = true;
+                    }
+                }
+            } else {
+                let cleanedUserAnswer = rawAnswer.toLowerCase()
+                                            .replace(/angles?/g, '')
+                                            .replace(/the/g, '')
+                                            .replace(/[^a-z0-9]/g, '');
+                
+                if (currentQuestionData.answers.includes(cleanedUserAnswer)) {
+                    isCorrect = true;
+                }
+            }
+
+            showFeedback(isCorrect, missingSymbol);
+        }
+
+        function showFeedback(isCorrect, missingSymbol = false) {
+            const overlay = document.getElementById('feedback-overlay');
+            const content = document.getElementById('feedback-content');
+            const title = document.getElementById('feedback-title');
+            const msg = document.getElementById('feedback-msg');
+            const icon = document.getElementById('feedback-icon');
+            const input = document.getElementById('answer-input');
+            const btn = document.getElementById('next-btn');
+
+            overlay.classList.add('active');
+            content.classList.remove('pop-in');
+            void content.offsetWidth; 
+            content.classList.add('pop-in');
+
+            if (isCorrect) {
+                score++;
+                updateScore();
+                title.innerText = "Awesome!";
+                title.className = "text-3xl font-bold mb-2 text-green-600";
+                msg.innerText = "You got it exactly right.";
+                icon.innerText = "🎉";
+                content.className = "text-center p-6 bg-green-50 rounded-2xl shadow-xl border-4 border-green-200";
+                btn.className = "mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-[0_4px_0_#15803d] active:shadow-none active:translate-y-1 text-xl";
+                
+                input.classList.add('border-green-500');
+                setTimeout(() => {
+                    if (overlay.classList.contains('active') && isCorrect) nextQuestion();
+                }, 2000);
+
+            } else {
+                title.innerText = "Not Quite.";
+                title.className = "text-3xl font-bold mb-2 text-red-600";
+                
+                if (missingSymbol) {
+                    msg.innerHTML = `You must include the angle symbol <strong>∠</strong> in front of your letters!`;
+                } else {
+                    let niceAnswer = currentQuestionData.answers[0];
+                    if (currentQuestionData.type === 'name_angle') niceAnswer = "∠" + niceAnswer;
+                    if (currentQuestionData.type === 'vertically_opposite') niceAnswer = "Vertically Opposite";
+                    if (currentQuestionData.type === 'complementary') niceAnswer = "Complementary";
+                    if (currentQuestionData.type === 'supplementary') niceAnswer = "Supplementary";
+                    
+                    msg.innerHTML = `The correct answer is <br><span class="text-xl font-bold text-slate-800 mt-2 inline-block">${niceAnswer}</span>`;
+                }
+                
+                icon.innerText = "🤔";
+                content.className = "text-center p-6 bg-red-50 rounded-2xl shadow-xl border-4 border-red-200";
+                btn.className = "mt-4 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-[0_4px_0_#0f172a] active:shadow-none active:translate-y-1 text-xl";
+                input.classList.add('shake', 'border-red-500');
+            }
+            btn.focus();
+        }
+
+        function nextQuestion() { loadQuestion(); }
+        function updateScore() { document.getElementById('score').innerText = score; }
+
+        function endGame() {
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.remove('hidden');
+            document.getElementById('final-score').innerText = score;
+
+            const msgEl = document.getElementById('end-message');
+            if (score === 10) {
+                msgEl.innerText = "Flawless! You are an Angle Master! 🏆";
+                msgEl.className = "text-2xl font-bold text-amber-500";
+            } else if (score >= 7) {
+                msgEl.innerText = "Great job! You know your geometry well. 🌟";
+                msgEl.className = "text-xl font-semibold text-teal-600";
+            } else {
+                msgEl.innerText = "Keep practicing to master these relationships. 👍";
+                msgEl.className = "text-xl font-semibold text-slate-600";
+            }
+        }
+
+        function resetGame() {
+            document.getElementById('end-screen').classList.add('hidden');
+            startGame();
+        }
+
+        document.getElementById('answer-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                if(document.getElementById('feedback-overlay').classList.contains('active')) {
+                    nextQuestion();
+                } else {
+                    checkAnswer();
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
