@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Angles in Transversals</title>
+<style>
+:root {
+  --bg: #f0f4ff;
+  --card-bg: #ffffff;
+  --card-border: #d4daf0;
+  --primary: #7c8cf8;
+  --primary-dark: #5b6be6;
+  --primary-light: #b8c1fc;
+  --secondary: #fbbf24;
+  --success: #6dd4a0;
+  --success-dark: #3cb878;
+  --danger: #f87171;
+  --danger-light: #fecaca;
+  --text: #2d3250;
+  --text-light: #6b7294;
+  --corresponding: #7c8cf8;
+  --alternate: #f472b6;
+  --cointerior: #fbbf24;
+  --vertically-opposite: #6dd4a0;
+  --pastel-pink: #fce4ec;
+  --pastel-blue: #e3f2fd;
+  --pastel-green: #e8f5e9;
+  --pastel-yellow: #fffde7;
+  --pastel-purple: #ede7f6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  min-height: 100vh;
+  font-size: 18px;
+}
+
+.app-header {
+  text-align: center;
+  padding: 3rem 2rem 2rem;
+  background: var(--pastel-purple);
+  border-bottom: 2px solid var(--card-border);
+}
+.app-header h1 {
+  font-size: 2.8rem; font-weight: 900;
+  color: var(--text);
+  letter-spacing: -0.03em;
+}
+.app-header p {
+  font-size: 1.2rem; color: var(--text-light); margin-top: 0.4rem;
+  font-weight: 500;
+}
+
+.tab-bar {
+  display: flex; gap: 0.8rem; justify-content: center;
+  padding: 1rem 1.5rem;
+  background: var(--pastel-purple);
+  border-bottom: 2px solid var(--card-border);
+  position: sticky; top: 0; z-index: 10;
+}
+.tab-btn {
+  padding: 0.9rem 2.5rem;
+  border: 2px solid var(--card-border);
+  background: var(--card-bg);
+  border-radius: 999px;
+  font-size: 1.15rem; font-weight: 700;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+.tab-btn:hover {
+  background: var(--pastel-blue);
+  color: var(--text);
+  border-color: var(--primary-light);
+}
+.tab-btn:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.tab-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.main-content { display: none; padding: 2rem 1.5rem; max-width: 1000px; margin: 0 auto; }
+.main-content.active { display: block; }
+
+.card {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 1.2rem;
+  padding: 2.5rem;
+  margin-bottom: 1.8rem;
+}
+.card h2 {
+  font-size: 1.7rem; margin-bottom: 0.7rem;
+  color: var(--text); font-weight: 800;
+}
+
+.canvas-container { display: flex; justify-content: center; margin: 1.5rem 0; }
+canvas {
+  border: 2px solid var(--card-border);
+  border-radius: 1rem;
+  cursor: pointer;
+  max-width: 100%;
+  background: #fafbff;
+}
+
+.legend {
+  display: flex; flex-wrap: wrap; gap: 1.2rem; margin-top: 1.2rem;
+  padding: 1.2rem 1.5rem;
+  background: var(--pastel-blue);
+  border-radius: 1rem;
+  border: 2px solid var(--card-border);
+}
+.legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; font-weight: 600; color: var(--text); }
+.legend-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
+
+.info-box {
+  background: var(--pastel-blue);
+  border-left: 5px solid var(--primary);
+  padding: 1.3rem 1.5rem; border-radius: 0 1rem 1rem 0;
+  margin: 1.2rem 0; font-size: 1.1rem; line-height: 1.8;
+  color: var(--text);
+}
+.prompt-box {
+  background: var(--pastel-yellow);
+  border-left: 5px solid var(--secondary);
+  padding: 1.3rem 1.5rem; border-radius: 0 1rem 1rem 0;
+  margin: 1.2rem 0; font-size: 1.2rem; font-weight: 700;
+  color: var(--text);
+}
+.feedback {
+  padding: 1.3rem 1.5rem; border-radius: 1rem; margin: 1.2rem 0;
+  font-weight: 600; font-size: 1.1rem; display: none; line-height: 1.7;
+}
+.feedback.correct {
+  background: var(--pastel-green); border-left: 5px solid var(--success);
+  color: #1b5e20; display: block;
+}
+.feedback.incorrect {
+  background: var(--pastel-pink); border-left: 5px solid var(--danger);
+  color: #b71c1c; display: block;
+}
+
+.btn {
+  padding: 0.85rem 2rem; border: 2px solid transparent; border-radius: 999px;
+  font-size: 1.05rem; font-weight: 700; cursor: pointer;
+  transition: all 200ms ease;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.btn-primary {
+  background: var(--primary); color: white; border-color: var(--primary);
+}
+.btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+.btn-success {
+  background: var(--success); color: white; border-color: var(--success);
+}
+.btn-success:hover { background: var(--success-dark); border-color: var(--success-dark); }
+.btn-danger { background: var(--danger); color: white; border-color: var(--danger); }
+.btn-secondary {
+  background: var(--card-bg); border-color: var(--card-border); color: var(--text);
+}
+.btn-secondary:hover { background: var(--pastel-blue); border-color: var(--primary-light); }
+
+.btn-group { display: flex; flex-wrap: wrap; gap: 0.7rem; margin: 1.2rem 0; }
+.btn-choice {
+  padding: 0.9rem 1.8rem;
+  border: 2px solid var(--card-border);
+  border-radius: 999px;
+  background: var(--card-bg);
+  font-size: 1.05rem; font-weight: 700;
+  color: var(--text); cursor: pointer;
+  transition: all 200ms ease;
+}
+.btn-choice:hover {
+  border-color: var(--primary);
+  background: var(--pastel-purple);
+}
+.btn-choice:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+
+.score-bar {
+  display: flex; align-items: center; gap: 1.2rem;
+  padding: 1.1rem 1.5rem;
+  background: var(--pastel-green);
+  border-radius: 999px; margin-bottom: 1.2rem;
+  font-weight: 700; font-size: 1.1rem;
+  border: 2px solid #c8e6c9;
+  color: var(--text);
+}
+.score-bar .score { color: #2e7d32; font-size: 1.2rem; }
+.score-bar .total { color: var(--text-light); }
+
+.instructions { font-size: 1.1rem; color: var(--text-light); margin-bottom: 1rem; line-height: 1.7; }
+
+.input-row { display: flex; gap: 0.7rem; flex-wrap: wrap; align-items: stretch; }
+.input-row input {
+  flex: 1; min-width: 220px; padding: 0.9rem 1.4rem;
+  border: 2px solid var(--card-border);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 1.1rem; font-family: inherit; font-weight: 600;
+  transition: all 200ms;
+}
+.input-row input::placeholder { color: #a0a8c4; }
+.input-row input:focus {
+  outline: none; border-color: var(--primary);
+}
+
+.actions-row { display: flex; gap: 0.7rem; flex-wrap: wrap; margin-top: 1.2rem; }
+
+.trophy-banner {
+  background: var(--pastel-yellow);
+  border: 2px solid #ffe082;
+  border-radius: 1rem;
+  padding: 1.3rem 1.5rem; margin: 1rem 0;
+  text-align: center; font-size: 1.25rem; font-weight: 800;
+  color: #f57f17; display: none;
+}
+.trophy-banner.show { display: block; }
+
+.level-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin: 1.5rem 0;
+}
+.level-card {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 1.2rem;
+  padding: 2rem 1.5rem; cursor: pointer;
+  transition: all 200ms ease;
+  text-align: center; position: relative;
+}
+.level-card:hover {
+  border-color: var(--primary);
+  background: var(--pastel-purple);
+}
+.level-card:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.level-card.locked { opacity: 0.4; cursor: not-allowed; }
+.level-card.locked:hover { border-color: var(--card-border); background: var(--card-bg); }
+.level-card.active-level { border-color: var(--primary); background: var(--pastel-purple); }
+.level-num { font-size: 3rem; font-weight: 900; color: var(--primary); margin-bottom: 0.3rem; }
+.level-card.locked .level-num { color: #c4c9de; }
+.level-title { font-size: 1.2rem; font-weight: 800; color: var(--text); margin-bottom: 0.3rem; }
+.level-desc { font-size: 0.95rem; color: var(--text-light); line-height: 1.5; }
+.level-trophy { position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem; }
+.level-lock { position: absolute; top: 1rem; right: 1rem; font-size: 1.3rem; }
+.back-btn { margin-bottom: 1.2rem; }
+.game-area { display: none; }
+.game-area.active { display: block; }
+
+.cert-overlay {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 100;
+  align-items: center; justify-content: center;
+}
+.cert-overlay.show { display: flex; }
+.cert-modal {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 1.2rem; padding: 2.5rem;
+  max-width: 480px; width: 90%; text-align: center;
+}
+.cert-modal h3 { font-size: 1.6rem; color: var(--text); margin-bottom: 0.5rem; }
+.cert-modal p { color: var(--text-light); margin-bottom: 1.5rem; font-size: 1.05rem; }
+.cert-modal input {
+  width: 100%; padding: 1rem 1.4rem;
+  border: 2px solid var(--card-border);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 1.15rem; font-family: inherit;
+  font-weight: 600; text-align: center; margin-bottom: 1.2rem;
+}
+.cert-modal input::placeholder { color: #a0a8c4; }
+.cert-modal input:focus {
+  outline: none; border-color: var(--primary);
+}
+.cert-btn-row { display: flex; gap: 0.8rem; justify-content: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .btn-choice, .tab-btn, .level-card { transition: none; }
+}
+@media (max-width: 640px) {
+  .app-header { padding: 2rem 1.2rem 1.5rem; }
+  .app-header h1 { font-size: 1.8rem; }
+  .tab-btn { font-size: 1rem; padding: 0.75rem 1.5rem; }
+  .main-content { padding: 1.2rem 0.8rem; }
+  .card { padding: 1.5rem; }
+  .prompt-box { font-size: 1.05rem; }
+  .level-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <h1>📐 Angles in Transversals</h1>
+  <p>Explore and master angle relationships with parallel lines</p>
+</div>
+<div class="tab-bar" role="tablist">
+  <button class="tab-btn active" role="tab" aria-selected="true" data-tab="explorer">🔍 Explorer</button>
+  <button class="tab-btn" role="tab" aria-selected="false" data-tab="games">🎮 Games</button>
+</div>
+
+<!-- EXPLORER -->
+<div class="main-content active" id="tab-explorer">
+  <div class="card">
+    <h2>Angle Explorer</h2>
+    <p class="instructions">Click on any angle to highlight it and see all its related angles.</p>
+    <div class="canvas-container"><canvas id="explorerCanvas" width="700" height="480" aria-label="Interactive transversal diagram"></canvas></div>
+    <div id="explorerInfo" class="info-box">Click any angle on the diagram to explore its relationships.</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--primary)"></div> Selected</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--corresponding)"></div> Corresponding</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--alternate)"></div> Alternate (Interior)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--cointerior)"></div> Co-interior</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--vertically-opposite)"></div> Vertically Opposite</div>
+    </div>
+  </div>
+</div>
+
+<!-- GAMES -->
+<div class="main-content" id="tab-games">
+  <div id="levelSelector">
+    <div class="card">
+      <h2>Choose a Level</h2>
+      <p class="instructions">Complete each level with 9/10 or 10/10 to earn a trophy 🏆. Earn trophies in Levels 1–3 to unlock Level 4!</p>
+      <div class="level-grid">
+        <div class="level-card" tabindex="0" data-level="1">
+          <span class="level-trophy" id="lt1"></span>
+          <div class="level-num">1</div>
+          <div class="level-title">Click the Angle</div>
+          <div class="level-desc">Find and click the angle with the given relationship to the highlighted angle.</div>
+        </div>
+        <div class="level-card" tabindex="0" data-level="2">
+          <span class="level-trophy" id="lt2"></span>
+          <div class="level-num">2</div>
+          <div class="level-title">Name the Relationship</div>
+          <div class="level-desc">Two angles are highlighted — type the correct relationship between them.</div>
+        </div>
+        <div class="level-card" tabindex="0" data-level="3">
+          <span class="level-trophy" id="lt3"></span>
+          <div class="level-num">3</div>
+          <div class="level-title">Parallel or Not?</div>
+          <div class="level-desc">Given angle sizes, decide whether the lines are parallel and give the reason.</div>
+        </div>
+        <div class="level-card" tabindex="0" data-level="4" id="level4Card">
+          <span class="level-lock" id="lt4lock">🔒</span>
+          <span class="level-trophy" id="lt4"></span>
+          <div class="level-num">4</div>
+          <div class="level-title">Algebra Challenge</div>
+          <div class="level-desc">Use angle relationships and algebra to find the value of x. Requires all three trophies to unlock!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-area" id="game1Area">
+    <button class="btn btn-secondary back-btn" id="back1">← Back to Levels</button>
+    <div class="card">
+      <h2>Level 1: Click the Correct Angle</h2>
+      <p class="instructions">Find and click the angle that has the given relationship to the highlighted angle.</p>
+      <div class="score-bar">
+        <span>Score: <span class="score" id="g1Score">0</span></span>
+        <span class="total">Question: <span id="g1Qnum">1</span>/10</span>
+        <span id="g1Parallel" style="margin-left:auto;font-size:0.95rem;"></span>
+      </div>
+      <div id="g1Prompt" class="prompt-box"></div>
+      <div class="canvas-container"><canvas id="game1Canvas" width="700" height="480" aria-label="Level 1 diagram"></canvas></div>
+      <div id="g1Feedback" class="feedback"></div>
+      <div id="g1Trophy" class="trophy-banner"></div>
+      <div class="actions-row">
+        <button class="btn btn-primary" id="g1Next" style="display:none;">Next Question →</button>
+        <button class="btn btn-secondary" id="g1Reset">Restart</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-area" id="game2Area">
+    <button class="btn btn-secondary back-btn" id="back2">← Back to Levels</button>
+    <div class="card">
+      <h2>Level 2: Name the Relationship</h2>
+      <p class="instructions">Two angles are highlighted. Type the correct relationship between them.</p>
+      <div class="score-bar">
+        <span>Score: <span class="score" id="g2Score">0</span></span>
+        <span class="total">Question: <span id="g2Qnum">1</span>/10</span>
+      </div>
+      <div class="canvas-container"><canvas id="game2Canvas" width="700" height="480" aria-label="Level 2 diagram"></canvas></div>
+      <div style="margin:1.2rem 0;">
+        <label for="g2Input" style="font-weight:700;display:block;margin-bottom:0.5rem;font-size:1.1rem;">Type the relationship:</label>
+        <div class="input-row">
+          <input type="text" id="g2Input" placeholder="e.g. corresponding" autocomplete="off">
+          <button class="btn btn-primary" id="g2Submit">Check</button>
+        </div>
+      </div>
+      <div id="g2Feedback" class="feedback"></div>
+      <div id="g2Trophy" class="trophy-banner"></div>
+      <div class="actions-row">
+        <button class="btn btn-primary" id="g2Next" style="display:none;">Next Question →</button>
+        <button class="btn btn-secondary" id="g2Reset">Restart</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-area" id="game3Area">
+    <button class="btn btn-secondary back-btn" id="back3">← Back to Levels</button>
+    <div class="card">
+      <h2>Level 3: Parallel or Not?</h2>
+      <p class="instructions">Two angle sizes are shown. Decide whether the lines are parallel and give the reason.</p>
+      <div class="score-bar">
+        <span>Score: <span class="score" id="g3Score">0</span></span>
+        <span class="total">Question: <span id="g3Qnum">1</span>/10</span>
+      </div>
+      <div class="canvas-container"><canvas id="game3Canvas" width="700" height="480" aria-label="Level 3 diagram"></canvas></div>
+      <div id="g3Question" class="prompt-box"></div>
+      <div class="btn-group" id="g3Choices"></div>
+      <div id="g3Feedback" class="feedback"></div>
+      <div id="g3Trophy" class="trophy-banner"></div>
+      <div class="actions-row">
+        <button class="btn btn-primary" id="g3Next" style="display:none;">Next Question →</button>
+        <button class="btn btn-secondary" id="g3Reset">Restart</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-area" id="game4Area">
+    <button class="btn btn-secondary back-btn" id="back4">← Back to Levels</button>
+    <div class="card">
+      <h2>Level 4: Algebra Challenge 🧠</h2>
+      <div id="g4Intro" class="info-box" style="margin-bottom:1.2rem;">
+        <strong>How it works:</strong> The two lines in each diagram are <strong>parallel</strong>. Two angles are shown as algebraic expressions involving <strong>x</strong>. Use your knowledge of angle relationships (corresponding angles are equal, alternate interior angles are equal, co-interior angles sum to 180°) to set up an equation and solve for <strong>x</strong>. Questions get progressively harder — some have expressions on both sides!
+      </div>
+      <div class="score-bar">
+        <span>Score: <span class="score" id="g4Score">0</span></span>
+        <span class="total">Question: <span id="g4Qnum">1</span>/10</span>
+      </div>
+      <div id="g4Prompt" class="prompt-box"></div>
+      <div class="canvas-container"><canvas id="game4Canvas" width="700" height="480" aria-label="Level 4 algebra diagram"></canvas></div>
+      <div style="margin:1.2rem 0;">
+        <label for="g4Input" style="font-weight:700;display:block;margin-bottom:0.5rem;font-size:1.1rem;">Enter the value of x:</label>
+        <div class="input-row">
+          <input type="number" id="g4Input" placeholder="e.g. 25" autocomplete="off">
+          <button class="btn btn-primary" id="g4Submit">Check</button>
+        </div>
+      </div>
+      <div id="g4Feedback" class="feedback"></div>
+      <div id="g4Trophy" class="trophy-banner"></div>
+      <div class="actions-row">
+        <button class="btn btn-primary" id="g4Next" style="display:none;">Next Question →</button>
+        <button class="btn btn-secondary" id="g4Reset">Restart</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Certificate Modal -->
+<div class="cert-overlay" id="certOverlay">
+  <div class="cert-modal">
+    <h3>🏆 Ultimate Trophy!</h3>
+    <p>Congratulations on mastering all four levels! Enter your name to generate your personalised certificate.</p>
+    <input type="text" id="certName" placeholder="Your name" maxlength="40">
+    <div class="cert-btn-row">
+      <button class="btn btn-primary" id="certDownload">Download Certificate</button>
+      <button class="btn btn-secondary" id="certClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // ========== TROPHY STATE ==========
+  // Replaced js-cookie library with native browser localStorage to ensure it runs standalone
+  var trophies = {
+    game1: localStorage.getItem('trophy_game1') === 'true',
+    game2: localStorage.getItem('trophy_game2') === 'true',
+    game3: localStorage.getItem('trophy_game3') === 'true',
+    game4: localStorage.getItem('trophy_game4') === 'true'
+  };
+
+  function awardTrophy(game) {
+    trophies[game] = true;
+    localStorage.setItem('trophy_' + game, 'true');
+    updateTrophyUI();
+  }
+
+  function updateTrophyUI() {
+    document.getElementById('lt1').textContent = trophies.game1 ? '🏆' : '';
+    document.getElementById('lt2').textContent = trophies.game2 ? '🏆' : '';
+    document.getElementById('lt3').textContent = trophies.game3 ? '🏆' : '';
+    document.getElementById('lt4').textContent = trophies.game4 ? '🏆' : '';
+    var card4 = document.getElementById('level4Card');
+    var lock4 = document.getElementById('lt4lock');
+    if (trophies.game1 && trophies.game2 && trophies.game3) {
+      card4.classList.remove('locked');
+      lock4.textContent = trophies.game4 ? '' : '⭐';
+    } else {
+      card4.classList.add('locked');
+      lock4.textContent = '🔒';
+    }
+  }
+  updateTrophyUI();
+
+  // ========== TAB NAVIGATION ==========
+  var tabBtns = document.querySelectorAll('.tab-btn');
+  tabBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var tab = btn.getAttribute('data-tab');
+      tabBtns.forEach(function(b) { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+      document.querySelectorAll('.main-content').forEach(function(c) { c.classList.remove('active'); });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      document.getElementById('tab-' + tab).classList.add('active');
+      if (tab === 'games') showLevelSelector();
+    });
+  });
+
+  // ========== LEVEL NAVIGATION ==========
+  function showLevelSelector() {
+    document.getElementById('levelSelector').style.display = 'block';
+    document.querySelectorAll('.game-area').forEach(function(g) { g.classList.remove('active'); });
+  }
+
+  function openGame(level) {
+    document.getElementById('levelSelector').style.display = 'none';
+    document.querySelectorAll('.game-area').forEach(function(g) { g.classList.remove('active'); });
+    document.getElementById('game' + level + 'Area').classList.add('active');
+  }
+
+  document.querySelectorAll('.level-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      var level = parseInt(card.getAttribute('data-level'));
+      if (level === 4 && !(trophies.game1 && trophies.game2 && trophies.game3)) return;
+      openGame(level);
+    });
+    card.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
+    });
+  });
+
+  ['back1','back2','back3','back4'].forEach(function(id) {
+    document.getElementById(id).addEventListener('click', showLevelSelector);
+  });
+
+  // ========== GEOMETRY HELPERS ==========
+  var ANGLE_NAMES = {1:'a',2:'b',3:'c',4:'d',5:'e',6:'f',7:'g',8:'h'};
+
+  // INTERIOR ALTERNATE ONLY: pairs 3&5 and 4&6 (between the lines)
+  var RELATIONSHIPS = {
+    'corresponding': [[1,5],[2,6],[3,7],[4,8]],
+    'alternate': [[3,5],[4,6]],
+    'co-interior': [[3,6],[4,5]],
+    'vertically opposite': [[1,3],[2,4],[5,7],[6,8]]
+  };
+
+  function getRelationship(a, b) {
+    for (var rel in RELATIONSHIPS) {
+      var pairs = RELATIONSHIPS[rel];
+      for (var i = 0; i < pairs.length; i++) {
+        if ((pairs[i][0]===a && pairs[i][1]===b)||(pairs[i][0]===b && pairs[i][1]===a)) return rel;
+      }
+    }
+    return null;
+  }
+
+  function getRelatedAngles(sel) {
+    var result = {};
+    for (var rel in RELATIONSHIPS) {
+      var pairs = RELATIONSHIPS[rel];
+      for (var i = 0; i < pairs.length; i++) {
+        if (pairs[i][0]===sel) { if (!result[rel]) result[rel] = []; result[rel].push(pairs[i][1]); }
+        if (pairs[i][1]===sel) { if (!result[rel]) result[rel] = []; result[rel].push(pairs[i][0]); }
+      }
+    }
+    return result;
+  }
+
+  function computeGeometry(cx, cy, tAngleDeg, lAngleDeg, parallel) {
+    var line1Y = cy - 100, line2Y = cy + 100;
+    var tRad = tAngleDeg * Math.PI / 180;
+    var tdx = Math.sin(tRad), tdy = Math.cos(tRad);
+    var t1 = (line1Y - cy) / tdy;
+    var int1 = { x: cx + t1 * tdx, y: line1Y };
+    var t2 = (line2Y - cy) / tdy;
+    var int2 = { x: cx + t2 * tdx, y: line2Y };
+    var l1Rad = lAngleDeg * Math.PI / 180;
+    var l2Rad = parallel ? lAngleDeg * Math.PI / 180 : (lAngleDeg + 15) * Math.PI / 180;
+    return { int1:int1, int2:int2, tRad:tRad, tdx:tdx, tdy:tdy, l1Rad:l1Rad, l2Rad:l2Rad };
+  }
+
+  function getAngleSectors(geo) {
+    var sectors = [];
+    var intersections = [
+      { pt: geo.int1, lRad: geo.l1Rad, ids: [1,2,3,4] },
+      { pt: geo.int2, lRad: geo.l2Rad, ids: [5,6,7,8] }
+    ];
+    for (var i = 0; i < intersections.length; i++) {
+      var inter = intersections[i];
+      var ldx = Math.cos(inter.lRad), ldy = Math.sin(inter.lRad);
+      var dirs = [
+        { x: -geo.tdx, y: -geo.tdy },
+        { x: ldx, y: ldy },
+        { x: geo.tdx, y: geo.tdy },
+        { x: -ldx, y: -ldy }
+      ];
+      var dirAngles = dirs.map(function(d) { return Math.atan2(d.y, d.x); });
+      var indexed = dirAngles.map(function(a, idx) { return { angle: a, idx: idx }; });
+      indexed.sort(function(a, b) { return a.angle - b.angle; });
+      for (var s = 0; s < 4; s++) {
+        var startA = indexed[s].angle;
+        var endA = indexed[(s+1)%4].angle;
+        if (endA <= startA) endA += Math.PI * 2;
+        var midA = (startA + endA) / 2;
+        var mx = Math.cos(midA), my = Math.sin(midA);
+        var angleIdx;
+        if (mx <= 0 && my <= 0) angleIdx = 0;
+        else if (mx > 0 && my <= 0) angleIdx = 1;
+        else if (mx > 0 && my > 0) angleIdx = 2;
+        else angleIdx = 3;
+        sectors.push({ id: inter.ids[angleIdx], pt: inter.pt, startA: startA, endA: endA, midA: midA });
+      }
+    }
+    return sectors;
+  }
+
+  function getHoveredAngle(mx, my, geo) {
+    var sectors = getAngleSectors(geo);
+    for (var i = 0; i < sectors.length; i++) {
+      var s = sectors[i];
+      var dx = mx - s.pt.x, dy = my - s.pt.y;
+      var dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist > 70 || dist < 5) continue;
+      var ca = Math.atan2(dy, dx);
+      var start = s.startA, end = s.endA;
+      if (ca < start) ca += Math.PI * 2;
+      if (ca >= start && ca < end) return s.id;
+    }
+    return null;
+  }
+
+  function drawHoverSector(ctx, angleId, geo, color) {
+    if (!angleId) return;
+    var sectors = getAngleSectors(geo);
+    for (var i = 0; i < sectors.length; i++) {
+      if (sectors[i].id === angleId) {
+        var s = sectors[i];
+        ctx.fillStyle = color || 'rgba(124,140,248,0.12)';
+        ctx.strokeStyle = color ? color.replace('0.12','0.35') : 'rgba(124,140,248,0.3)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(s.pt.x, s.pt.y);
+        ctx.arc(s.pt.x, s.pt.y, 45, s.startA, s.endA);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        break;
+      }
+    }
+  }
+
+  function drawTransversalDiagram(ctx, W, H, geo, highlights, angleLabels, angleSizes) {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#fafbff';
+    ctx.fillRect(0, 0, W, H);
+    var int1 = geo.int1, int2 = geo.int2;
+    var l1dx = Math.cos(geo.l1Rad), l1dy = Math.sin(geo.l1Rad);
+    var l2dx = Math.cos(geo.l2Rad), l2dy = Math.sin(geo.l2Rad);
+    ctx.lineWidth = 3; ctx.strokeStyle = '#b0b8d4';
+    ctx.beginPath(); ctx.moveTo(int1.x-l1dx*320, int1.y-l1dy*320); ctx.lineTo(int1.x+l1dx*320, int1.y+l1dy*320); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(int2.x-l2dx*320, int2.y-l2dy*320); ctx.lineTo(int2.x+l2dx*320, int2.y+l2dy*320); ctx.stroke();
+    ctx.strokeStyle = '#7c8cf8'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(int1.x-geo.tdx*220, int1.y-geo.tdy*220); ctx.lineTo(int2.x+geo.tdx*220, int2.y+geo.tdy*220); ctx.stroke();
+    drawAnglesAt(ctx, int1, geo.tdx, geo.tdy, l1dx, l1dy, [1,2,3,4], highlights, angleLabels, angleSizes);
+    drawAnglesAt(ctx, int2, geo.tdx, geo.tdy, l2dx, l2dy, [5,6,7,8], highlights, angleLabels, angleSizes);
+    ctx.fillStyle = '#7c8cf8';
+    [int1,int2].forEach(function(p) { ctx.beginPath(); ctx.arc(p.x,p.y,5,0,Math.PI*2); ctx.fill(); });
+  }
+
+  function drawAnglesAt(ctx, intPt, tdx, tdy, ldx, ldy, angleIds, highlights, labels, sizes) {
+    var dirs = [{x:-tdx,y:-tdy},{x:ldx,y:ldy},{x:tdx,y:tdy},{x:-ldx,y:-ldy}];
+    var dirAngles = dirs.map(function(d){return Math.atan2(d.y,d.x);});
+    var indexed = dirAngles.map(function(a,i){return{angle:a,idx:i};});
+    indexed.sort(function(a,b){return a.angle-b.angle;});
+    for (var s=0;s<4;s++) {
+      var startA=indexed[s].angle, endA=indexed[(s+1)%4].angle;
+      if(endA<=startA) endA+=Math.PI*2;
+      var midA=(startA+endA)/2;
+      var mx=Math.cos(midA), my=Math.sin(midA);
+      var angleIdx;
+      if(mx<=0&&my<=0) angleIdx=0; else if(mx>0&&my<=0) angleIdx=1;
+      else if(mx>0&&my>0) angleIdx=2; else angleIdx=3;
+      var angleId=angleIds[angleIdx];
+      var radius=34;
+      var hl=highlights?highlights[angleId]:null;
+      if(hl) {
+        ctx.fillStyle=hl+'33'; ctx.strokeStyle=hl; ctx.lineWidth=2.5;
+        ctx.beginPath(); ctx.moveTo(intPt.x,intPt.y);
+        ctx.arc(intPt.x,intPt.y,radius,startA,endA); ctx.closePath(); ctx.fill(); ctx.stroke();
+      }
+      var labelR=55;
+      var lx=intPt.x+Math.cos(midA)*labelR, ly=intPt.y+Math.sin(midA)*labelR;
+      ctx.font='bold 16px Segoe UI, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      var displayText='';
+      if(sizes&&sizes[angleId]!==undefined) displayText=sizes[angleId];
+      else if(labels) displayText=ANGLE_NAMES[angleId];
+      if(displayText) { ctx.fillStyle=hl?hl:'#8890ab'; ctx.fillText(displayText,lx,ly); }
+    }
+  }
+
+  function getClickedAngle(mx, my, geo) { return getHoveredAngle(mx, my, geo); }
+
+  function getCanvasCoords(canvas, e, W, H) {
+    var rect = canvas.getBoundingClientRect();
+    return { x: (e.clientX - rect.left) * W / rect.width, y: (e.clientY - rect.top) * H / rect.height };
+  }
+
+  // ========== EXPLORER ==========
+  (function() {
+    var canvas = document.getElementById('explorerCanvas');
+    var ctx = canvas.getContext('2d');
+    var infoEl = document.getElementById('explorerInfo');
+    var W=canvas.width, H=canvas.height;
+    var geo = computeGeometry(W/2, H/2, 15, 5, true);
+    var selectedAngle = null, hoveredAngle = null;
+    var REL_COLORS = {'corresponding':'#7c8cf8','alternate':'#f472b6','co-interior':'#fbbf24','vertically opposite':'#6dd4a0'};
+    function draw() {
+      var highlights = {};
+      if(selectedAngle) {
+        highlights[selectedAngle]='#7c8cf8';
+        var related=getRelatedAngles(selectedAngle);
+        for(var rel in related) {
+          var angles = related[rel];
+          for(var i=0;i<angles.length;i++) highlights[angles[i]]=REL_COLORS[rel];
+        }
+      }
+      drawTransversalDiagram(ctx,W,H,geo,highlights,true,null);
+      if(hoveredAngle && !highlights[hoveredAngle]) drawHoverSector(ctx,hoveredAngle,geo);
+      if(selectedAngle) {
+        var related=getRelatedAngles(selectedAngle);
+        var lines=['<strong>Angle '+ANGLE_NAMES[selectedAngle]+'</strong> selected:'];
+        for(var rel in related) {
+          var angles = related[rel];
+          var names = angles.map(function(a){return ANGLE_NAMES[a];}).join(', ');
+          lines.push('<span style="color:'+REL_COLORS[rel]+';font-weight:700;">■</span> <strong>'+rel+'</strong>: angle '+names);
+        }
+        infoEl.innerHTML=lines.join('<br>');
+      }
+    }
+    draw();
+    canvas.addEventListener('click', function(e) {
+      var c=getCanvasCoords(canvas,e,W,H);
+      var clicked=getClickedAngle(c.x,c.y,geo);
+      if(clicked){selectedAngle=clicked;draw();}
+    });
+    canvas.addEventListener('mousemove', function(e) {
+      var c=getCanvasCoords(canvas,e,W,H);
+      var h=getHoveredAngle(c.x,c.y,geo);
+      if(h!==hoveredAngle){hoveredAngle=h;draw();}
+    });
+    canvas.addEventListener('mouseleave', function() { hoveredAngle=null; draw(); });
+  })();
+
+  // ========== GAME 1 ==========
+  (function() {
+    var canvas=document.getElementById('game1Canvas'), ctx=canvas.getContext('2d');
+    var W=canvas.width, H=canvas.height;
+    var scoreEl=document.getElementById('g1Score'), qnumEl=document.getElementById('g1Qnum');
+    var promptEl=document.getElementById('g1Prompt'), feedbackEl=document.getElementById('g1Feedback');
+    var nextBtn=document.getElementById('g1Next'), resetBtn=document.getElementById('g1Reset');
+    var parallelEl=document.getElementById('g1Parallel'), trophyEl=document.getElementById('g1Trophy');
+    var score=0, qNum=0, totalQ=10;
+    var currentGeo, currentSource, currentTarget, currentRel, isParallel, answered, hoveredAngle=null;
+    var ALL_RELS=['corresponding','alternate','co-interior','vertically opposite'];
+    function pickQuestion() {
+      qNum++; answered=false; hoveredAngle=null;
+      feedbackEl.className='feedback'; feedbackEl.textContent='';
+      nextBtn.style.display='none'; qnumEl.textContent=qNum;
+      isParallel=Math.random()>0.3;
+      currentGeo=computeGeometry(W/2,H/2,10+Math.random()*20,-10+Math.random()*20,isParallel);
+      parallelEl.textContent=isParallel?'(Lines are parallel)':'(Lines are NOT parallel)';
+      parallelEl.style.color=isParallel?'#2e7d32':'#c62828';
+      currentRel=ALL_RELS[Math.floor(Math.random()*ALL_RELS.length)];
+      var pairs=RELATIONSHIPS[currentRel];
+      var pair=pairs[Math.floor(Math.random()*pairs.length)];
+      if(Math.random()>0.5){currentSource=pair[0];currentTarget=pair[1];}
+      else{currentSource=pair[1];currentTarget=pair[0];}
+      promptEl.innerHTML='Click the <strong>'+currentRel+'</strong> angle of angle <strong>'+ANGLE_NAMES[currentSource]+'</strong>';
+      drawGame();
+    }
+    function drawGame() {
+      var highlights={}; highlights[currentSource]='#7c8cf8';
+      drawTransversalDiagram(ctx,W,H,currentGeo,highlights,true,null);
+      if(hoveredAngle && hoveredAngle!==currentSource && !answered) drawHoverSector(ctx,hoveredAngle,currentGeo);
+    }
+    canvas.addEventListener('click', function(e) {
+      if(answered||qNum>totalQ) return;
+      var c=getCanvasCoords(canvas,e,W,H);
+      var clicked=getClickedAngle(c.x,c.y,currentGeo);
+      if(!clicked||clicked===currentSource) return;
+      answered=true;
+      var highlights={}; highlights[currentSource]='#7c8cf8';
+      if(clicked===currentTarget) {
+        score++; scoreEl.textContent=score;
+        highlights[currentTarget]='#6dd4a0';
+        feedbackEl.className='feedback correct';
+        feedbackEl.innerHTML='✅ Correct! Angle '+ANGLE_NAMES[clicked]+' is the '+currentRel+' angle of angle '+ANGLE_NAMES[currentSource]+'.';
+      } else {
+        highlights[clicked]='#f87171'; highlights[currentTarget]='#6dd4a0';
+        feedbackEl.className='feedback incorrect';
+        var actualRel=getRelationship(currentSource,clicked);
+        var extra=actualRel?' (Angle '+ANGLE_NAMES[clicked]+' is actually the '+actualRel+' angle.)':'';
+        feedbackEl.innerHTML='❌ Not quite. The correct answer was angle <strong>'+ANGLE_NAMES[currentTarget]+'</strong>.'+extra;
+      }
+      drawTransversalDiagram(ctx,W,H,currentGeo,highlights,true,null);
+      if(qNum<totalQ) nextBtn.style.display='inline-block';
+      if(qNum>=totalQ) {
+        feedbackEl.innerHTML+='<br><br>🏁 Final score: <strong>'+score+'/'+totalQ+'</strong>';
+        if(score>=9) { awardTrophy('game1'); trophyEl.textContent='🏆 Trophy earned! You scored '+score+'/10!'; trophyEl.classList.add('show'); }
+      }
+    });
+    canvas.addEventListener('mousemove', function(e) {
+      if(answered) return;
+      var c=getCanvasCoords(canvas,e,W,H);
+      var h=getHoveredAngle(c.x,c.y,currentGeo);
+      if(h!==hoveredAngle){hoveredAngle=h;drawGame();}
+    });
+    canvas.addEventListener('mouseleave', function(){hoveredAngle=null;if(!answered)drawGame();});
+    nextBtn.addEventListener('click', function(){pickQuestion();});
+    resetBtn.addEventListener('click', function(){score=0;qNum=0;scoreEl.textContent=0;trophyEl.classList.remove('show');pickQuestion();});
+    document.addEventListener('keydown', function(e) {
+      if(e.key==='Enter'&&answered&&qNum<totalQ) {
+        if(document.getElementById('game1Area').classList.contains('active')) pickQuestion();
+      }
+    });
+    pickQuestion();
+  })();
+
+  // ========== GAME 2 ==========
+  (function() {
+    var canvas=document.getElementById('game2Canvas'), ctx=canvas.getContext('2d');
+    var W=canvas.width, H=canvas.height;
+    var scoreEl=document.getElementById('g2Score'), qnumEl=document.getElementById('g2Qnum');
+    var feedbackEl=document.getElementById('g2Feedback');
+    var nextBtn=document.getElementById('g2Next'), resetBtn=document.getElementById('g2Reset');
+    var trophyEl=document.getElementById('g2Trophy');
+    var inputEl=document.getElementById('g2Input'), submitBtn=document.getElementById('g2Submit');
+    var score=0, qNum=0, totalQ=10;
+    var currentGeo, currentA, currentB, correctRel, answered, hoveredAngle=null;
+    var ALL_RELS=['corresponding','alternate','co-interior','vertically opposite'];
+    function pickQuestion() {
+      qNum++; answered=false; hoveredAngle=null;
+      feedbackEl.className='feedback'; nextBtn.style.display='none'; qnumEl.textContent=qNum;
+      inputEl.value=''; inputEl.disabled=false; submitBtn.disabled=false; inputEl.style.borderColor='#d4daf0';
+      currentGeo=computeGeometry(W/2,H/2,10+Math.random()*20,-10+Math.random()*20,true);
+      correctRel=ALL_RELS[Math.floor(Math.random()*ALL_RELS.length)];
+      var pairs=RELATIONSHIPS[correctRel];
+      var pair=pairs[Math.floor(Math.random()*pairs.length)];
+      currentA=pair[0]; currentB=pair[1];
+      drawGame(); inputEl.focus();
+    }
+    function drawGame() {
+      var highlights={}; highlights[currentA]='#7c8cf8'; highlights[currentB]='#f472b6';
+      drawTransversalDiagram(ctx,W,H,currentGeo,highlights,true,null);
+      if(hoveredAngle && hoveredAngle!==currentA && hoveredAngle!==currentB && !answered) drawHoverSector(ctx,hoveredAngle,currentGeo);
+    }
+    function checkAnswer() {
+      if(answered) return;
+      var chosen=inputEl.value.trim().toLowerCase();
+      if(!chosen) return;
+      answered=true; inputEl.disabled=true; submitBtn.disabled=true;
+      if(chosen===correctRel) {
+        score++; scoreEl.textContent=score;
+        inputEl.style.borderColor='#6dd4a0';
+        feedbackEl.className='feedback correct';
+        feedbackEl.innerHTML='✅ Correct! Angles '+ANGLE_NAMES[currentA]+' and '+ANGLE_NAMES[currentB]+' are <strong>'+correctRel+'</strong> angles.';
+      } else {
+        inputEl.style.borderColor='#f87171';
+        feedbackEl.className='feedback incorrect';
+        feedbackEl.innerHTML='❌ Not quite. The correct answer is <strong>'+correctRel+'</strong>.';
+      }
+      if(qNum<totalQ) nextBtn.style.display='inline-block';
+      if(qNum>=totalQ) {
+        feedbackEl.innerHTML+='<br><br>🏁 Final score: <strong>'+score+'/'+totalQ+'</strong>';
+        if(score>=9) { awardTrophy('game2'); trophyEl.textContent='🏆 Trophy earned! You scored '+score+'/10!'; trophyEl.classList.add('show'); }
+      }
+    }
+    submitBtn.addEventListener('click', checkAnswer);
+    inputEl.addEventListener('keydown', function(e) {
+      if(e.key==='Enter') { e.preventDefault(); if(!answered) checkAnswer(); else if(qNum<totalQ) pickQuestion(); }
+    });
+    canvas.addEventListener('mousemove', function(e) {
+      if(answered) return;
+      var c=getCanvasCoords(canvas,e,W,H);
+      var h=getHoveredAngle(c.x,c.y,currentGeo);
+      if(h!==hoveredAngle){hoveredAngle=h;drawGame();}
+    });
+    canvas.addEventListener('mouseleave', function(){hoveredAngle=null;if(!answered)drawGame();});
+    nextBtn.addEventListener('click', function(){pickQuestion();});
+    resetBtn.addEventListener('click', function(){score=0;qNum=0;scoreEl.textContent=0;trophyEl.classList.remove('show');pickQuestion();});
+    pickQuestion();
+  })();
+
+  // ========== GAME 3 ==========
+  (function() {
+    var canvas=document.getElementById('game3Canvas'), ctx=canvas.getContext('2d');
+    var W=canvas.width, H=canvas.height;
+    var scoreEl=document.getElementById('g3Score'), qnumEl=document.getElementById('g3Qnum');
+    var feedbackEl=document.getElementById('g3Feedback'), choicesEl=document.getElementById('g3Choices');
+    var questionEl=document.getElementById('g3Question');
+    var nextBtn=document.getElementById('g3Next'), resetBtn=document.getElementById('g3Reset');
+    var trophyEl=document.getElementById('g3Trophy');
+    var score=0, qNum=0, totalQ=10;
+    var currentGeo, answered, correctAnswer, correctReason;
+    var angleA, angleB, sizeA, sizeB, relType, chosenParallel=null, hoveredAngle=null;
+    function pickQuestion() {
+      qNum++; answered=false; chosenParallel=null; hoveredAngle=null;
+      feedbackEl.className='feedback'; nextBtn.style.display='none'; qnumEl.textContent=qNum;
+      var isParallel=Math.random()>0.4;
+      currentGeo=computeGeometry(W/2,H/2,10+Math.random()*20,-10+Math.random()*20,isParallel);
+      var testRels=['corresponding','alternate','co-interior'];
+      relType=testRels[Math.floor(Math.random()*testRels.length)];
+      var pairs=RELATIONSHIPS[relType]; var pair=pairs[Math.floor(Math.random()*pairs.length)];
+      angleA=pair[0]; angleB=pair[1];
+      sizeA=40+Math.floor(Math.random()*80);
+      if(isParallel) {
+        if(relType==='co-interior') sizeB=180-sizeA; else sizeB=sizeA;
+        correctAnswer='parallel';
+        if(relType==='corresponding') correctReason='Corresponding angles are equal ('+sizeA+'° = '+sizeB+'°), so lines are parallel.';
+        else if(relType==='alternate') correctReason='Alternate interior angles are equal ('+sizeA+'° = '+sizeB+'°), so lines are parallel.';
+        else correctReason='Co-interior angles sum to 180° ('+sizeA+'° + '+sizeB+'° = 180°), so lines are parallel.';
+      } else {
+        var offset=(Math.random()>0.5?1:-1)*(5+Math.floor(Math.random()*25));
+        sizeB=relType==='co-interior'?180-sizeA+offset:sizeA+offset;
+        if(sizeB<10) sizeB=10; if(sizeB>170) sizeB=170;
+        correctAnswer='not parallel';
+        if(relType==='corresponding') correctReason='Corresponding angles are NOT equal ('+sizeA+'° ≠ '+sizeB+'°), so lines are not parallel.';
+        else if(relType==='alternate') correctReason='Alternate interior angles are NOT equal ('+sizeA+'° ≠ '+sizeB+'°), so lines are not parallel.';
+        else correctReason='Co-interior angles do NOT sum to 180° ('+sizeA+'° + '+sizeB+'° = '+(sizeA+sizeB)+'°), so lines are not parallel.';
+      }
+      drawGame(); showStep1();
+      questionEl.innerHTML='Angles <strong>'+ANGLE_NAMES[angleA]+'</strong> = '+sizeA+'° and <strong>'+ANGLE_NAMES[angleB]+'</strong> = '+sizeB+'°. Are the two lines parallel?';
+    }
+    function drawGame() {
+      var highlights={}; highlights[angleA]='#7c8cf8'; highlights[angleB]='#f472b6';
+      var sizes={}; sizes[angleA]=sizeA+'°'; sizes[angleB]=sizeB+'°';
+      drawTransversalDiagram(ctx,W,H,currentGeo,highlights,false,sizes);
+      if(hoveredAngle && !highlights[hoveredAngle] && !answered) drawHoverSector(ctx,hoveredAngle,currentGeo);
+    }
+    function showStep1() {
+      choicesEl.innerHTML='';
+      ['Parallel','Not Parallel'].forEach(function(text) {
+        var btn=document.createElement('button'); btn.className='btn-choice'; btn.textContent=text;
+        btn.addEventListener('click', function() { chosenParallel=text==='Parallel'?'parallel':'not parallel'; showStep2(); });
+        choicesEl.appendChild(btn);
+      });
+    }
+    function showStep2() {
+      choicesEl.innerHTML='';
+      var reasons;
+      if(chosenParallel==='parallel') {
+        reasons=[{text:'Corresponding angles are equal',reason:'corresponding'},{text:'Alternate interior angles are equal',reason:'alternate'},{text:'Co-interior angles add up to 180°',reason:'co-interior'}];
+      } else {
+        reasons=[{text:'Corresponding angles are not equal',reason:'corresponding'},{text:'Alternate interior angles are not equal',reason:'alternate'},{text:'Co-interior angles do not add up to 180°',reason:'co-interior'}];
+      }
+      reasons.forEach(function(r) {
+        var btn=document.createElement('button'); btn.className='btn-choice'; btn.textContent=r.text;
+        btn.addEventListener('click', function(){checkAnswer(r.reason);});
+        choicesEl.appendChild(btn);
+      });
+    }
+    function checkAnswer(chosenReason) {
+      if(answered) return; answered=true;
+      var isCorrect=(chosenParallel===correctAnswer && chosenReason===relType);
+      if(isCorrect) {
+        score++; scoreEl.textContent=score;
+        feedbackEl.className='feedback correct'; feedbackEl.innerHTML='✅ Correct! '+correctReason;
+      } else {
+        feedbackEl.className='feedback incorrect';
+        var wrongPart=chosenParallel!==correctAnswer?'The lines are actually <strong>'+correctAnswer+'</strong>. ':'';
+        feedbackEl.innerHTML='❌ Not quite. '+wrongPart+correctReason;
+      }
+      if(qNum<totalQ) nextBtn.style.display='inline-block';
+      if(qNum>=totalQ) {
+        feedbackEl.innerHTML+='<br><br>🏁 Final score: <strong>'+score+'/'+totalQ+'</strong>';
+        if(score>=9) { awardTrophy('game3'); trophyEl.textContent='🏆 Trophy earned! You scored '+score+'/10!'; trophyEl.classList.add('show'); updateTrophyUI(); }
+      }
+    }
+    canvas.addEventListener('mousemove', function(e) {
+      if(answered) return;
+      var c=getCanvasCoords(canvas,e,W,H);
+      var h=getHoveredAngle(c.x,c.y,currentGeo);
+      if(h!==hoveredAngle){hoveredAngle=h;drawGame();}
+    });
+    canvas.addEventListener('mouseleave', function(){hoveredAngle=null;if(!answered)drawGame();});
+    nextBtn.addEventListener('click', function(){pickQuestion();});
+    resetBtn.addEventListener('click', function(){score=0;qNum=0;scoreEl.textContent=0;trophyEl.classList.remove('show');pickQuestion();});
+    document.addEventListener('keydown', function(e) {
+      if(e.key==='Enter'&&answered&&qNum<totalQ) {
+        if(document.getElementById('game3Area').classList.contains('active')) pickQuestion();
+      }
+    });
+    pickQuestion();
+  })();
+
+  // ========== GAME 4: ALGEBRA ==========
+  (function() {
+    var canvas=document.getElementById('game4Canvas'), ctx=canvas.getContext('2d');
+    var W=canvas.width, H=canvas.height;
+    var scoreEl=document.getElementById('g4Score'), qnumEl=document.getElementById('g4Qnum');
+    var promptEl=document.getElementById('g4Prompt'), feedbackEl=document.getElementById('g4Feedback');
+    var nextBtn=document.getElementById('g4Next'), resetBtn=document.getElementById('g4Reset');
+    var trophyEl=document.getElementById('g4Trophy');
+    var inputEl=document.getElementById('g4Input'), submitBtn=document.getElementById('g4Submit');
+    var score=0, qNum=0, totalQ=10;
+    var currentGeo, answered, correctX, hoveredAngle=null;
+    var qAngleA, qAngleB, exprA, exprB, relType;
+
+    function generateQuestion() {
+      qNum++; answered=false; hoveredAngle=null;
+      feedbackEl.className='feedback'; nextBtn.style.display='none'; qnumEl.textContent=qNum;
+      inputEl.value=''; inputEl.disabled=false; submitBtn.disabled=false; inputEl.style.borderColor='#d4daf0';
+      currentGeo=computeGeometry(W/2,H/2,10+Math.random()*20,-10+Math.random()*20,true);
+      var rels=['corresponding','alternate','co-interior'];
+      relType=rels[Math.floor(Math.random()*rels.length)];
+      var pairs=RELATIONSHIPS[relType];
+      var pair=pairs[Math.floor(Math.random()*pairs.length)];
+      qAngleA=pair[0]; qAngleB=pair[1];
+
+      correctX=Math.floor(Math.random()*30)+5;
+      var a=Math.floor(Math.random()*5)+2;
+      var b=Math.floor(Math.random()*30)-10;
+      var valueA=a*correctX+b;
+      if(valueA<20) { b+=(25-valueA); valueA=a*correctX+b; }
+      if(valueA>160) { b-=(valueA-155); valueA=a*correctX+b; }
+
+      var difficulty=Math.random();
+      if(difficulty<0.4) {
+        if(relType==='co-interior') {
+          var valueB=180-valueA;
+          exprA=a+'x'+(b>=0?' + '+b:' − '+Math.abs(b))+'°';
+          exprB=valueB+'°';
+        } else {
+          exprA=a+'x'+(b>=0?' + '+b:' − '+Math.abs(b))+'°';
+          exprB=valueA+'°';
+        }
+      } else if(difficulty<0.75) {
+        var c=Math.floor(Math.random()*3)+1;
+        var d;
+        if(relType==='co-interior') {
+          var valueB=180-valueA;
+          d=valueB-c*correctX;
+          exprA=a+'x'+(b>=0?' + '+b:' − '+Math.abs(b))+'°';
+          exprB=c+'x'+(d>=0?' + '+d:' − '+Math.abs(d))+'°';
+        } else {
+          d=valueA-c*correctX;
+          exprA=a+'x'+(b>=0?' + '+b:' − '+Math.abs(b))+'°';
+          exprB=c+'x'+(d>=0?' + '+d:' − '+Math.abs(d))+'°';
+        }
+      } else {
+        var a2=Math.floor(Math.random()*4)+3;
+        var b2=Math.floor(Math.random()*40)-15;
+        var valueA2=a2*correctX+b2;
+        if(valueA2<20) { b2+=(25-valueA2); valueA2=a2*correctX+b2; }
+        if(valueA2>160) { b2-=(valueA2-155); valueA2=a2*correctX+b2; }
+        if(relType==='co-interior') {
+          var c2=Math.floor(Math.random()*3)+1;
+          var d2=180-valueA2-c2*correctX;
+          exprA=a2+'x'+(b2>=0?' + '+b2:' − '+Math.abs(b2))+'°';
+          exprB=c2+'x'+(d2>=0?' + '+d2:' − '+Math.abs(d2))+'°';
+        } else {
+          var c2=Math.floor(Math.random()*3)+1;
+          var d2=valueA2-c2*correctX;
+          exprA=a2+'x'+(b2>=0?' + '+b2:' − '+Math.abs(b2))+'°';
+          exprB=c2+'x'+(d2>=0?' + '+d2:' − '+Math.abs(d2))+'°';
+        }
+      }
+
+      var reason;
+      if(relType==='corresponding') reason='Corresponding angles are equal (parallel lines)';
+      else if(relType==='alternate') reason='Alternate interior angles are equal (parallel lines)';
+      else reason='Co-interior angles sum to 180° (parallel lines)';
+      promptEl.innerHTML='The lines are <strong>parallel</strong>. Angles <strong>'+ANGLE_NAMES[qAngleA]+'</strong> and <strong>'+ANGLE_NAMES[qAngleB]+'</strong> are <strong>'+relType+'</strong> angles.<br>'+reason+'.<br>Find the value of <strong>x</strong>.';
+      drawGame();
+      inputEl.focus();
+    }
+
+    function drawGame() {
+      var highlights={}; highlights[qAngleA]='#7c8cf8'; highlights[qAngleB]='#f472b6';
+      var sizes={}; sizes[qAngleA]=exprA; sizes[qAngleB]=exprB;
+      drawTransversalDiagram(ctx,W,H,currentGeo,highlights,false,sizes);
+      if(hoveredAngle && !highlights[hoveredAngle] && !answered) drawHoverSector(ctx,hoveredAngle,currentGeo);
+    }
+
+    function checkAnswer() {
+      if(answered) return;
+      var val=parseInt(inputEl.value.trim());
+      if(isNaN(val)) return;
+      answered=true; inputEl.disabled=true; submitBtn.disabled=true;
+      if(val===correctX) {
+        score++; scoreEl.textContent=score;
+        inputEl.style.borderColor='#6dd4a0';
+        feedbackEl.className='feedback correct';
+        feedbackEl.innerHTML='✅ Correct! x = '+correctX+'.';
+      } else {
+        inputEl.style.borderColor='#f87171';
+        feedbackEl.className='feedback incorrect';
+        feedbackEl.innerHTML='❌ Not quite. The correct answer is <strong>x = '+correctX+'</strong>.';
+      }
+      if(qNum<totalQ) nextBtn.style.display='inline-block';
+      if(qNum>=totalQ) {
+        feedbackEl.innerHTML+='<br><br>🏁 Final score: <strong>'+score+'/'+totalQ+'</strong>';
+        if(score>=9) {
+          awardTrophy('game4');
+          trophyEl.innerHTML='🏆 ULTIMATE TROPHY EARNED! You scored '+score+'/10!<br><button class="btn btn-success" id="openCertBtn" style="margin-top:0.8rem;">🎓 Download Your Certificate</button>';
+          trophyEl.classList.add('show');
+          document.getElementById('openCertBtn').addEventListener('click', function() {
+            document.getElementById('certOverlay').classList.add('show');
+            document.getElementById('certName').focus();
+          });
+        }
+      }
+    }
+
+    submitBtn.addEventListener('click', checkAnswer);
+    inputEl.addEventListener('keydown', function(e) {
+      if(e.key==='Enter') { e.preventDefault(); if(!answered) checkAnswer(); else if(qNum<totalQ) generateQuestion(); }
+    });
+    canvas.addEventListener('mousemove', function(e) {
+      if(answered) return;
+      var c=getCanvasCoords(canvas,e,W,H);
+      var h=getHoveredAngle(c.x,c.y,currentGeo);
+      if(h!==hoveredAngle){hoveredAngle=h;drawGame();}
+    });
+    canvas.addEventListener('mouseleave', function(){hoveredAngle=null;if(!answered)drawGame();});
+    nextBtn.addEventListener('click', function(){generateQuestion();});
+    resetBtn.addEventListener('click', function(){score=0;qNum=0;scoreEl.textContent=0;trophyEl.classList.remove('show');generateQuestion();});
+    document.addEventListener('keydown', function(e) {
+      if(e.key==='Enter'&&answered&&qNum<totalQ) {
+        if(document.getElementById('game4Area').classList.contains('active')) generateQuestion();
+      }
+    });
+    generateQuestion();
+  })();
+
+  // ========== CERTIFICATE ==========
+  function roundRect(cx,x,y,w,h,r) {
+    cx.beginPath();
+    cx.moveTo(x+r,y); cx.lineTo(x+w-r,y); cx.quadraticCurveTo(x+w,y,x+w,y+r);
+    cx.lineTo(x+w,y+h-r); cx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    cx.lineTo(x+r,y+h); cx.quadraticCurveTo(x,y+h,x,y+h-r);
+    cx.lineTo(x,y+r); cx.quadraticCurveTo(x,y,x+r,y);
+    cx.closePath();
+  }
+
+  document.getElementById('certDownload').addEventListener('click', function() {
+    var name = document.getElementById('certName').value.trim();
+    if (!name) { document.getElementById('certName').style.borderColor = '#f87171'; return; }
+    document.getElementById('certName').style.borderColor = '#d4daf0';
+
+    var c = document.createElement('canvas'); c.width = 1000; c.height = 700;
+    var cx = c.getContext('2d');
+
+    // Pastel background
+    cx.fillStyle = '#e8eaf6'; cx.fillRect(0, 0, 1000, 700);
+
+    // White card
+    cx.fillStyle = '#ffffff';
+    roundRect(cx, 50, 50, 900, 600, 20); cx.fill();
+
+    // Border
+    cx.strokeStyle = '#7c8cf8'; cx.lineWidth = 3;
+    roundRect(cx, 65, 65, 870, 570, 16); cx.stroke();
+
+    // Inner border
+    cx.strokeStyle = '#d4daf0'; cx.lineWidth = 1;
+    roundRect(cx, 80, 80, 840, 540, 12); cx.stroke();
+
+    cx.font = '80px serif'; cx.textAlign = 'center';
+    cx.fillText('🏆', 500, 160);
+
+    cx.font = 'bold 38px Segoe UI, sans-serif'; cx.fillStyle = '#2d3250';
+    cx.fillText('Certificate of Excellence', 500, 215);
+
+    cx.strokeStyle = '#d4daf0'; cx.lineWidth = 2;
+    cx.beginPath(); cx.moveTo(250, 235); cx.lineTo(750, 235); cx.stroke();
+
+    cx.font = '22px Segoe UI, sans-serif'; cx.fillStyle = '#7c8cf8';
+    cx.fillText('Angles in Transversals — Ultimate Master', 500, 270);
+
+    cx.font = 'bold 44px Georgia, serif'; cx.fillStyle = '#2d3250';
+    cx.fillText(name, 500, 340);
+
+    cx.strokeStyle = '#fbbf24'; cx.lineWidth = 2;
+    cx.beginPath(); cx.moveTo(200, 355); cx.lineTo(800, 355); cx.stroke();
+
+    cx.font = '18px Segoe UI, sans-serif'; cx.fillStyle = '#6b7294';
+    cx.fillText('This certifies outstanding achievement in mastering', 500, 400);
+    cx.fillText('angle relationships with parallel lines and transversals.', 500, 428);
+    cx.fillText('All four levels completed with excellence!', 500, 456);
+
+    cx.font = '16px Segoe UI, sans-serif'; cx.fillStyle = '#a0a8c4';
+    cx.fillText(new Date().toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'}), 500, 520);
+
+    cx.font = '32px serif';
+    cx.fillText('✨ ⭐ ✨ ⭐ ✨ ⭐ ✨ ⭐ ✨', 500, 575);
+
+    var link = document.createElement('a');
+    link.download = 'Transversal_Trophy_' + name.replace(/\s+/g, '_') + '.png';
+    link.href = c.toDataURL('image/png');
+    link.click();
+
+    document.getElementById('certOverlay').classList.remove('show');
+  });
+
+  document.getElementById('certClose').addEventListener('click', function() {
+    document.getElementById('certOverlay').classList.remove('show');
+  });
+
+  document.getElementById('certName').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('certDownload').click(); }
+  });
+
+})();
+</script>
+</body>
+</html>

@@ -391,12 +391,26 @@
         ctx.stroke();
         if (style.label) {
             const mid = deg2rad((start + end) / 2);
-            const lx = v.x + Math.cos(mid) * (r + (style.labelOffset || 22));
-            const ly = v.y + Math.sin(mid) * (r + (style.labelOffset || 22));
+            // Position label inside the arc
+            const labelRadius = r * 0.6;
+            let lx = v.x + Math.cos(mid) * labelRadius;
+            let ly = v.y + Math.sin(mid) * labelRadius;
             ctx.fillStyle = style.labelColor || '#0f172a';
             ctx.font = style.font || 'bold 14px Nunito, sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+
+            // Basic boundary check to keep labels on canvas
+            const textMetrics = ctx.measureText(style.label);
+            const textWidth = textMetrics.width;
+            const textHeight = 14; // Approximate font height
+            const margin = 5; // px from edge
+
+            if (lx - textWidth / 2 < margin) lx = textWidth / 2 + margin;
+            if (lx + textWidth / 2 > ctx.canvas.width - margin) lx = ctx.canvas.width - textWidth / 2 - margin;
+            if (ly - textHeight / 2 < margin) ly = textHeight / 2 + margin;
+            if (ly + textHeight / 2 > ctx.canvas.height - margin) ly = ctx.canvas.height - textHeight / 2 - margin;
+
             ctx.fillText(style.label, lx, ly);
         }
     }
