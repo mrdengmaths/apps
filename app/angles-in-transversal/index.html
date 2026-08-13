@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Angles in a Transversal: Year 7 Maths</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Nunito:wght@400;700;800&display=swap');
+
+    body {
+        font-family: 'Nunito', sans-serif;
+        background-color: #eef2ff;
+        background-image: radial-gradient(#6366f1 1px, transparent 1px);
+        background-size: 22px 22px;
+    }
+
+    h1, h2, h3, .btn-text, .tab-btn { font-family: 'Fredoka', sans-serif; }
+
+    .canvas-container {
+        position: relative;
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+        overflow: hidden;
+        border: 4px solid #4338ca;
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-10px); }
+        50% { transform: translateX(10px); }
+        75% { transform: translateX(-10px); }
+    }
+    .shake { animation: shake 0.4s ease-in-out; }
+
+    @keyframes pop {
+        0% { transform: scale(0.9); opacity: 0; }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    .pop-in { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+    @keyframes confettiPop {
+        0% { transform: translate(0,0) scale(0.6) rotate(0deg); opacity: 1; }
+        100% { transform: translate(var(--dx), var(--dy)) scale(1.1) rotate(var(--rot)); opacity: 0; }
+    }
+    .confetti-bit {
+        position: absolute; top: 50%; left: 50%; font-size: 1.4rem;
+        pointer-events: none; animation: confettiPop 0.9s ease-out forwards;
+    }
+
+    .feedback-overlay {
+        position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(255,255,255,0.9); opacity: 0; pointer-events: none;
+        transition: opacity 0.3s; z-index: 10; backdrop-filter: blur(2px);
+    }
+    .feedback-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .tab-btn {
+        font-weight: 600; padding: 0.6rem 1.1rem; border-radius: 0.9rem;
+        transition: all 0.15s ease; color: #4338ca; background: #eef2ff;
+        border: 2px solid transparent;
+    }
+    .tab-btn.active { background: #4338ca; color: white; box-shadow: 0 4px 0 #312e81; }
+    .tab-btn:not(.active):hover { background: #e0e7ff; }
+
+    .rel-btn {
+        font-weight: 700; font-size: 0.85rem; padding: 0.55rem 0.7rem; border-radius: 0.8rem;
+        border: 2px solid #c7d2fe; background: white; color: #3730a3; transition: all 0.15s ease;
+        cursor: pointer;
+    }
+    .rel-btn.active { color: white; border-color: transparent; box-shadow: 0 3px 0 rgba(0,0,0,0.25); }
+
+    .switch { position: relative; display: inline-block; width: 52px; height: 28px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch-track {
+        position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; transition: 0.2s; border-radius: 999px;
+    }
+    .switch-track:before {
+        content: ""; position: absolute; height: 22px; width: 22px; left: 3px; bottom: 3px;
+        background: white; transition: 0.2s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .switch input:checked + .switch-track { background: #4338ca; }
+    .switch input:checked + .switch-track:before { transform: translateX(24px); }
+
+    .hidden-panel { display: none; }
+</style>
+</head>
+<body class="min-h-screen p-4 text-slate-800">
+
+<div class="max-w-4xl mx-auto">
+    <a href="../" class="inline-block mb-3 text-indigo-700 font-bold hover:text-indigo-900">&larr; All Apps</a>
+
+    <div class="bg-white/95 backdrop-blur rounded-3xl shadow-2xl p-5 sm:p-8 border border-indigo-100">
+
+        <div class="text-center mb-6">
+            <h1 class="text-3xl sm:text-4xl font-bold text-indigo-700 mb-1 drop-shadow-sm">Angles in a Transversal</h1>
+            <p class="text-md sm:text-lg text-slate-500 font-semibold">Corresponding &bull; Alternate &bull; Co-Interior &bull; Vertically Opposite</p>
+        </div>
+
+        <!-- Tab nav -->
+        <div class="flex flex-wrap justify-center gap-2 mb-6">
+            <button class="tab-btn active" data-tab="explore">🔍 Explore</button>
+            <button class="tab-btn" data-tab="game1">🎯 Game 1: Spot It</button>
+            <button class="tab-btn" data-tab="game2">✍️ Game 2: Name It</button>
+            <button class="tab-btn" data-tab="game3">📐 Game 3: Parallel?</button>
+        </div>
+
+        <!-- ======================= EXPLORE TAB ======================= -->
+        <div id="panel-explore" class="tab-panel">
+            <p class="text-center text-slate-600 mb-4">Two lines are cut by a transversal. Choose a relationship, then click any angle to see its partner highlighted!</p>
+
+            <div class="flex flex-wrap justify-center gap-2 mb-4" id="explore-rel-buttons">
+                <button class="rel-btn" data-relation="corresponding">F &mdash; Corresponding</button>
+                <button class="rel-btn" data-relation="alternate">Z &mdash; Alternate</button>
+                <button class="rel-btn" data-relation="coInterior">C &mdash; Co-Interior</button>
+                <button class="rel-btn" data-relation="vertical">X &mdash; Vert. Opposite</button>
+            </div>
+
+            <div class="canvas-container w-full aspect-[16/10] mb-4 flex justify-center items-center bg-slate-50">
+                <canvas id="explore-canvas" class="max-w-full max-h-full"></canvas>
+                <div id="explore-feedback-overlay" class="feedback-overlay" style="pointer-events:none;">
+                    <div class="text-center p-4 bg-white/0"></div>
+                </div>
+            </div>
+
+            <div id="explore-info" class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 mb-4 text-center min-h-[64px] flex items-center justify-center">
+                <p class="text-slate-700 font-semibold">Pick a relationship above, then click an angle in the diagram.</p>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                <div class="flex items-center gap-3">
+                    <label class="switch">
+                        <input type="checkbox" id="explore-parallel-toggle" checked>
+                        <span class="switch-track"></span>
+                    </label>
+                    <span class="font-bold text-slate-700">Lines are parallel</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-bold text-slate-600 w-28">Tilt transversal</label>
+                    <input type="range" id="explore-trans-slider" min="35" max="145" value="115" class="w-full accent-indigo-600">
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-bold text-slate-600 w-28">Rotate lines</label>
+                    <input type="range" id="explore-line-slider" min="-35" max="35" value="0" class="w-full accent-indigo-600">
+                </div>
+                <div class="flex items-center gap-2" id="explore-skew-wrap" style="display:none;">
+                    <label class="text-sm font-bold text-slate-600 w-28">Skew 2nd line</label>
+                    <input type="range" id="explore-skew-slider" min="10" max="50" value="25" class="w-full accent-indigo-600">
+                </div>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-3 mt-4">
+                <button id="explore-animate-btn" class="btn-text bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2 px-5 rounded-xl shadow-[0_4px_0_#b45309] active:shadow-none active:translate-y-1 transition-all">▶ Animate Rotation</button>
+                <button id="explore-randomize-btn" class="btn-text bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-5 rounded-xl shadow-[0_4px_0_#3730a3] active:shadow-none active:translate-y-1 transition-all">🎲 New Random Diagram</button>
+                <button id="explore-measures-toggle" class="btn-text bg-white border-2 border-slate-300 hover:bg-slate-100 text-slate-700 font-bold py-2 px-5 rounded-xl transition-all">📏 Show Angle Sizes</button>
+            </div>
+        </div>
+
+        <!-- ======================= GAME 1 TAB ======================= -->
+        <div id="panel-game1" class="tab-panel hidden-panel">
+            <div id="game1-play">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="text-lg font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-lg">Q <span id="game1-qnum">1</span>/8</div>
+                    <div class="text-lg font-bold text-amber-500 bg-amber-50 px-4 py-2 rounded-lg">Score: <span id="game1-score">0</span></div>
+                </div>
+                <p id="game1-prompt" class="text-center text-xl font-semibold text-slate-700 mb-3">Click the Corresponding angle to the marked one!</p>
+                <div class="canvas-container w-full aspect-[16/10] mb-2 flex justify-center items-center bg-slate-50">
+                    <canvas id="game1-canvas" class="max-w-full max-h-full"></canvas>
+                    <div id="game1-feedback-overlay" class="feedback-overlay">
+                        <div class="text-center p-6 bg-white rounded-2xl shadow-xl border-4 border-white">
+                            <span id="game1-feedback-icon" class="text-6xl block mb-2"></span>
+                            <h3 id="game1-feedback-title" class="text-3xl font-bold mb-2">Correct!</h3>
+                            <p id="game1-feedback-msg" class="text-lg text-slate-600 font-semibold"></p>
+                            <button id="game1-next-btn" class="mt-4 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="game1-end" class="hidden text-center space-y-5">
+                <h2 class="text-3xl font-bold text-indigo-600">Round Complete!</h2>
+                <div class="bg-slate-50 p-6 rounded-3xl inline-block border-2 border-slate-100">
+                    <p class="text-xl text-slate-600 mb-1">Your score</p>
+                    <p class="text-5xl font-black text-amber-500"><span id="game1-final-score">0</span>/8</p>
+                </div>
+                <p id="game1-end-msg" class="text-lg font-semibold text-slate-700"></p>
+                <div><button id="game1-replay-btn" class="btn-text bg-indigo-500 hover:bg-indigo-600 text-white text-xl py-3 px-10 rounded-full shadow-[0_5px_0_#3730a3] active:shadow-none active:translate-y-1 transition-all">Play Again</button></div>
+            </div>
+        </div>
+
+        <!-- ======================= GAME 2 TAB ======================= -->
+        <div id="panel-game2" class="tab-panel hidden-panel">
+            <div id="game2-play">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="text-lg font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-lg">Q <span id="game2-qnum">1</span>/8</div>
+                    <div class="text-lg font-bold text-amber-500 bg-amber-50 px-4 py-2 rounded-lg">Score: <span id="game2-score">0</span></div>
+                </div>
+                <p class="text-center text-xl font-semibold text-slate-700 mb-3">What is the relationship between angle A and angle B?</p>
+                <div class="canvas-container w-full aspect-[16/10] mb-3 flex justify-center items-center bg-slate-50">
+                    <canvas id="game2-canvas" class="max-w-full max-h-full"></canvas>
+                    <div id="game2-feedback-overlay" class="feedback-overlay">
+                        <div class="text-center p-6 bg-white rounded-2xl shadow-xl border-4 border-white">
+                            <span id="game2-feedback-icon" class="text-6xl block mb-2"></span>
+                            <h3 id="game2-feedback-title" class="text-3xl font-bold mb-2">Correct!</h3>
+                            <p id="game2-feedback-msg" class="text-lg text-slate-600 font-semibold"></p>
+                            <button id="game2-next-btn" class="mt-4 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Next</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-3 justify-center items-center w-full max-w-lg mx-auto">
+                    <input type="text" id="game2-answer-input" placeholder="Type: corresponding, alternate, co-interior, vertically opposite..."
+                        class="w-full text-md p-3 rounded-xl border-2 border-slate-300 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100 transition-all font-semibold text-center shadow-inner" autocomplete="off">
+                    <button id="game2-submit-btn" class="w-full sm:w-auto btn-text bg-amber-400 hover:bg-amber-500 text-slate-900 text-lg py-3 px-6 rounded-xl shadow-[0_4px_0_#b45309] active:shadow-none active:translate-y-1 transition-all">Check</button>
+                </div>
+                <p class="text-center text-sm text-slate-400 mt-3">Possible answers: Corresponding, Alternate, Co-Interior (allied), Vertically Opposite.</p>
+            </div>
+            <div id="game2-end" class="hidden text-center space-y-5">
+                <h2 class="text-3xl font-bold text-indigo-600">Round Complete!</h2>
+                <div class="bg-slate-50 p-6 rounded-3xl inline-block border-2 border-slate-100">
+                    <p class="text-xl text-slate-600 mb-1">Your score</p>
+                    <p class="text-5xl font-black text-amber-500"><span id="game2-final-score">0</span>/8</p>
+                </div>
+                <p id="game2-end-msg" class="text-lg font-semibold text-slate-700"></p>
+                <div><button id="game2-replay-btn" class="btn-text bg-indigo-500 hover:bg-indigo-600 text-white text-xl py-3 px-10 rounded-full shadow-[0_5px_0_#3730a3] active:shadow-none active:translate-y-1 transition-all">Play Again</button></div>
+            </div>
+        </div>
+
+        <!-- ======================= GAME 3 TAB ======================= -->
+        <div id="panel-game3" class="tab-panel hidden-panel">
+            <div id="game3-play">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="text-lg font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-lg">Q <span id="game3-qnum">1</span>/6</div>
+                    <div class="text-lg font-bold text-amber-500 bg-amber-50 px-4 py-2 rounded-lg">Score: <span id="game3-score">0</span></div>
+                </div>
+                <p class="text-center text-xl font-semibold text-slate-700 mb-3">Are the two lines parallel?</p>
+                <div class="canvas-container w-full aspect-[16/10] mb-3 flex justify-center items-center bg-slate-50">
+                    <canvas id="game3-canvas" class="max-w-full max-h-full"></canvas>
+                    <div id="game3-feedback-overlay" class="feedback-overlay">
+                        <div class="text-center p-6 bg-white rounded-2xl shadow-xl border-4 border-white max-w-sm">
+                            <span id="game3-feedback-icon" class="text-6xl block mb-2"></span>
+                            <h3 id="game3-feedback-title" class="text-3xl font-bold mb-2">Correct!</h3>
+                            <p id="game3-feedback-msg" class="text-md text-slate-600 font-semibold"></p>
+                            <button id="game3-next-btn" class="mt-4 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="game3-step1" class="flex justify-center gap-4 mb-3">
+                    <button class="game3-choice-btn btn-text bg-emerald-500 hover:bg-emerald-600 text-white text-lg py-3 px-8 rounded-xl shadow-[0_4px_0_#065f46] active:shadow-none active:translate-y-1 transition-all" data-choice="parallel">✅ Parallel</button>
+                    <button class="game3-choice-btn btn-text bg-rose-500 hover:bg-rose-600 text-white text-lg py-3 px-8 rounded-xl shadow-[0_4px_0_#9f1239] active:shadow-none active:translate-y-1 transition-all" data-choice="notparallel">❌ Not Parallel</button>
+                </div>
+
+                <div id="game3-step2" class="hidden">
+                    <p class="text-center font-bold text-slate-600 mb-2">Why?</p>
+                    <div class="grid sm:grid-cols-2 gap-2 max-w-xl mx-auto">
+                        <button class="game3-reason-btn rel-btn" data-reason="corresponding">Corresponding angles are equal</button>
+                        <button class="game3-reason-btn rel-btn" data-reason="alternate">Alternate angles are equal</button>
+                        <button class="game3-reason-btn rel-btn" data-reason="coInterior">Co-interior angles add to 180&deg;</button>
+                        <button class="game3-reason-btn rel-btn" data-reason="none">None of these relationships hold</button>
+                    </div>
+                </div>
+            </div>
+            <div id="game3-end" class="hidden text-center space-y-5">
+                <h2 class="text-3xl font-bold text-indigo-600">Round Complete!</h2>
+                <div class="bg-slate-50 p-6 rounded-3xl inline-block border-2 border-slate-100">
+                    <p class="text-xl text-slate-600 mb-1">Your score</p>
+                    <p class="text-5xl font-black text-amber-500"><span id="game3-final-score">0</span>/6</p>
+                </div>
+                <p id="game3-end-msg" class="text-lg font-semibold text-slate-700"></p>
+                <div><button id="game3-replay-btn" class="btn-text bg-indigo-500 hover:bg-indigo-600 text-white text-xl py-3 px-10 rounded-full shadow-[0_5px_0_#3730a3] active:shadow-none active:translate-y-1 transition-all">Play Again</button></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    /* ============================= MATH / GEOMETRY CORE ============================= */
+    const deg2rad = d => d * Math.PI / 180;
+    const rad2deg = r => r * 180 / Math.PI;
+    function normalizeAngle(a) { a = a % 360; if (a < 0) a += 360; return a; }
+    function angleDiffAbs(a, b) {
+        let d = Math.abs(normalizeAngle(a) - normalizeAngle(b));
+        if (d > 180) d = 360 - d;
+        return d;
+    }
+    function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    const INTERIOR_T_SIGN = { 1: 1, 2: -1 };
+
+    function buildDiagram(lineAngle1, lineAngle2, transAngle, canvasW, canvasH) {
+        const cx = canvasW / 2, cy = canvasH / 2;
+        const spread = Math.min(canvasW, canvasH) * 0.30;
+        const uRad = deg2rad(transAngle);
+        const ux = Math.cos(uRad), uy = Math.sin(uRad);
+        const P1 = { x: cx - ux * spread, y: cy - uy * spread };
+        const P2 = { x: cx + ux * spread, y: cy + uy * spread };
+
+        function linePlus(lineAngleDeg) {
+            const cands = [lineAngleDeg, lineAngleDeg + 180];
+            for (const c of cands) {
+                const vx = Math.cos(deg2rad(c)), vy = Math.sin(deg2rad(c));
+                const cr = ux * vy - uy * vx;
+                if (cr > 0) return normalizeAngle(c);
+            }
+            return normalizeAngle(cands[0]);
+        }
+
+        const Tplus = normalizeAngle(transAngle);
+        const Tminus = normalizeAngle(transAngle + 180);
+        const L1plus = linePlus(lineAngle1);
+        const L1minus = normalizeAngle(L1plus + 180);
+        const L2plus = linePlus(lineAngle2);
+        const L2minus = normalizeAngle(L2plus + 180);
+
+        const angles = [];
+        for (const point of [1, 2]) {
+            for (const tSign of [1, -1]) {
+                for (const lSign of [1, -1]) {
+                    const t = tSign === 1 ? Tplus : Tminus;
+                    const Lp = point === 1 ? L1plus : L2plus;
+                    const Lm = point === 1 ? L1minus : L2minus;
+                    const l = lSign === 1 ? Lp : Lm;
+                    angles.push({
+                        id: point + '_' + tSign + '_' + lSign,
+                        point, tSign, lSign,
+                        rayT: t, rayL: l,
+                        measure: angleDiffAbs(t, l),
+                        vertex: point === 1 ? P1 : P2,
+                        interior: tSign === INTERIOR_T_SIGN[point]
+                    });
+                }
+            }
+        }
+
+        return { P1, P2, Tplus, Tminus, L1plus, L1minus, L2plus, L2minus, angles, transAngle, lineAngle1, lineAngle2 };
+    }
+
+    function findAngle(diagram, point, tSign, lSign) {
+        return diagram.angles.find(a => a.point === point && a.tSign === tSign && a.lSign === lSign);
+    }
+
+    function getRelated(diagram, angleObj, relation) {
+        const { point, tSign, lSign } = angleObj;
+        const other = point === 1 ? 2 : 1;
+        if (relation === 'corresponding') return findAngle(diagram, other, tSign, lSign);
+        if (relation === 'vertical') return findAngle(diagram, point, -tSign, -lSign);
+        if (relation === 'alternate') return findAngle(diagram, other, INTERIOR_T_SIGN[other], -lSign);
+        if (relation === 'coInterior') return findAngle(diagram, other, INTERIOR_T_SIGN[other], lSign);
+        return null;
+    }
+
+    function arcParams(rayT, rayL, measure) {
+        const d = normalizeAngle(rayL - rayT);
+        if (Math.abs(d - measure) < 0.01) return { start: rayT, end: rayT + measure };
+        return { start: rayL, end: rayL + measure };
+    }
+
+    /* ============================= RENDERING ============================= */
+    function drawInfiniteLine(ctx, point, angleDeg, canvas, color, width) {
+        const len = Math.max(canvas.width, canvas.height) * 1.6;
+        const rad = deg2rad(angleDeg);
+        const dx = Math.cos(rad) * len, dy = Math.sin(rad) * len;
+        ctx.beginPath();
+        ctx.moveTo(point.x - dx, point.y - dy);
+        ctx.lineTo(point.x + dx, point.y + dy);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+    }
+
+    function drawSectorArc(ctx, angleObj, style) {
+        const { start, end } = arcParams(angleObj.rayT, angleObj.rayL, angleObj.measure);
+        const r = style.radius;
+        const v = angleObj.vertex;
+        ctx.beginPath();
+        ctx.moveTo(v.x, v.y);
+        ctx.arc(v.x, v.y, r, deg2rad(start), deg2rad(end));
+        ctx.closePath();
+        ctx.fillStyle = style.fill || 'rgba(0,0,0,0)';
+        ctx.fill();
+        ctx.strokeStyle = style.stroke || 'rgba(100,116,139,0.55)';
+        ctx.lineWidth = style.strokeWidth || 1.5;
+        ctx.stroke();
+        if (style.label) {
+            const mid = deg2rad((start + end) / 2);
+            const lx = v.x + Math.cos(mid) * (r + (style.labelOffset || 22));
+            const ly = v.y + Math.sin(mid) * (r + (style.labelOffset || 22));
+            ctx.fillStyle = style.labelColor || '#0f172a';
+            ctx.font = style.font || 'bold 14px Nunito, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(style.label, lx, ly);
+        }
+    }
+
+    function renderDiagram(canvas, diagram, styleForAngle, opts) {
+        opts = opts || {};
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        const margin = 8;
+        ctx.beginPath();
+        ctx.rect(margin, margin, canvas.width - 2 * margin, canvas.height - 2 * margin);
+        ctx.clip();
+        drawInfiniteLine(ctx, diagram.P1, diagram.lineAngle1, canvas, '#1e293b', 3.5);
+        drawInfiniteLine(ctx, diagram.P2, diagram.lineAngle2, canvas, '#1e293b', 3.5);
+        drawInfiniteLine(ctx, diagram.P1, diagram.transAngle, canvas, '#4338ca', 3.5);
+        ctx.restore();
+
+        // arrowheads / line name tags near edges (optional simple markers)
+        [ { p: diagram.P1, label: 'line 1' }, { p: diagram.P2, label: 'line 2' } ].forEach(() => {});
+
+        diagram.angles.forEach(a => {
+            const style = styleForAngle(a) || {};
+            style.radius = style.radius || Math.min(canvas.width, canvas.height) * 0.085;
+            drawSectorArc(ctx, a, style);
+        });
+
+        [diagram.P1, diagram.P2].forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#1e293b';
+            ctx.fill();
+        });
+    }
+
+    function getCanvasPos(canvas, evt) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+        const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+        return {
+            x: (clientX - rect.left) * (canvas.width / rect.width),
+            y: (clientY - rect.top) * (canvas.height / rect.height)
+        };
+    }
+
+    function hitTestAngle(diagram, mx, my) {
+        const d1 = Math.hypot(mx - diagram.P1.x, my - diagram.P1.y);
+        const d2 = Math.hypot(mx - diagram.P2.x, my - diagram.P2.y);
+        const point = d1 < d2 ? 1 : 2;
+        const vertex = point === 1 ? diagram.P1 : diagram.P2;
+        const dist = Math.min(d1, d2);
+        if (dist > 150 || dist < 5) return null;
+        const clickAngle = normalizeAngle(rad2deg(Math.atan2(my - vertex.y, mx - vertex.x)));
+        const candidates = diagram.angles.filter(a => a.point === point);
+        for (const a of candidates) {
+            const { start } = arcParams(a.rayT, a.rayL, a.measure);
+            const rel = normalizeAngle(clickAngle - start);
+            if (rel <= a.measure + 0.75) return a;
+        }
+        return null;
+    }
+
+    /* ============================= DIAGRAM GENERATION ============================= */
+    function pickDiagramAngles(parallel) {
+        for (let tries = 0; tries < 60; tries++) {
+            const lineAngle1 = randomInt(-20, 20);
+            const transAngle = lineAngle1 + randomInt(55, 125) * (Math.random() < 0.5 ? 1 : -1);
+            let lineAngle2;
+            if (parallel) {
+                lineAngle2 = lineAngle1;
+            } else {
+                const offset = randomInt(15, 45) * (Math.random() < 0.5 ? 1 : -1);
+                lineAngle2 = lineAngle1 + offset;
+            }
+            const diff1 = angleDiffAbs(transAngle, lineAngle1);
+            const diff2 = angleDiffAbs(transAngle, lineAngle2);
+            if (diff1 >= 25 && diff1 <= 155 && diff2 >= 25 && diff2 <= 155 && (parallel || Math.abs(diff1 - diff2) >= 5)) {
+                return { lineAngle1, lineAngle2, transAngle };
+            }
+        }
+        return { lineAngle1: 0, lineAngle2: parallel ? 0 : 30, transAngle: 100 };
+    }
+
+    function makeRandomDiagram(canvas, parallel) {
+        const p = pickDiagramAngles(parallel);
+        const d = buildDiagram(p.lineAngle1, p.lineAngle2, p.transAngle, canvas.width, canvas.height);
+        d.isParallel = parallel;
+        return d;
+    }
+
+    function pickStartAngle(diagram, relation) {
+        const point = pick([1, 2]);
+        let tSign, lSign = pick([1, -1]);
+        if (relation === 'alternate' || relation === 'coInterior') {
+            tSign = INTERIOR_T_SIGN[point];
+        } else {
+            tSign = pick([1, -1]);
+        }
+        return findAngle(diagram, point, tSign, lSign);
+    }
+
+    const RELATION_INFO = {
+        corresponding: { name: 'Corresponding Angles', shape: 'F-shape', color: '#2563eb', fill: 'rgba(37,99,235,0.35)', desc: 'Same position at each intersection.' },
+        alternate: { name: 'Alternate Angles', shape: 'Z-shape', color: '#9333ea', fill: 'rgba(147,51,234,0.35)', desc: 'Opposite sides of the transversal, both between the two lines.' },
+        coInterior: { name: 'Co-Interior Angles', shape: 'C-shape', color: '#ea580c', fill: 'rgba(234,88,12,0.35)', desc: 'Same side of the transversal, both between the two lines (also called allied angles).' },
+        vertical: { name: 'Vertically Opposite Angles', shape: 'X-shape', color: '#dc2626', fill: 'rgba(220,38,38,0.35)', desc: 'Formed opposite each other where two lines cross - always equal!' }
+    };
+
+    function normalizeText(s) { return s.toLowerCase().replace(/[^a-z]/g, ''); }
+    const RELATION_ANSWERS = {
+        corresponding: ['corresponding', 'correspondingangles', 'corespondingangles'],
+        alternate: ['alternate', 'alternateangles', 'alternateinterior', 'alternateinteriorangles'],
+        coInterior: ['cointerior', 'cointeriorangles', 'allied', 'alliedangles', 'samesideinterior', 'samesideinteriorangles', 'consecutiveinterior', 'consecutiveinteriorangles'],
+        vertical: ['verticallyopposite', 'verticallyopposedangles', 'vertical', 'verticalangles', 'vertopp', 'verticallyoppositeangles']
+    };
+
+    function burstConfetti(container) {
+        const emojis = ['✨', '🎉', '⭐', '📐', '💫'];
+        for (let i = 0; i < 10; i++) {
+            const span = document.createElement('span');
+            span.className = 'confetti-bit';
+            span.textContent = pick(emojis);
+            const dx = (Math.random() - 0.5) * 220;
+            const dy = (Math.random() - 0.9) * 180;
+            span.style.setProperty('--dx', dx + 'px');
+            span.style.setProperty('--dy', dy + 'px');
+            span.style.setProperty('--rot', (Math.random() * 360) + 'deg');
+            container.appendChild(span);
+            setTimeout(() => span.remove(), 950);
+        }
+    }
+
+    /* ============================= TAB SWITCHING ============================= */
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const panels = {
+        explore: document.getElementById('panel-explore'),
+        game1: document.getElementById('panel-game1'),
+        game2: document.getElementById('panel-game2'),
+        game3: document.getElementById('panel-game3')
+    };
+    function showTab(name) {
+        Object.keys(panels).forEach(k => panels[k].classList.toggle('hidden-panel', k !== name));
+        tabButtons.forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+        requestAnimationFrame(() => {
+            if (name === 'explore') { resizeCanvas(exploreCanvas); updateExplore(); }
+            if (name === 'game1') { resizeCanvas(game1Canvas); renderGame1(); }
+            if (name === 'game2') { resizeCanvas(game2Canvas); renderGame2(); }
+            if (name === 'game3') { resizeCanvas(game3Canvas); renderGame3(); }
+        });
+    }
+    tabButtons.forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+    function resizeCanvas(canvas) {
+        const container = canvas.parentElement;
+        const w = container.clientWidth;
+        const h = w * 0.6;
+        canvas.width = w;
+        canvas.height = h;
+    }
+
+    /* ============================= EXPLORE TAB ============================= */
+    const exploreCanvas = document.getElementById('explore-canvas');
+    const exploreInfo = document.getElementById('explore-info');
+    const parallelToggle = document.getElementById('explore-parallel-toggle');
+    const transSlider = document.getElementById('explore-trans-slider');
+    const lineSlider = document.getElementById('explore-line-slider');
+    const skewSlider = document.getElementById('explore-skew-slider');
+    const skewWrap = document.getElementById('explore-skew-wrap');
+    const measuresToggleBtn = document.getElementById('explore-measures-toggle');
+    let exploreRelation = 'corresponding';
+    let exploreSelected = null;
+    let showMeasures = false;
+
+    document.querySelectorAll('#explore-rel-buttons .rel-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            exploreRelation = btn.dataset.relation;
+            exploreSelected = null;
+            document.querySelectorAll('#explore-rel-buttons .rel-btn').forEach(b => {
+                b.classList.remove('active');
+                b.style.background = '';
+                b.style.borderColor = '';
+            });
+            btn.classList.add('active');
+            btn.style.background = RELATION_INFO[exploreRelation].color;
+            btn.style.borderColor = RELATION_INFO[exploreRelation].color;
+            updateExplore();
+        });
+    });
+    document.querySelector('#explore-rel-buttons .rel-btn[data-relation="corresponding"]').click();
+
+    parallelToggle.addEventListener('change', () => {
+        skewWrap.style.display = parallelToggle.checked ? 'none' : 'flex';
+        exploreSelected = null;
+        updateExplore();
+    });
+    transSlider.addEventListener('input', () => { exploreSelected = null; updateExplore(); });
+    lineSlider.addEventListener('input', () => { exploreSelected = null; updateExplore(); });
+    skewSlider.addEventListener('input', () => { exploreSelected = null; updateExplore(); });
+    measuresToggleBtn.addEventListener('click', () => {
+        showMeasures = !showMeasures;
+        measuresToggleBtn.textContent = showMeasures ? '📏 Hide Angle Sizes' : '📏 Show Angle Sizes';
+        updateExplore();
+    });
+
+    document.getElementById('explore-randomize-btn').addEventListener('click', () => {
+        const parallel = Math.random() < 0.5;
+        parallelToggle.checked = parallel;
+        skewWrap.style.display = parallel ? 'none' : 'flex';
+        transSlider.value = randomInt(50, 130);
+        lineSlider.value = randomInt(-30, 30);
+        skewSlider.value = randomInt(15, 45);
+        exploreSelected = null;
+        updateExplore();
+    });
+
+    let exploreAnimReq = null;
+    document.getElementById('explore-animate-btn').addEventListener('click', () => {
+        if (exploreAnimReq) return;
+        const base = parseFloat(transSlider.value);
+        const start = performance.now();
+        const duration = 3200;
+        function step(now) {
+            const t = (now - start) / duration;
+            if (t >= 1) {
+                transSlider.value = base;
+                updateExplore();
+                exploreAnimReq = null;
+                return;
+            }
+            transSlider.value = base + Math.sin(t * Math.PI * 2) * 25;
+            updateExplore();
+            exploreAnimReq = requestAnimationFrame(step);
+        }
+        exploreAnimReq = requestAnimationFrame(step);
+    });
+
+    function buildExploreDiagram() {
+        const parallel = parallelToggle.checked;
+        const lineAngle1 = parseFloat(lineSlider.value);
+        const lineAngle2 = parallel ? lineAngle1 : lineAngle1 + parseFloat(skewSlider.value);
+        const transAngle = parseFloat(transSlider.value);
+        const d = buildDiagram(lineAngle1, lineAngle2, transAngle, exploreCanvas.width, exploreCanvas.height);
+        d.isParallel = parallel;
+        return d;
+    }
+
+    function updateExplore() {
+        if (!exploreCanvas.width) resizeCanvas(exploreCanvas);
+        const diagram = buildExploreDiagram();
+        const relInfo = RELATION_INFO[exploreRelation];
+        let partner = null;
+        if (exploreSelected) {
+            const match = findAngle(diagram, exploreSelected.point, exploreSelected.tSign, exploreSelected.lSign);
+            if (match && (exploreRelation !== 'alternate' && exploreRelation !== 'coInterior' || match.interior)) {
+                partner = getRelated(diagram, match, exploreRelation);
+                exploreSelected = match;
+            } else {
+                exploreSelected = null;
+            }
+        }
+
+        renderDiagram(exploreCanvas, diagram, (a) => {
+            const isSel = exploreSelected && a.id === exploreSelected.id;
+            const isPartner = partner && a.id === partner.id;
+            let label = showMeasures ? Math.round(a.measure) + '°' : '';
+            if (isSel) return { fill: 'rgba(37,99,235,0.4)', stroke: '#1d4ed8', strokeWidth: 2.5, label: label || '●', labelColor: '#1d4ed8' };
+            if (isPartner) return { fill: relInfo.fill, stroke: relInfo.color, strokeWidth: 2.5, label: label || '●', labelColor: relInfo.color };
+            return { fill: 'rgba(148,163,184,0.08)', stroke: 'rgba(100,116,139,0.5)', label };
+        });
+
+        if (exploreSelected && partner) {
+            const eq = exploreRelation === 'vertical' ? true : diagram.isParallel;
+            let verdict;
+            if (exploreRelation === 'vertical') {
+                verdict = `Vertically opposite angles are ALWAYS equal: both are ${Math.round(exploreSelected.measure)}°.`;
+            } else if (exploreRelation === 'coInterior') {
+                verdict = diagram.isParallel
+                    ? `Since the lines are parallel, co-interior angles add to 180°: ${Math.round(exploreSelected.measure)}° + ${Math.round(partner.measure)}° = ${Math.round(exploreSelected.measure + partner.measure)}°.`
+                    : `The lines are NOT parallel, so these co-interior angles do NOT need to add to 180°: ${Math.round(exploreSelected.measure)}° + ${Math.round(partner.measure)}° = ${Math.round(exploreSelected.measure + partner.measure)}°.`;
+            } else {
+                verdict = diagram.isParallel
+                    ? `Since the lines are parallel, ${relInfo.name.toLowerCase()} are equal: both are ${Math.round(exploreSelected.measure)}°.`
+                    : `The lines are NOT parallel, so these angles are NOT equal: ${Math.round(exploreSelected.measure)}° vs ${Math.round(partner.measure)}°.`;
+            }
+            exploreInfo.innerHTML = `<p class="font-bold" style="color:${relInfo.color}">${relInfo.name} (${relInfo.shape})</p><p class="text-slate-700 mt-1">${verdict}</p>`;
+        } else {
+            exploreInfo.innerHTML = `<p class="text-slate-700 font-semibold">${relInfo.name} (${relInfo.shape}): ${relInfo.desc} Click an angle to try it!</p>`;
+        }
+    }
+
+    exploreCanvas.addEventListener('click', (evt) => {
+        const diagram = buildExploreDiagram();
+        const pos = getCanvasPos(exploreCanvas, evt);
+        const hit = hitTestAngle(diagram, pos.x, pos.y);
+        if (!hit) return;
+        if ((exploreRelation === 'alternate' || exploreRelation === 'coInterior') && !hit.interior) {
+            exploreInfo.innerHTML = `<p class="text-rose-600 font-semibold">That angle is on the outside (exterior). ${RELATION_INFO[exploreRelation].name} only apply to angles between the two lines. Try one of the inner angles!</p>`;
+            exploreSelected = null;
+            updateExplore();
+            return;
+        }
+        exploreSelected = hit;
+        updateExplore();
+    });
+
+    window.addEventListener('resize', () => {
+        if (!panels.explore.classList.contains('hidden-panel')) { resizeCanvas(exploreCanvas); updateExplore(); }
+        if (!panels.game1.classList.contains('hidden-panel')) { resizeCanvas(game1Canvas); renderGame1(); }
+        if (!panels.game2.classList.contains('hidden-panel')) { resizeCanvas(game2Canvas); renderGame2(); }
+        if (!panels.game3.classList.contains('hidden-panel')) { resizeCanvas(game3Canvas); renderGame3(); }
+    });
+
+    /* ============================= GAME 1: SPOT THE ANGLE ============================= */
+    const game1Canvas = document.getElementById('game1-canvas');
+    const G1_TOTAL = 8;
+    let g1 = { round: 0, score: 0, diagram: null, given: null, correct: null, relation: null, locked: false };
+
+    function newGame1Round() {
+        g1.diagram = makeRandomDiagram(game1Canvas, Math.random() < 0.5);
+        g1.relation = pick(['corresponding', 'alternate', 'coInterior', 'vertical']);
+        g1.given = pickStartAngle(g1.diagram, g1.relation);
+        g1.correct = getRelated(g1.diagram, g1.given, g1.relation);
+        g1.locked = false;
+        document.getElementById('game1-prompt').textContent = `Click the ${RELATION_INFO[g1.relation].name} (${RELATION_INFO[g1.relation].shape}) to the marked angle!`;
+        document.getElementById('game1-qnum').textContent = g1.round + 1;
+        renderGame1();
+    }
+
+    function renderGame1(clickedWrong) {
+        if (!g1.diagram) return;
+        renderDiagram(game1Canvas, g1.diagram, (a) => {
+            if (a.id === g1.given.id) return { fill: 'rgba(37,99,235,0.4)', stroke: '#1d4ed8', strokeWidth: 2.5, label: '★' };
+            if (g1.locked && a.id === g1.correct.id) return { fill: 'rgba(16,185,129,0.4)', stroke: '#059669', strokeWidth: 2.5, label: '✓' };
+            if (g1.locked && clickedWrong && a.id === clickedWrong.id) return { fill: 'rgba(220,38,38,0.35)', stroke: '#dc2626', strokeWidth: 2.5, label: '✗' };
+            return { fill: 'rgba(148,163,184,0.06)', stroke: 'rgba(100,116,139,0.45)' };
+        });
+    }
+
+    game1Canvas.addEventListener('click', (evt) => {
+        if (g1.locked || !g1.diagram) return;
+        const pos = getCanvasPos(game1Canvas, evt);
+        const hit = hitTestAngle(g1.diagram, pos.x, pos.y);
+        if (!hit) return;
+        g1.locked = true;
+        const correct = hit.id === g1.correct.id;
+        if (correct) g1.score++;
+        document.getElementById('game1-score').textContent = g1.score;
+        renderGame1(hit);
+        showFeedback('game1', correct,
+            correct ? 'Correct!' : 'Not Quite!',
+            correct ? `That's the ${RELATION_INFO[g1.relation].name.toLowerCase()}!` : `The correct angle is highlighted in green - that's the ${RELATION_INFO[g1.relation].name.toLowerCase()}.`);
+    });
+
+    document.getElementById('game1-next-btn').addEventListener('click', () => {
+        hideFeedback('game1');
+        g1.round++;
+        if (g1.round >= G1_TOTAL) {
+            document.getElementById('game1-play').classList.add('hidden');
+            document.getElementById('game1-end').classList.remove('hidden');
+            document.getElementById('game1-final-score').textContent = g1.score;
+            document.getElementById('game1-end-msg').textContent = endMessage(g1.score, G1_TOTAL);
+        } else {
+            newGame1Round();
+        }
+    });
+    document.getElementById('game1-replay-btn').addEventListener('click', () => {
+        g1.round = 0; g1.score = 0;
+        document.getElementById('game1-score').textContent = 0;
+        document.getElementById('game1-end').classList.add('hidden');
+        document.getElementById('game1-play').classList.remove('hidden');
+        newGame1Round();
+    });
+
+    /* ============================= GAME 2: NAME THE RELATIONSHIP ============================= */
+    const game2Canvas = document.getElementById('game2-canvas');
+    const G2_TOTAL = 8;
+    let g2 = { round: 0, score: 0, diagram: null, a: null, b: null, relation: null, locked: false };
+
+    function newGame2Round() {
+        g2.diagram = makeRandomDiagram(game2Canvas, Math.random() < 0.5);
+        g2.relation = pick(['corresponding', 'alternate', 'coInterior', 'vertical']);
+        g2.a = pickStartAngle(g2.diagram, g2.relation);
+        g2.b = getRelated(g2.diagram, g2.a, g2.relation);
+        g2.locked = false;
+        document.getElementById('game2-qnum').textContent = g2.round + 1;
+        document.getElementById('game2-answer-input').value = '';
+        document.getElementById('game2-answer-input').disabled = false;
+        renderGame2();
+    }
+
+    function renderGame2() {
+        if (!g2.diagram) return;
+        renderDiagram(game2Canvas, g2.diagram, (a) => {
+            if (a.id === g2.a.id) return { fill: 'rgba(37,99,235,0.4)', stroke: '#1d4ed8', strokeWidth: 2.5, label: 'A' };
+            if (a.id === g2.b.id) return { fill: 'rgba(234,88,12,0.4)', stroke: '#c2410c', strokeWidth: 2.5, label: 'B' };
+            return { fill: 'rgba(148,163,184,0.06)', stroke: 'rgba(100,116,139,0.45)' };
+        });
+    }
+
+    function checkGame2() {
+        if (g2.locked) return;
+        const raw = document.getElementById('game2-answer-input').value.trim();
+        if (!raw) return;
+        g2.locked = true;
+        document.getElementById('game2-answer-input').disabled = true;
+        const norm = normalizeText(raw);
+        const correct = RELATION_ANSWERS[g2.relation].includes(norm);
+        if (correct) g2.score++;
+        document.getElementById('game2-score').textContent = g2.score;
+        showFeedback('game2', correct,
+            correct ? 'Correct!' : 'Not Quite!',
+            `A and B are ${RELATION_INFO[g2.relation].name} (${RELATION_INFO[g2.relation].shape}). ${RELATION_INFO[g2.relation].desc}`);
+    }
+    document.getElementById('game2-submit-btn').addEventListener('click', checkGame2);
+    document.getElementById('game2-answer-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') checkGame2(); });
+
+    document.getElementById('game2-next-btn').addEventListener('click', () => {
+        hideFeedback('game2');
+        g2.round++;
+        if (g2.round >= G2_TOTAL) {
+            document.getElementById('game2-play').classList.add('hidden');
+            document.getElementById('game2-end').classList.remove('hidden');
+            document.getElementById('game2-final-score').textContent = g2.score;
+            document.getElementById('game2-end-msg').textContent = endMessage(g2.score, G2_TOTAL);
+        } else {
+            newGame2Round();
+        }
+    });
+    document.getElementById('game2-replay-btn').addEventListener('click', () => {
+        g2.round = 0; g2.score = 0;
+        document.getElementById('game2-score').textContent = 0;
+        document.getElementById('game2-end').classList.add('hidden');
+        document.getElementById('game2-play').classList.remove('hidden');
+        newGame2Round();
+    });
+
+    /* ============================= GAME 3: PARALLEL OR NOT? ============================= */
+    const game3Canvas = document.getElementById('game3-canvas');
+    const G3_TOTAL = 6;
+    let g3 = { round: 0, score: 0, diagram: null, a: null, b: null, relation: null, step1: null, locked: false };
+
+    function newGame3Round() {
+        for (let tries = 0; tries < 40; tries++) {
+            const relation = pick(['corresponding', 'alternate', 'coInterior']);
+            const isParallel = Math.random() < 0.5;
+            const diagram = makeRandomDiagram(game3Canvas, isParallel);
+            const a = pickStartAngle(diagram, relation);
+            const b = getRelated(diagram, a, relation);
+            const valA = Math.round(a.measure), valB = Math.round(b.measure);
+            if (valA === 90 || valB === 90) continue;
+            g3.diagram = diagram; g3.relation = relation; g3.a = a; g3.b = b;
+            break;
+        }
+        g3.step1 = null;
+        g3.locked = false;
+        document.getElementById('game3-qnum').textContent = g3.round + 1;
+        document.getElementById('game3-step1').classList.remove('hidden');
+        document.getElementById('game3-step2').classList.add('hidden');
+        document.querySelectorAll('.game3-choice-btn').forEach(b => b.disabled = false);
+        document.querySelectorAll('.game3-reason-btn').forEach(b => { b.disabled = false; b.classList.remove('active'); b.style.background = ''; b.style.borderColor = ''; b.style.color = ''; });
+        renderGame3();
+    }
+
+    function renderGame3() {
+        if (!g3.diagram) return;
+        renderDiagram(game3Canvas, g3.diagram, (a) => {
+            if (a.id === g3.a.id) return { fill: 'rgba(37,99,235,0.25)', stroke: '#1d4ed8', strokeWidth: 2.5, label: Math.round(a.measure) + '°', labelColor: '#1d4ed8', labelOffset: 26 };
+            if (a.id === g3.b.id) return { fill: 'rgba(234,88,12,0.25)', stroke: '#c2410c', strokeWidth: 2.5, label: Math.round(a.measure) + '°', labelColor: '#c2410c', labelOffset: 26 };
+            return { fill: 'rgba(148,163,184,0.05)', stroke: 'rgba(100,116,139,0.35)' };
+        });
+    }
+
+    document.querySelectorAll('.game3-choice-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (g3.step1) return;
+            g3.step1 = btn.dataset.choice;
+            document.querySelectorAll('.game3-choice-btn').forEach(b => b.disabled = true);
+            document.getElementById('game3-step2').classList.remove('hidden');
+
+            const correspondingBtn = document.querySelector('.game3-reason-btn[data-reason="corresponding"]');
+            const alternateBtn = document.querySelector('.game3-reason-btn[data-reason="alternate"]');
+            const coInteriorBtn = document.querySelector('.game3-reason-btn[data-reason="coInterior"]');
+            const noneBtn = document.querySelector('.game3-reason-btn[data-reason="none"]');
+
+            if (g3.step1 === 'notparallel') {
+                correspondingBtn.textContent = 'Corresponding angles are NOT equal';
+                alternateBtn.textContent = 'Alternate angles are NOT equal';
+                coInteriorBtn.textContent = 'Co-interior angles do NOT add to 180°';
+                noneBtn.classList.add('hidden');
+            } else { // 'parallel'
+                correspondingBtn.textContent = 'Corresponding angles are equal';
+                alternateBtn.textContent = 'Alternate angles are equal';
+                coInteriorBtn.textContent = 'Co-interior angles add to 180°';
+                noneBtn.classList.remove('hidden');
+            }
+        });
+    });
+
+    document.querySelectorAll('.game3-reason-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (g3.locked || !g3.step1) return;
+            g3.locked = true;
+            document.querySelectorAll('.game3-reason-btn').forEach(b => b.disabled = true);
+            const chosenReason = btn.dataset.reason;
+            const truthParallel = g3.diagram.isParallel;
+            const truthReason = g3.relation;
+            const step1Correct = (g3.step1 === 'parallel') === truthParallel;
+            const reasonCorrect = chosenReason === truthReason;
+            const allCorrect = step1Correct && reasonCorrect;
+            if (allCorrect) g3.score++;
+            document.getElementById('game3-score').textContent = g3.score;
+
+            const valA = Math.round(g3.a.measure), valB = Math.round(g3.b.measure);
+            let msg;
+            if (truthParallel) {
+                if (g3.relation === 'coInterior') msg = `These are co-interior angles: ${valA}° + ${valB}° = ${valA + valB}°, so the lines ARE parallel.`;
+                else msg = `These are ${RELATION_INFO[g3.relation].name.toLowerCase()}: ${valA}° = ${valB}°, so the lines ARE parallel.`;
+            } else {
+                msg = `These are ${RELATION_INFO[g3.relation].name.toLowerCase()} but ${valA}° and ${valB}° don't match the rule (equal, or sum to 180°), so the lines are NOT parallel.`;
+            }
+            showFeedback('game3', allCorrect, allCorrect ? 'Correct!' : 'Not Quite!', msg);
+        });
+    });
+
+    document.getElementById('game3-next-btn').addEventListener('click', () => {
+        hideFeedback('game3');
+        g3.round++;
+        if (g3.round >= G3_TOTAL) {
+            document.getElementById('game3-play').classList.add('hidden');
+            document.getElementById('game3-end').classList.remove('hidden');
+            document.getElementById('game3-final-score').textContent = g3.score;
+            document.getElementById('game3-end-msg').textContent = endMessage(g3.score, G3_TOTAL);
+        } else {
+            newGame3Round();
+        }
+    });
+    document.getElementById('game3-replay-btn').addEventListener('click', () => {
+        g3.round = 0; g3.score = 0;
+        document.getElementById('game3-score').textContent = 0;
+        document.getElementById('game3-end').classList.add('hidden');
+        document.getElementById('game3-play').classList.remove('hidden');
+        newGame3Round();
+    });
+
+    /* ============================= SHARED FEEDBACK HELPERS ============================= */
+    function showFeedback(prefix, correct, title, msg) {
+        const overlay = document.getElementById(prefix + '-feedback-overlay');
+        const icon = document.getElementById(prefix + '-feedback-icon');
+        const titleEl = document.getElementById(prefix + '-feedback-title');
+        const msgEl = document.getElementById(prefix + '-feedback-msg');
+        icon.textContent = correct ? '🎉' : '🤔';
+        titleEl.textContent = title;
+        titleEl.className = 'text-3xl font-bold mb-2 ' + (correct ? 'text-emerald-600' : 'text-rose-600');
+        msgEl.textContent = msg;
+        overlay.classList.add('active');
+        const card = overlay.querySelector('div');
+        card.classList.remove('pop-in', 'shake');
+        void card.offsetWidth;
+        card.classList.add(correct ? 'pop-in' : 'shake');
+        if (correct) burstConfetti(overlay);
+    }
+    function hideFeedback(prefix) {
+        document.getElementById(prefix + '-feedback-overlay').classList.remove('active');
+    }
+
+    function endMessage(score, total) {
+        const pct = score / total;
+        if (pct === 1) return 'Perfect score! You are a transversal angles expert!';
+        if (pct >= 0.75) return 'Excellent work! You really know your angle relationships.';
+        if (pct >= 0.5) return 'Good effort! Review the tricky ones and try again.';
+        return 'Keep practising - try the Explore tab again then have another go!';
+    }
+
+    /* ============================= INIT ============================= */
+    resizeCanvas(exploreCanvas);
+    updateExplore();
+    newGame1Round();
+    newGame2Round();
+    newGame3Round();
+})();
+</script>
+</body>
+</html>
