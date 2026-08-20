@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Interest Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdfa; /* Light teal background */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .coin {
+            width: 60px;
+            height: 20px;
+            background-color: #fbbf24; /* Amber-400 */
+            border-radius: 50%;
+            border: 2px solid #b45309; /* Amber-700 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), inset 0 -3px 0 rgba(180, 83, 9, 0.5);
+            position: absolute;
+            transition: all 1.5s ease-in-out;
+            z-index: 10;
+        }
+
+        .coin-face {
+            content: '$';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            color: #b45309;
+            font-size: 0.8rem;
+        }
+
+        .stack-container {
+            position: relative;
+            width: 80px;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            border-bottom: 4px solid #334155; /* Slate-700 */
+            margin: 0 10px;
+            padding-bottom: 5px;
+        }
+
+        .stack-label {
+            position: absolute;
+            bottom: -30px;
+            width: 100%;
+            text-align: center;
+            font-weight: 600;
+            color: #1e293b; /* Slate-800 */
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .workspace {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            z-index: 20;
+        }
+
+        .stacks-area {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 2rem;
+            width: 100%;
+            max-width: 100%;
+            padding: 0 1rem;
+            min-height: 300px;
+            position: relative;
+        }
+        
+        .years-container {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding-bottom: 2rem; /* space for labels */
+            max-width: 90%;
+            flex-grow: 1;
+        }
+
+        /* Animation class for newly generated coins */
+        .pop-in {
+            animation: popIn 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Custom scrollbar for years container */
+        .years-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .years-container::-webkit-scrollbar-track {
+            background: #e2e8f0; 
+            border-radius: 4px;
+        }
+        .years-container::-webkit-scrollbar-thumb {
+            background: #94a3b8; 
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="workspace">
+        <h1 class="text-3xl font-bold text-slate-800 mb-6 text-center">Simple Interest Visualizer</h1>
+        
+        <div class="controls w-full max-w-3xl">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                <div>
+                    <label for="principalInput" class="block text-sm font-medium text-gray-700 mb-1">Principal (Coins)</label>
+                    <input type="number" id="principalInput" value="10" min="1" max="50" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500">
+                    <p class="text-xs text-gray-500 mt-1">Number of coins to start with.</p>
+                </div>
+                <div>
+                    <label for="rateInput" class="block text-sm font-medium text-gray-700 mb-1">Interest Rate (%)</label>
+                    <input type="number" id="rateInput" value="20" min="1" max="100" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500">
+                    <p class="text-xs text-gray-500 mt-1">Percent of principal earned per year.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button id="setupBtn" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded shadow transition duration-200">
+                        Setup
+                    </button>
+                    <button id="resetBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded shadow transition duration-200">
+                        Reset
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-center gap-4 border-t pt-4">
+                <button id="advanceTimeBtn" disabled class="bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg shadow-lg text-lg transition duration-200 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Advance 1 Year
+                </button>
+                <button id="concludeBtn" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg shadow-lg text-lg transition duration-200">
+                    Conclude (Sum Interest)
+                </button>
+            </div>
+            
+            <div id="repaymentControl" class="mt-4 flex justify-center items-center gap-4 hidden">
+                <label for="installmentsInput" class="text-md font-medium text-gray-700">Repayment Period (Installments):</label>
+                <input type="number" id="installmentsInput" value="3" min="1" max="24" class="w-24 px-3 py-2 border border-emerald-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500">
+            </div>
+
+            <div id="statsPanel" class="mt-4 text-center hidden">
+                <p class="text-lg font-semibold text-slate-700">
+                    Total Interest Earned: <span id="totalInterestDisplay" class="text-indigo-600">0</span> coins
+                </p>
+                <p class="text-md text-slate-600">
+                    Final Amount: <span id="finalAmountDisplay" class="text-teal-600">0</span> coins
+                </p>
+            </div>
+        </div>
+
+        <div class="stacks-area" id="stacksArea">
+            <div class="stack-container" id="principalStack">
+                <div class="stack-label">Principal</div>
+            </div>
+            
+            <div class="years-container" id="yearsContainer">
+                <!-- Year stacks will be added here dynamically -->
+            </div>
+            
+            <div class="stack-container hidden" id="totalInterestStack">
+                <div class="stack-label text-indigo-700 font-bold">Total Interest</div>
+            </div>
+
+            <div class="stack-container hidden" id="totalAmountStack">
+                <div class="stack-label text-emerald-700 font-bold">Total Amount</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const principalInput = document.getElementById('principalInput');
+        const rateInput = document.getElementById('rateInput');
+        const setupBtn = document.getElementById('setupBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const advanceTimeBtn = document.getElementById('advanceTimeBtn');
+        const concludeBtn = document.getElementById('concludeBtn');
+        
+        const principalStackDiv = document.getElementById('principalStack');
+        const yearsContainerDiv = document.getElementById('yearsContainer');
+        const totalInterestStackDiv = document.getElementById('totalInterestStack');
+        const totalAmountStackDiv = document.getElementById('totalAmountStack');
+        const statsPanel = document.getElementById('statsPanel');
+        const totalInterestDisplay = document.getElementById('totalInterestDisplay');
+        const finalAmountDisplay = document.getElementById('finalAmountDisplay');
+        const repaymentControl = document.getElementById('repaymentControl');
+        const installmentsInput = document.getElementById('installmentsInput');
+
+        const coinHeight = 8; // Adjust based on visual stacking needs, less than actual height to overlap
+
+        let principalCoins = [];
+        let allInterestCoins = [];
+        let currentYear = 0;
+        let interestPerYear = 0;
+        let isAnimating = false;
+        let appState = 'SETUP'; // SETUP, ADVANCING, CONCLUDED, SUMMED_TOTAL, REPAYING
+
+        function animateCoin(coin, targetContainer, stackIndex, delay = 0) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    // 1. Get exact physical position
+                    const startRect = coin.getBoundingClientRect();
+                    
+                    // 2. Move to body without visually jumping
+                    coin.style.transition = 'none';
+                    document.body.appendChild(coin);
+                    coin.style.position = 'absolute';
+                    coin.style.left = `${startRect.left + window.scrollX}px`;
+                    coin.style.top = `${startRect.top + window.scrollY}px`;
+                    coin.style.bottom = 'auto';
+                    coin.style.transform = 'none';
+                    
+                    // 3. Force reflow to register coordinates
+                    void coin.offsetWidth;
+                    
+                    // 4. Calculate target position relative to body
+                    const targetRect = targetContainer.getBoundingClientRect();
+                    const targetX = targetRect.left + window.scrollX + (targetRect.width / 2) - 30; // 30 is half coin width
+                    const targetY = targetRect.bottom + window.scrollY - 24 - (stackIndex * coinHeight); // 24 = 4px border + 20px height
+
+                    // 5. Animate to target
+                    coin.style.transition = 'all 1.5s ease-in-out';
+                    coin.style.left = `${targetX}px`;
+                    coin.style.top = `${targetY}px`;
+                    
+                    // 6. Cleanly attach to target container after transition
+                    setTimeout(() => {
+                        coin.style.transition = 'none'; // Prevent jumping when swapping DOM parent
+                        coin.style.position = 'absolute';
+                        coin.style.left = '50%';
+                        coin.style.transform = 'translateX(-50%)';
+                        coin.style.top = 'auto';
+                        coin.style.bottom = `${stackIndex * coinHeight}px`;
+                        targetContainer.appendChild(coin);
+                        
+                        // Reflow and restore transition
+                        void coin.offsetWidth;
+                        coin.style.transition = 'all 1.5s ease-in-out';
+                        resolve();
+                    }, 1500); // Wait for CSS transition
+                }, delay);
+            });
+        }
+
+        // Function to create a visual coin element
+        function createCoin(isPrincipal = true) {
+            const coin = document.createElement('div');
+            coin.className = 'coin';
+            
+            // Add slight visual distinction for interest coins
+            if (!isPrincipal) {
+                coin.style.backgroundColor = '#fb923c'; // Orange-400
+                coin.style.borderColor = '#9a3412'; // Orange-800
+                coin.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), inset 0 -3px 0 rgba(154, 52, 18, 0.5)';
+            }
+            
+            const face = document.createElement('div');
+            face.className = 'coin-face';
+            face.innerText = '¢';
+            if(!isPrincipal) face.style.color = '#9a3412';
+            coin.appendChild(face);
+            
+            return coin;
+        }
+
+        function setupVisualizer() {
+            if (isAnimating) return;
+            resetVisualizer();
+
+            const principalCount = parseInt(principalInput.value);
+            const ratePercent = parseFloat(rateInput.value);
+
+            if (isNaN(principalCount) || principalCount <= 0) {
+                alert("Please enter a valid principal amount.");
+                return;
+            }
+
+            // Calculate exact interest coins per year, rounding down or up depending on logic, let's round nearest for visualization
+            interestPerYear = Math.max(1, Math.round(principalCount * (ratePercent / 100)));
+            
+            // Create principal stack visually
+            for (let i = 0; i < principalCount; i++) {
+                const coin = createCoin(true);
+                // Stack them visually using bottom positioning
+                coin.style.bottom = `${i * coinHeight}px`;
+                principalStackDiv.appendChild(coin);
+                principalCoins.push(coin);
+            }
+
+            advanceTimeBtn.disabled = false;
+            concludeBtn.disabled = true;
+            setupBtn.disabled = true;
+            principalInput.disabled = true;
+            rateInput.disabled = true;
+            
+            appState = 'ADVANCING';
+            statsPanel.classList.add('hidden');
+        }
+
+        function resetVisualizer() {
+            appState = 'SETUP';
+            
+            principalStackDiv.innerHTML = '<div class="stack-label">Principal</div>';
+            principalStackDiv.style.borderBottom = '';
+            principalStackDiv.classList.remove('hidden');
+            
+            yearsContainerDiv.innerHTML = '';
+            yearsContainerDiv.style.opacity = "1";
+            yearsContainerDiv.classList.remove('hidden');
+            
+            totalInterestStackDiv.innerHTML = '<div class="stack-label text-indigo-700 font-bold">Total Interest</div>';
+            totalInterestStackDiv.style.borderBottom = '';
+            totalInterestStackDiv.classList.add('hidden');
+
+            totalAmountStackDiv.innerHTML = '<div class="stack-label text-emerald-700 font-bold">Total Amount</div>';
+            totalAmountStackDiv.style.borderBottom = '';
+            totalAmountStackDiv.classList.add('hidden');
+            
+            statsPanel.classList.add('hidden');
+            repaymentControl.classList.add('hidden');
+            
+            concludeBtn.innerText = "Sum Interest";
+            concludeBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700', 'bg-teal-600', 'hover:bg-teal-700', 'hidden');
+            concludeBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+
+            principalCoins = [];
+            allInterestCoins = [];
+            currentYear = 0;
+            interestPerYear = 0;
+
+            setupBtn.disabled = false;
+            principalInput.disabled = false;
+            rateInput.disabled = false;
+            advanceTimeBtn.disabled = true;
+            concludeBtn.disabled = true;
+        }
+
+        async function advanceTime() {
+            if (isAnimating || interestPerYear <= 0) return;
+            isAnimating = true;
+            advanceTimeBtn.disabled = true;
+            concludeBtn.disabled = true;
+
+            currentYear++;
+            
+            const yearStack = document.createElement('div');
+            yearStack.className = 'stack-container';
+            yearStack.id = `year-stack-${currentYear}`;
+            yearStack.innerHTML = `<div class="stack-label">Year ${currentYear}</div>`;
+            yearsContainerDiv.appendChild(yearStack);
+            
+            // Scroll to the new year stack if needed
+            yearsContainerDiv.scrollLeft = yearsContainerDiv.scrollWidth;
+
+            // Wait a tick for layout to update after scroll
+            await new Promise(r => setTimeout(r, 50));
+
+            const newCoins = [];
+            const principalRect = principalStackDiv.getBoundingClientRect();
+
+            for (let i = 0; i < interestPerYear; i++) {
+                const newCoin = createCoin(false);
+                newCoin.style.position = 'absolute';
+                
+                // Start position: near the top of the principal stack
+                const startX = principalRect.left + window.scrollX + (principalRect.width / 2) - 30; 
+                const startY = principalRect.bottom + window.scrollY - 24 - (principalCoins.length * coinHeight) - 30 - (i * coinHeight);
+
+                newCoin.style.left = `${startX}px`;
+                newCoin.style.top = `${startY}px`;
+                document.body.appendChild(newCoin);
+                
+                newCoin.classList.add('pop-in');
+                newCoins.push(newCoin);
+            }
+
+            // Wait for pop-in animation
+            await new Promise(resolve => setTimeout(resolve, 1200));
+
+            const movePromises = newCoins.map((coin, index) => {
+                coin.classList.remove('pop-in');
+                allInterestCoins.push(coin);
+                return animateCoin(coin, yearStack, index, index * 100); // slight stagger
+            });
+
+            await Promise.all(movePromises);
+
+            isAnimating = false;
+            advanceTimeBtn.disabled = false;
+            concludeBtn.disabled = false;
+        }
+
+        async function conclude() {
+            if (isAnimating || currentYear === 0) return;
+            isAnimating = true;
+            advanceTimeBtn.disabled = true;
+            concludeBtn.disabled = true;
+
+            // Show final stack areas
+            totalInterestStackDiv.classList.remove('hidden');
+            
+            // Force layout update before calculating coordinates
+            void totalInterestStackDiv.offsetWidth;
+
+            const movePromises = allInterestCoins.map((coin, index) => {
+                return animateCoin(coin, totalInterestStackDiv, index, index * 150);
+            });
+
+            await Promise.all(movePromises);
+
+            // Update stats
+            totalInterestDisplay.innerText = allInterestCoins.length;
+            finalAmountDisplay.innerText = principalCoins.length + allInterestCoins.length;
+            statsPanel.classList.remove('hidden');
+
+            // Fade out the now empty year stacks
+            yearsContainerDiv.style.transition = "opacity 1s ease";
+            yearsContainerDiv.style.opacity = "0";
+
+            concludeBtn.innerText = "Sum Principal & Interest";
+            concludeBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+            concludeBtn.classList.add('bg-teal-600', 'hover:bg-teal-700');
+            concludeBtn.disabled = false;
+            appState = 'CONCLUDED';
+
+            isAnimating = false;
+        }
+
+        async function sumTotalAmount() {
+            if (isAnimating) return;
+            isAnimating = true;
+            concludeBtn.disabled = true;
+
+            appState = 'SUMMED_TOTAL';
+
+            totalAmountStackDiv.classList.remove('hidden');
+            
+            // Force layout update
+            void totalAmountStackDiv.offsetWidth;
+
+            const allCoins = [...principalCoins, ...allInterestCoins];
+
+            const movePromises = allCoins.map((coin, index) => {
+                return animateCoin(coin, totalAmountStackDiv, index, index * 150);
+            });
+
+            await Promise.all(movePromises);
+
+            principalStackDiv.classList.add('hidden');
+            totalInterestStackDiv.classList.add('hidden');
+            yearsContainerDiv.classList.add('hidden');
+
+            concludeBtn.innerText = "Distribute Repayment";
+            concludeBtn.classList.remove('bg-teal-600', 'hover:bg-teal-700');
+            concludeBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+            concludeBtn.disabled = false;
+            repaymentControl.classList.remove('hidden');
+
+            isAnimating = false;
+        }
+
+        async function distributeRepayment() {
+            if (isAnimating) return;
+            isAnimating = true;
+            concludeBtn.disabled = true;
+
+            const installments = parseInt(installmentsInput.value);
+            if (isNaN(installments) || installments < 1) {
+                alert("Please enter a valid number of installments.");
+                isAnimating = false;
+                concludeBtn.disabled = false;
+                return;
+            }
+
+            appState = 'REPAYING';
+
+            // Prepare UI for repayment
+            yearsContainerDiv.innerHTML = '';
+            yearsContainerDiv.style.opacity = "1";
+            yearsContainerDiv.classList.remove('hidden');
+            repaymentControl.classList.add('hidden');
+            
+            // Create Repayment Stacks
+            const repaymentStacks = [];
+            for(let i=1; i<=installments; i++) {
+                const stack = document.createElement('div');
+                stack.className = 'stack-container';
+                stack.innerHTML = `<div class="stack-label text-emerald-700 font-bold">Repayment ${i}</div>`;
+                yearsContainerDiv.appendChild(stack);
+                repaymentStacks.push(stack);
+            }
+
+            // Combine all coins
+            const allCoins = [...principalCoins, ...allInterestCoins];
+            
+            // Calculate distribution
+            const coinsPerStack = Math.floor(allCoins.length / installments);
+            const remainder = allCoins.length % installments;
+
+            let coinIndex = 0;
+            const movePromises = [];
+
+            // Fade out the old labels and borders
+            const pLabel = totalAmountStackDiv.querySelector('.stack-label');
+            if (pLabel) pLabel.style.opacity = 0;
+            totalAmountStackDiv.style.borderBottom = 'none';
+
+            // Wait a tick for layout
+            await new Promise(r => setTimeout(r, 50));
+
+            for(let i=0; i<installments; i++) {
+                const stack = repaymentStacks[i];
+                const coinsForThisStack = coinsPerStack + (i < remainder ? 1 : 0);
+                
+                for(let j=0; j<coinsForThisStack; j++) {
+                    if(coinIndex >= allCoins.length) break;
+                    const coin = allCoins[coinIndex];
+                    movePromises.push(animateCoin(coin, stack, j, coinIndex * 150));
+                    coinIndex++;
+                }
+            }
+
+            await Promise.all(movePromises);
+            
+            // Hide original empty containers completely
+            totalAmountStackDiv.classList.add('hidden');
+
+            isAnimating = false;
+            concludeBtn.classList.add('hidden');
+        }
+
+        setupBtn.addEventListener('click', setupVisualizer);
+        setupBtn.addEventListener('click', setupVisualizer);
+        resetBtn.addEventListener('click', () => {
+            // Need to reset opacity of years container if it was hidden
+            yearsContainerDiv.style.opacity = "1";
+            resetVisualizer();
+        });
+        advanceTimeBtn.addEventListener('click', advanceTime);
+        concludeBtn.addEventListener('click', () => {
+            if (appState === 'ADVANCING' || appState === 'SETUP') {
+                conclude();
+            } else if (appState === 'CONCLUDED') {
+                sumTotalAmount();
+            } else if (appState === 'SUMMED_TOTAL') {
+                distributeRepayment();
+            }
+        });
+
+        // Initialize state
+        resetVisualizer();
+
+    </script>
+</body>
+</html>
