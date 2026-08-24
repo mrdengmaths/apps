@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Can you get to maths on time??</title>
+    <!-- Importing Tone.js for synthesized game sounds -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        /* --- Buggy Popups --- */
+        .buggy-popup {
+            position: absolute;
+            top: 20px;
+            width: 200px;
+            background: white;
+            border: 4px solid #f39c12;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            z-index: 100;
+        }
+
+        .buggy-popup.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-20px);
+        }
+
+        .buggy-popup.left { left: 30px; }
+        .buggy-popup.right { right: 30px; }
+
+        .buggy-icon {
+            font-size: 4rem; 
+            margin-bottom: 10px;
+            filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.2));
+        }
+
+        .buggy-route {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .buggy-sum {
+            font-size: 1.2rem;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        /* --- Turn Spectrum Styles --- */
+        .turn-counter-wrapper {
+            width: 90%;
+            max-width: 800px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .spectrum-container {
+            position: relative;
+            margin-top: 30px;
+            height: 60px;
+        }
+
+        .spectrum-bar {
+            position: relative;
+            height: 20px;
+            border-radius: 10px;
+            background: linear-gradient(to right, 
+                #4caf50 0%, #4caf50 28%, 
+                #ffeb3b 28%, #ffeb3b 56%, 
+                #ff9800 56%, #ff9800 94%, 
+                #f44336 94%, #f44336 100%);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .spectrum-arrow {
+            position: absolute;
+            top: -16px;
+            left: 0%;
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 16px solid #2c3e50;
+            transform: translateX(-50%);
+            transition: left 0.4s ease-out;
+            z-index: 10;
+            filter: drop-shadow(0px -2px 2px rgba(0,0,0,0.2));
+        }
+
+        .spectrum-labels {
+            position: relative;
+            height: 30px;
+            margin-top: 8px;
+        }
+
+        .spectrum-label {
+            position: absolute;
+            transform: translateX(-50%);
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #555;
+            white-space: nowrap;
+        }
+
+        /* --- Board and Deck Styles --- */
+        .board {
+            display: flex;
+            gap: 60px;
+            margin-bottom: 25px;
+            align-items: stretch;
+        }
+
+        .side-emoji {
+            display: flex;
+            align-items: center;
+            font-size: 5rem;
+            filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.15));
+        }
+
+        .deck-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 420px;
+        }
+
+        .tracker-container {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            align-items: center;
+            height: 80px; 
+            margin: 10px 0;
+            width: 100%;
+        }
+
+        .mini-card {
+            width: 48px;
+            height: 72px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .mini-card.toilet { font-size: 0.85rem; }
+
+        .red-deck .mini-card:not(.drawn) {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border: 1px solid #922b21;
+        }
+
+        .blue-deck .mini-card:not(.drawn) {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border: 1px solid #1f618d;
+        }
+
+        .mini-card.drawn {
+            background: #e0e0e0 !important;
+            color: #888 !important;
+            border: 1px solid #bbb !important;
+            text-decoration: line-through;
+            opacity: 0.7;
+            box-shadow: none;
+        }
+
+        .current-card {
+            width: 240px;
+            height: 330px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.75rem;
+            font-weight: bold;
+            color: white;
+            z-index: 2;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+            transition: transform 0.2s ease;
+            text-align: center;
+        }
+
+        .red-deck .current-card {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border: 4px solid #922b21;
+        }
+
+        .blue-deck .current-card {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border: 4px solid #1f618d;
+        }
+
+        #action-btn {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            background-color: #2ecc71;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+
+        #action-btn:hover:not(:disabled) {
+            background-color: #27ae60;
+        }
+
+        #action-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        #action-btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .status {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            color: #555;
+            font-weight: bold;
+        }
+
+        /* --- Game Modal Styles --- */
+        #game-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        #game-modal.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 50px 100px;
+            border-radius: 24px;
+            border: 8px solid #f39c12;
+            font-size: 5rem;
+            font-weight: bold;
+            color: #2c3e50;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            text-align: center;
+            transform: scale(0.7);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #game-modal.visible .modal-content {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Full Screen Game Modal -->
+    <div id="game-modal">
+        <div class="modal-content" id="modal-text"></div>
+    </div>
+
+    <!-- Left Buggy Popup -->
+    <div id="left-buggy" class="buggy-popup left hidden">
+        <div class="buggy-icon">🛺</div>
+        <div class="buggy-route" id="left-route"></div>
+        <div class="buggy-sum" id="left-sum"></div>
+    </div>
+
+    <!-- Right Buggy Popup -->
+    <div id="right-buggy" class="buggy-popup right hidden">
+        <div class="buggy-icon">🛺</div>
+        <div class="buggy-route" id="right-route"></div>
+        <div class="buggy-sum" id="right-sum"></div>
+    </div>
+
+    <h1>Can you get to maths on time??</h1>
+
+    <!-- Turn Spectrum -->
+    <div class="turn-counter-wrapper">
+        <div style="font-weight: bold; color: #333; font-size: 1.1rem;">Time Elapsed: <span id="time-text">0:00</span></div>
+        <div class="spectrum-container">
+            <div class="spectrum-bar">
+                <div class="spectrum-arrow" id="spectrum-arrow"></div>
+            </div>
+            <div class="spectrum-labels">
+                <span class="spectrum-label" style="left: 14%;">time-traveler</span>
+                <span class="spectrum-label" style="left: 42%;">early is on-time</span>
+                <span class="spectrum-label" style="left: 75%;">on-time is late</span>
+                <span class="spectrum-label" style="left: 97%;">see me after class</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Board -->
+    <div class="board">
+        <!-- Hands on head Emoji -->
+        <div class="side-emoji">🙆</div>
+
+        <!-- Odd Deck -->
+        <div class="deck-container red-deck">
+            <div class="tracker-container" id="red-remaining"></div>
+            <div class="current-card" id="red-current">Odd Deck</div>
+            <div class="tracker-container" id="red-drawn"></div>
+        </div>
+
+        <!-- Even Deck -->
+        <div class="deck-container blue-deck">
+            <div class="tracker-container" id="blue-remaining"></div>
+            <div class="current-card" id="blue-current">Even Deck</div>
+            <div class="tracker-container" id="blue-drawn"></div>
+        </div>
+
+        <!-- Hands on hips Emoji -->
+        <div class="side-emoji">🦸</div>
+    </div>
+
+    <button id="action-btn" onclick="initiateTurn()">Draw First Card</button>
+    <div class="status" id="status-text">Draws remaining in deck: 6</div>
+
+    <script>
+        const oddDeckTemplate = ['1', '3', '5', '7', '9', '11', 'Toilet'];
+        const evenDeckTemplate = ['2', '4', '6', '8', '10', '12', 'Toilet'];
+        const maxDraws = 6; 
+        const timePerTurn = 20; 
+
+        // Buggy Data 
+        const startLocations = ["Science quad", "Health centre", "Dining hall", "Boyce hall", "Q-block", "Library", "C-block", "Gamson"];
+        const endLocations = ["Sound-stage", "Student services", "Rosewood Centre"];
+        const sumRanges = ["1-2", "3-4", "5-6", "7-8", "9-10", "11-12"];
+
+        let redDeck = []; 
+        let blueDeck = []; 
+        let redDrawn = [];
+        let blueDrawn = [];
+        let drawCount = 0;       
+        let totalTimeSeconds = 0;
+        let isProcessingTurn = false;
+
+        // --- Audio Setup (Tone.js & Speech Synthesis) ---
+        let audioInitialized = false;
+        
+        // Synth for standard countdown beep
+        const beepSynth = new Tone.Synth({
+            oscillator: { type: "square" },
+            envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
+        }).toDestination();
+        beepSynth.volume.value = -10;
+
+        // PolySynth for the card drawing sound (sounds like a multi-tone pop/chime)
+        const drawSynth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "triangle" },
+            envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.1 }
+        }).toDestination();
+        drawSynth.volume.value = -5;
+
+        async function initAudio() {
+            if (!audioInitialized) {
+                await Tone.start();
+                audioInitialized = true;
+            }
+        }
+
+        function playBeep() {
+            if (!audioInitialized) return;
+            beepSynth.triggerAttackRelease("E5", "16n");
+        }
+
+        function playBoop() {
+            if (!audioInitialized) return;
+            beepSynth.triggerAttackRelease("A5", "8n");
+        }
+
+        function playDrawSound() {
+            if (!audioInitialized) return;
+            const now = Tone.now();
+            // A quick ascending triad chord for the draw sound
+            drawSynth.triggerAttackRelease(["C5", "E5", "G5"], "16n", now);
+        }
+
+        function speakText(text) {
+            // Using Web Speech API for the "Game Tone" voice
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.pitch = 1.3; // Higher pitch for game feel
+                utterance.rate = 1.1;  // Slightly faster
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // --- Modal UI Functions ---
+        function showModal(text) {
+            const modal = document.getElementById('game-modal');
+            const modalText = document.getElementById('modal-text');
+            modalText.innerHTML = text;
+            modal.classList.add('visible');
+        }
+
+        function hideModal() {
+            const modal = document.getElementById('game-modal');
+            modal.classList.remove('visible');
+        }
+
+        // Helper to format seconds as M:SS
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return m + ":" + (s < 10 ? "0" : "") + s;
+        }
+
+        // Shuffle Array
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        // Get Random Item from Array
+        function getRandomItem(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        // Buggy Functions 
+        function triggerBuggies() {
+            document.getElementById('left-route').innerHTML = `${getRandomItem(startLocations)}<br>to<br>${getRandomItem(endLocations)}`;
+            document.getElementById('left-sum').innerText = `${getRandomItem(sumRanges)}`;
+            
+            document.getElementById('right-route').innerHTML = `${getRandomItem(startLocations)}<br>to<br>${getRandomItem(endLocations)}`;
+            document.getElementById('right-sum').innerText = `${getRandomItem(sumRanges)}`;
+
+            document.getElementById('left-buggy').classList.remove('hidden');
+            document.getElementById('right-buggy').classList.remove('hidden');
+        }
+
+        function hideBuggies() {
+            document.getElementById('left-buggy').classList.add('hidden');
+            document.getElementById('right-buggy').classList.add('hidden');
+        }
+
+        // Prevent Toilet from being the first drawn
+        function preventToiletFirst(deck) {
+            const lastIndex = deck.length - 1;
+            if (deck[lastIndex] === 'Toilet') {
+                const swapIndex = Math.floor(Math.random() * lastIndex); 
+                [deck[lastIndex], deck[swapIndex]] = [deck[swapIndex], deck[lastIndex]];
+            }
+            return deck;
+        }
+
+        // Sorts cards strictly for display purposes
+        function sortForDisplay(cards) {
+            return [...cards].sort((a, b) => {
+                if (a === 'Toilet' && b === 'Toilet') return 0;
+                if (a === 'Toilet') return 1;
+                if (b === 'Toilet') return -1;
+                return parseInt(a) - parseInt(b);
+            });
+        }
+
+        // Renders the tracker mini-cards
+        function renderTrackers() {
+            const buildHTML = (cards, isDrawn) => {
+                return cards.map(card => {
+                    const toiletClass = card === 'Toilet' ? ' toilet' : '';
+                    const drawnClass = isDrawn ? ' drawn' : '';
+                    return `<div class="mini-card${toiletClass}${drawnClass}">${card}</div>`;
+                }).join('');
+            };
+
+            document.getElementById('red-remaining').innerHTML = buildHTML(sortForDisplay(redDeck), false);
+            document.getElementById('blue-remaining').innerHTML = buildHTML(sortForDisplay(blueDeck), false);
+            document.getElementById('red-drawn').innerHTML = buildHTML(redDrawn, true);
+            document.getElementById('blue-drawn').innerHTML = buildHTML(blueDrawn, true);
+        }
+
+        function resetGame() {
+            redDeck = preventToiletFirst(shuffle([...oddDeckTemplate]));
+            blueDeck = preventToiletFirst(shuffle([...evenDeckTemplate]));
+            
+            redDrawn = [];
+            blueDrawn = [];
+            drawCount = 0;
+
+            hideBuggies();
+
+            document.getElementById('red-current').innerText = "Odd Deck";
+            document.getElementById('blue-current').innerText = "Even Deck";
+            
+            renderTrackers();
+
+            document.getElementById('action-btn').innerText = totalTimeSeconds === 0 ? "Draw First Card" : "Continue Drawing";
+            document.getElementById('status-text').innerText = `Draws remaining in deck: ${maxDraws}`;
+        }
+
+        function executeCardDraw() {
+            const btn = document.getElementById('action-btn');
+
+            const newRedCard = redDeck.pop();
+            const newBlueCard = blueDeck.pop();
+
+            redDrawn.push(newRedCard);
+            blueDrawn.push(newBlueCard);
+
+            document.getElementById('red-current').innerText = newRedCard;
+            document.getElementById('blue-current').innerText = newBlueCard;
+
+            renderTrackers();
+            drawCount++;
+            
+            totalTimeSeconds += timePerTurn;
+            document.getElementById('time-text').innerText = formatTime(totalTimeSeconds);
+            
+            let arrowPercent = (Math.min(totalTimeSeconds, 320) / 320) * 100;
+            document.getElementById('spectrum-arrow').style.left = arrowPercent + '%';
+
+            if (drawCount >= maxDraws) {
+                btn.innerText = "Reset & Reshuffle Decks";
+                document.getElementById('status-text').innerText = "Round over!";
+                triggerBuggies();
+            } else {
+                btn.innerText = "Draw Next Card";
+                document.getElementById('status-text').innerText = `Draws remaining in deck: ${maxDraws - drawCount}`;
+            }
+        }
+
+        // Orchestrates the prompt, sounds, countdown, and drawing logic
+        async function initiateTurn() {
+            if (isProcessingTurn) return;
+
+            const btn = document.getElementById('action-btn');
+
+            if (drawCount >= maxDraws) {
+                resetGame();
+                return;
+            }
+
+            isProcessingTurn = true;
+            btn.disabled = true;
+
+            // Ensure Tone.js is active (requires user gesture)
+            await initAudio();
+
+            // 1. Popup "Odd or Even" for 1 second with Voice
+            showModal("Odd or Even?");
+            speakText("Odd or even?");
+
+            setTimeout(() => {
+                // 2. Start Countdown
+                let countdownNum = 3;
+                showModal(countdownNum);
+                playBeep(); // Beep on 3
+
+                const countdownInterval = setInterval(() => {
+                    countdownNum--;
+                    
+                    if (countdownNum > 0) {
+                        showModal(countdownNum);
+                        if (countdownNum === 1) {
+                            playBoop(); // Different sound (Boop) on 1
+                        } else {
+                            playBeep(); // Beep on 2
+                        }
+                    } else {
+                        // Countdown finished
+                        clearInterval(countdownInterval);
+                        hideModal();
+
+                        // 3. Draw cards & play draw sound
+                        executeCardDraw();
+                        playDrawSound();
+
+                        isProcessingTurn = false;
+                        btn.disabled = false;
+                    }
+                }, 1000); // 1-second intervals for the 3-second countdown
+            }, 1200); // Wait slightly more than 1 second so the user can read/hear "Odd or Even?"
+        }
+
+        window.onload = resetGame;
+    </script>
+</body>
+</html>
