@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intercept Explorers - Year 9 Math</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0fdf4; /* Light green background */
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+        
+        .mode-btn {
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .mode-btn:active {
+            transform: translateY(1px);
+        }
+
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .math-input {
+            width: 80px;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        /* Number plane canvas styling */
+        #number-plane {
+            background-color: #ffffff;
+            border: 2px solid #cbd5e1;
+            border-radius: 0.5rem;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+            cursor: crosshair;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .table-cell {
+            border: 2px solid #e2e8f0;
+            padding: 0.75rem;
+            text-align: center;
+            font-weight: 600;
+            min-width: 60px;
+        }
+
+        .table-header {
+            background-color: #f1f5f9;
+            color: #334155;
+        }
+
+        /* Progress star */
+        .star {
+            color: #cbd5e1;
+            transition: color 0.3s ease;
+        }
+        .star.filled {
+            color: #fbbf24; /* Yellow */
+        }
+        
+        /* Modal Animation */
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop-in {
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased h-screen flex flex-col">
+
+    <!-- Confetti Overlay -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Header Navigation -->
+    <header id="app-header" class="bg-white shadow-sm py-3 px-4 flex justify-between items-center hidden relative z-10">
+        <button id="btn-back" class="text-slate-500 hover:text-slate-800 flex items-center font-bold bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg transition-colors">
+            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            Menu
+        </button>
+        <h1 id="mode-title" class="text-xl font-bold text-center flex-grow text-indigo-600">Mode Title</h1>
+        <div id="progress-container" class="flex space-x-1">
+            <!-- Stars added dynamically -->
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow flex flex-col items-center justify-center p-4 relative z-0">
+        
+        <!-- Screen 0: Main Menu -->
+        <div id="screen-menu" class="max-w-3xl w-full text-center animate-pop-in">
+            <div class="mb-8">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-emerald-500 mb-2">
+                    Intercept Explorers
+                </h1>
+                <p class="text-lg text-slate-600 font-semibold">Master x and y intercepts! Choose a mode to play.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <!-- Mode 1 -->
+                <button onclick="app.startMode(1)" class="mode-btn bg-blue-500 hover:bg-blue-600 text-white rounded-2xl p-6 text-left flex flex-col justify-between h-40">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-1">Mode 1: The Graph</h2>
+                        <p class="text-blue-100 text-sm">Find the intercepts by looking at the line on the grid.</p>
+                    </div>
+                    <div class="self-end flex items-center space-x-3">
+                        <div id="trophy-1" onclick="app.showStats(event, 1)" class="hidden text-2xl cursor-pointer hover:scale-125 transition-transform bg-white/20 rounded-full w-10 h-10 flex items-center justify-center shadow-lg" title="View Stats">🏆</div>
+                        <div class="bg-blue-700/30 p-2 rounded-full">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- Mode 2 -->
+                <button onclick="app.startMode(2)" class="mode-btn bg-purple-500 hover:bg-purple-600 text-white rounded-2xl p-6 text-left flex flex-col justify-between h-40">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-1">Mode 2: Plot It!</h2>
+                        <p class="text-purple-100 text-sm">We give you the intercepts, you plot the points on the grid.</p>
+                    </div>
+                    <div class="self-end flex items-center space-x-3">
+                        <div id="trophy-2" onclick="app.showStats(event, 2)" class="hidden text-2xl cursor-pointer hover:scale-125 transition-transform bg-white/20 rounded-full w-10 h-10 flex items-center justify-center shadow-lg" title="View Stats">🏆</div>
+                        <div class="bg-purple-700/30 p-2 rounded-full">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- Mode 3 -->
+                <button onclick="app.startMode(3)" class="mode-btn bg-orange-500 hover:bg-orange-600 text-white rounded-2xl p-6 text-left flex flex-col justify-between h-40">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-1">Mode 3: The Table</h2>
+                        <p class="text-orange-100 text-sm">Spot the intercepts hidden in a table of values.</p>
+                    </div>
+                    <div class="self-end flex items-center space-x-3">
+                        <div id="trophy-3" onclick="app.showStats(event, 3)" class="hidden text-2xl cursor-pointer hover:scale-125 transition-transform bg-white/20 rounded-full w-10 h-10 flex items-center justify-center shadow-lg" title="View Stats">🏆</div>
+                        <div class="bg-orange-700/30 p-2 rounded-full">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- Mode 4 -->
+                <button onclick="app.startMode(4)" class="mode-btn bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl p-6 text-left flex flex-col justify-between h-40 relative overflow-hidden">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-1 flex items-center flex-wrap gap-2">
+                            Mode 4: Equation 
+                            <span class="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">Challenging</span>
+                        </h2>
+                        <p class="text-emerald-100 text-sm">Substitute x=0 and y=0 to find the intercepts from the equation.</p>
+                    </div>
+                    <div class="self-end flex items-center space-x-3">
+                        <div id="trophy-4" onclick="app.showStats(event, 4)" class="hidden text-2xl cursor-pointer hover:scale-125 transition-transform bg-white/20 rounded-full w-10 h-10 flex items-center justify-center shadow-lg" title="View Stats">🏆</div>
+                        <div class="bg-emerald-700/30 p-2 rounded-full">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        </div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Gameplay Screen (Shared container for all modes) -->
+        <div id="screen-game" class="hidden w-full max-w-2xl bg-white rounded-3xl shadow-xl p-6 md:p-8 flex flex-col items-center">
+            
+            <!-- Dynamic Content Area -->
+            <div id="game-content" class="w-full flex flex-col items-center mb-6">
+                <!-- Mode 1 & 2 Canvas Container -->
+                <div id="canvas-container" class="hidden flex-col items-center w-full">
+                    <p id="graph-instructions" class="text-slate-600 font-bold mb-3 text-center"></p>
+                    <div class="relative inline-block">
+                        <canvas id="number-plane" width="400" height="400"></canvas>
+                        <!-- Custom tooltip for Mode 2 interactions -->
+                        <div id="canvas-tooltip" class="absolute bg-slate-800 text-white text-xs px-2 py-1 rounded hidden pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-8px]"></div>
+                    </div>
+                </div>
+
+                <!-- Mode 3 Table Container -->
+                <div id="table-container" class="hidden w-full overflow-x-auto pb-4">
+                    <p class="text-slate-600 font-bold mb-4 text-center">Find the x-intercept and y-intercept from this table.</p>
+                    <table class="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
+                        <tbody id="data-table">
+                            <!-- Rows generated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mode 4 Equation Container -->
+                <div id="equation-container" class="hidden w-full text-center py-6">
+                    <p class="text-slate-500 font-semibold mb-2">Find the intercepts for the line:</p>
+                    <div id="equation-display" class="text-4xl md:text-5xl font-extrabold text-indigo-700 tracking-wider mb-6 bg-indigo-50 py-4 px-6 rounded-2xl inline-block border-2 border-indigo-100"></div>
+                    
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 inline-block text-left">
+                        <p class="font-bold mb-1 flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Hints:
+                        </p>
+                        <ul class="list-disc pl-5">
+                            <li>To find the <strong>x-intercept</strong>, substitute <strong>y = 0</strong></li>
+                            <li>To find the <strong>y-intercept</strong>, substitute <strong>x = 0</strong></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input & Action Area -->
+            <div id="input-area" class="w-full bg-slate-50 rounded-2xl p-5 border-2 border-slate-100 flex flex-col md:flex-row items-center justify-center gap-6">
+                
+                <!-- Inputs for Modes 1, 3, 4 -->
+                <div id="standard-inputs" class="flex flex-col md:flex-row gap-4 items-center">
+                    <div class="flex items-center bg-white border-2 border-blue-200 rounded-xl p-2 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200 transition-all">
+                        <label class="font-bold text-blue-700 mr-2 whitespace-nowrap">x-intercept =</label>
+                        <input type="number" id="input-x" class="math-input border-none focus:outline-none focus:ring-0 text-slate-800 bg-transparent" step="0.5" placeholder="?">
+                    </div>
+                    <div class="flex items-center bg-white border-2 border-purple-200 rounded-xl p-2 shadow-sm focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-200 transition-all">
+                        <label class="font-bold text-purple-700 mr-2 whitespace-nowrap">y-intercept =</label>
+                        <input type="number" id="input-y" class="math-input border-none focus:outline-none focus:ring-0 text-slate-800 bg-transparent" step="0.5" placeholder="?">
+                    </div>
+                </div>
+
+                <button id="btn-check" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 active:translate-y-0 text-lg w-full md:w-auto">
+                    Check Answer
+                </button>
+            </div>
+
+            <!-- Feedback Area -->
+            <div id="feedback-msg" class="mt-4 text-lg font-bold min-h-[28px] opacity-0 transition-opacity duration-300"></div>
+
+        </div>
+
+        <!-- Trophy Modal -->
+        <div id="trophy-modal" class="fixed inset-0 bg-slate-900/80 flex items-center justify-center hidden z-50 p-4">
+            <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center transform scale-95 opacity-0 transition-all duration-300" id="trophy-content">
+                <div class="text-6xl mb-4 animate-bounce">🏆</div>
+                <h2 class="text-3xl font-extrabold text-amber-500 mb-2">Mode Complete!</h2>
+                <p class="text-slate-600 font-semibold mb-6">Awesome job! You've mastered this mode.</p>
+                <button onclick="app.returnToMenu()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded-xl transition-colors">
+                    Back to Menu
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Modal -->
+        <div id="stats-modal" class="fixed inset-0 bg-slate-900/80 flex items-center justify-center hidden z-50 p-4">
+            <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center">
+                <div class="text-5xl mb-4">📊</div>
+                <h2 id="stats-title" class="text-2xl font-bold text-indigo-600 mb-4">Mode Stats</h2>
+                <div class="text-left space-y-3 mb-6 text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <p class="flex justify-between"><strong>Time Used:</strong> <span id="stat-time" class="font-bold text-indigo-600"></span></p>
+                    <p class="flex justify-between"><strong>Mistakes Made:</strong> <span id="stat-mistakes" class="font-bold text-rose-500"></span></p>
+                    <p class="flex flex-col mt-2 pt-2 border-t border-slate-200"><strong>Completed On:</strong> <span id="stat-date" class="text-sm mt-1 text-slate-500"></span></p>
+                </div>
+                <button onclick="document.getElementById('stats-modal').classList.add('hidden')" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-xl transition-colors">Close</button>
+            </div>
+        </div>
+
+        <!-- Mistakes Bank Modal -->
+        <div id="mistakes-modal" class="fixed inset-0 bg-slate-900/80 flex items-center justify-center hidden z-50 p-4">
+            <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-lg w-full flex flex-col max-h-[80vh]">
+                <div class="flex justify-between items-center mb-4 pb-4 border-b border-slate-100">
+                    <h2 class="text-2xl font-bold text-rose-600 flex items-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        Mistakes Bank
+                    </h2>
+                    <button onclick="document.getElementById('mistakes-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 hover:bg-slate-200 rounded-full p-1">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div id="mistakes-list" class="overflow-y-auto flex-grow space-y-3 pr-2">
+                    <!-- Mistakes injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Mistakes Button -->
+        <button id="btn-mistakes" onclick="app.openMistakesBank()" class="fixed bottom-6 right-6 bg-rose-500 hover:bg-rose-600 text-white p-4 rounded-full shadow-2xl transition-all hover:scale-105 z-20 hidden flex items-center justify-center group">
+            <svg class="w-6 h-6 mr-2 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+            <span class="font-bold">Review Mistakes (<span id="mistakes-count">0</span>)</span>
+        </button>
+
+    </main>
+
+    <script>
+        /**
+         * Confetti Particle System
+         */
+        const Confetti = (function() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            let animationId = null;
+
+            const colors = ['#fce18a', '#ff726d', '#b48def', '#f4306d', '#42e2b8'];
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
+            window.addEventListener('resize', resize);
+            resize();
+
+            class Particle {
+                constructor(x, y) {
+                    this.x = x;
+                    this.y = y;
+                    this.w = Math.random() * 10 + 5;
+                    this.h = Math.random() * 5 + 5;
+                    this.color = colors[Math.floor(Math.random() * colors.length)];
+                    this.vx = (Math.random() - 0.5) * 20;
+                    this.vy = (Math.random() - 1) * 15 - 5;
+                    this.rot = Math.random() * 360;
+                    this.rotSpeed = (Math.random() - 0.5) * 10;
+                    this.gravity = 0.5;
+                }
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.vy += this.gravity;
+                    this.rot += this.rotSpeed;
+                }
+                draw() {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(this.rot * Math.PI / 180);
+                    ctx.fillStyle = this.color;
+                    ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+                    ctx.restore();
+                }
+            }
+
+            function loop() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach((p, index) => {
+                    p.update();
+                    p.draw();
+                    if (p.y > canvas.height + 50) {
+                        particles.splice(index, 1);
+                    }
+                });
+                
+                if (particles.length > 0) {
+                    animationId = requestAnimationFrame(loop);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+
+            return {
+                fire: function(x = canvas.width / 2, y = canvas.height / 2, count = 100) {
+                    for (let i = 0; i < count; i++) {
+                        particles.push(new Particle(x, y));
+                    }
+                    if (!animationId || particles.length === count) {
+                        loop();
+                    }
+                }
+            };
+        })();
+
+
+        /**
+         * Main Application Logic
+         */
+        const app = (function() {
+            // --- State ---
+            let currentMode = 0;
+            let score = 0;
+            const pointsToWin = 5;
+            
+            // New State for Trophies and Mistakes
+            const modeStats = { 1: null, 2: null, 3: null, 4: null };
+            let sessionStartTime = null;
+            let sessionMistakes = 0;
+            let mistakesBank = []; 
+            let currentReattempt = null; 
+            
+            // Current problem data
+            let targetXInt = 0;
+            let targetYInt = 0;
+            let mode2UserPoints = {}; // {x: null, y: null}
+
+            // --- DOM Elements ---
+            const screens = {
+                menu: document.getElementById('screen-menu'),
+                game: document.getElementById('screen-game')
+            };
+            const header = document.getElementById('app-header');
+            const modeTitle = document.getElementById('mode-title');
+            const progressContainer = document.getElementById('progress-container');
+            
+            // Containers
+            const containers = {
+                canvas: document.getElementById('canvas-container'),
+                table: document.getElementById('table-container'),
+                equation: document.getElementById('equation-container')
+            };
+
+            // Inputs
+            const standardInputs = document.getElementById('standard-inputs');
+            const inputX = document.getElementById('input-x');
+            const inputY = document.getElementById('input-y');
+            const btnCheck = document.getElementById('btn-check');
+            const feedbackMsg = document.getElementById('feedback-msg');
+
+            // Specifics
+            const canvas = document.getElementById('number-plane');
+            const ctx = canvas.getContext('2d');
+            const graphInstructions = document.getElementById('graph-instructions');
+            const dataTable = document.getElementById('data-table');
+            const equationDisplay = document.getElementById('equation-display');
+            
+            // Grid config
+            const gridConfig = {
+                unitSize: 20, // pixels per unit
+                min: -10,
+                max: 10,
+                center: 200
+            };
+
+            // --- Initialization ---
+            function init() {
+                document.getElementById('btn-back').addEventListener('click', returnToMenu);
+                btnCheck.addEventListener('click', checkAnswer);
+                
+                // Allow enter key to check
+                [inputX, inputY].forEach(inp => {
+                    inp.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') checkAnswer();
+                    });
+                });
+
+                // Canvas interaction for Mode 2
+                canvas.addEventListener('mousedown', handleCanvasClick);
+                
+                // Mouse hover feedback for mode 2
+                canvas.addEventListener('mousemove', handleCanvasHover);
+                canvas.addEventListener('mouseleave', () => document.body.style.cursor = 'default');
+            }
+
+            // --- Utility Functions ---
+
+            // Generate a random intercept: Mostly integers [-8, 8], ~15% chance of .5, never 0
+            function getRandomIntercept() {
+                let val = 0;
+                while (val === 0) {
+                    let base = Math.floor(Math.random() * 17) - 8; // -8 to 8
+                    if (base === 0) continue; // skip 0
+                    
+                    if (Math.random() < 0.15 && Math.abs(base) < 8) {
+                        val = base + 0.5;
+                    } else {
+                        val = base;
+                    }
+                }
+                return val;
+            }
+
+            function setupProgressBar() {
+                progressContainer.innerHTML = '';
+                for (let i = 0; i < pointsToWin; i++) {
+                    const star = document.createElement('div');
+                    star.innerHTML = '<svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+                    star.className = 'star';
+                    star.id = `star-${i}`;
+                    progressContainer.appendChild(star);
+                }
+            }
+
+            function updateProgress() {
+                for (let i = 0; i < pointsToWin; i++) {
+                    const star = document.getElementById(`star-${i}`);
+                    if (i < score) {
+                        star.classList.add('filled');
+                        // Small pop animation
+                        star.style.transform = 'scale(1.2)';
+                        setTimeout(() => star.style.transform = 'scale(1)', 200);
+                    } else {
+                        star.classList.remove('filled');
+                    }
+                }
+            }
+
+            function showFeedback(isCorrect, message) {
+                feedbackMsg.textContent = message;
+                feedbackMsg.className = `mt-4 text-lg font-bold min-h-[28px] transition-opacity duration-300 ${isCorrect ? 'text-emerald-600' : 'text-rose-600'}`;
+                feedbackMsg.style.opacity = 1;
+                
+                // Shake if wrong
+                if (!isCorrect) {
+                    feedbackMsg.classList.add('animate-pulse');
+                    setTimeout(() => feedbackMsg.classList.remove('animate-pulse'), 500);
+                }
+            }
+
+            function clearFeedback() {
+                feedbackMsg.style.opacity = 0;
+                feedbackMsg.textContent = '';
+            }
+
+            // --- Canvas Drawing Functions ---
+            
+            function clearCanvas() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+
+            function toCanvasCoord(graphX, graphY) {
+                return {
+                    x: gridConfig.center + (graphX * gridConfig.unitSize),
+                    y: gridConfig.center - (graphY * gridConfig.unitSize)
+                };
+            }
+
+            function toGraphCoord(canvasX, canvasY) {
+                return {
+                    x: (canvasX - gridConfig.center) / gridConfig.unitSize,
+                    y: -(canvasY - gridConfig.center) / gridConfig.unitSize
+                };
+            }
+
+            function drawGrid() {
+                clearCanvas();
+                
+                // Minor grid lines
+                ctx.beginPath();
+                ctx.strokeStyle = '#f1f5f9';
+                ctx.lineWidth = 1;
+                for (let i = gridConfig.min; i <= gridConfig.max; i++) {
+                    // Vertical
+                    let cx = toCanvasCoord(i, 0).x;
+                    ctx.moveTo(cx, 0); ctx.lineTo(cx, canvas.height);
+                    // Horizontal
+                    let cy = toCanvasCoord(0, i).y;
+                    ctx.moveTo(0, cy); ctx.lineTo(canvas.width, cy);
+                }
+                ctx.stroke();
+
+                // Major axes
+                ctx.beginPath();
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 2;
+                // X axis
+                ctx.moveTo(0, gridConfig.center); ctx.lineTo(canvas.width, gridConfig.center);
+                // Y axis
+                ctx.moveTo(gridConfig.center, 0); ctx.lineTo(gridConfig.center, canvas.height);
+                ctx.stroke();
+
+                // Axis ticks and labels
+                ctx.fillStyle = '#64748b';
+                ctx.font = '10px Nunito';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                for (let i = gridConfig.min; i <= gridConfig.max; i++) {
+                    if (i === 0) continue;
+                    
+                    if (i % 2 === 0) { // Label every 2 units
+                        let pos = toCanvasCoord(i, 0);
+                        ctx.fillText(i, pos.x, pos.y + 12);
+                        
+                        pos = toCanvasCoord(0, i);
+                        ctx.fillText(i, pos.x - 12, pos.y);
+                    }
+                    
+                    // Ticks
+                    let pX = toCanvasCoord(i, 0);
+                    ctx.beginPath(); ctx.moveTo(pX.x, pX.y - 3); ctx.lineTo(pX.x, pX.y + 3); ctx.stroke();
+                    
+                    let pY = toCanvasCoord(0, i);
+                    ctx.beginPath(); ctx.moveTo(pY.x - 3, pY.y); ctx.lineTo(pY.x + 3, pY.y); ctx.stroke();
+                }
+
+                // Axis Labels
+                ctx.font = 'italic bold 14px Nunito';
+                ctx.fillStyle = '#334155';
+                ctx.fillText('x', canvas.width - 10, gridConfig.center + 15);
+                ctx.fillText('y', gridConfig.center - 15, 10);
+            }
+
+            function drawLine(xInt, yInt, color = '#3b82f6', width = 3, isDashed = false) {
+                // Determine two far points on the line to draw across canvas
+                // Equation: x/xInt + y/yInt = 1 => y = yInt - (yInt/xInt)*x
+                const slope = -yInt / xInt;
+                
+                const leftX = gridConfig.min - 5;
+                const leftY = yInt + slope * leftX;
+                
+                const rightX = gridConfig.max + 5;
+                const rightY = yInt + slope * rightX;
+
+                const p1 = toCanvasCoord(leftX, leftY);
+                const p2 = toCanvasCoord(rightX, rightY);
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width;
+                if (isDashed) ctx.setLineDash([8, 8]);
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            function drawPoint(x, y, color, label = '') {
+                const p = toCanvasCoord(x, y);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                if (label) {
+                    ctx.fillStyle = '#1e293b';
+                    ctx.font = 'bold 12px Nunito';
+                    // Offset label slightly
+                    ctx.fillText(label, p.x + 10, p.y - 15);
+                }
+            }
+
+            // --- Mode 2 Canvas Interactions ---
+            
+            function handleCanvasHover(e) {
+                if (currentMode !== 2 || btnCheck.textContent !== "Check Answer") return;
+                
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const canvasX = (e.clientX - rect.left) * scaleX;
+                const canvasY = (e.clientY - rect.top) * scaleY;
+
+                const graphPoint = toGraphCoord(canvasX, canvasY);
+                
+                // Snap to nearest 0.5
+                const snappedX = Math.round(graphPoint.x * 2) / 2;
+                const snappedY = Math.round(graphPoint.y * 2) / 2;
+
+                // Check if near an axis
+                const isNearXAxis = Math.abs(graphPoint.y) < 0.5;
+                const isNearYAxis = Math.abs(graphPoint.x) < 0.5;
+
+                if (isNearXAxis || isNearYAxis) {
+                    document.body.style.cursor = 'crosshair';
+                } else {
+                    document.body.style.cursor = 'not-allowed';
+                }
+            }
+
+            function handleCanvasClick(e) {
+                if (currentMode !== 2 || btnCheck.textContent !== "Check Answer") return;
+
+                const rect = canvas.getBoundingClientRect();
+                // Adjust for CSS scaling if any
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const canvasX = (e.clientX - rect.left) * scaleX;
+                const canvasY = (e.clientY - rect.top) * scaleY;
+
+                const graphPoint = toGraphCoord(canvasX, canvasY);
+                
+                // Snap to nearest 0.5
+                const snappedX = Math.round(graphPoint.x * 2) / 2;
+                const snappedY = Math.round(graphPoint.y * 2) / 2;
+
+                // Determine which axis they are trying to click
+                const isNearXAxis = Math.abs(graphPoint.y) < 0.8;
+                const isNearYAxis = Math.abs(graphPoint.x) < 0.8;
+
+                if (isNearXAxis && !isNearYAxis) {
+                    // Placing x-intercept
+                    mode2UserPoints.x = snappedX;
+                } else if (isNearYAxis && !isNearXAxis) {
+                    // Placing y-intercept
+                    mode2UserPoints.y = snappedY;
+                } else if (isNearXAxis && isNearYAxis) {
+                    // Clicked near origin, assume they meant (0,0) isn't used based on setup, but let's assign to missing one
+                    if (mode2UserPoints.x === null) mode2UserPoints.x = 0;
+                    else mode2UserPoints.y = 0;
+                } else {
+                    // Clicked far from axes
+                    showFeedback(false, "Click on the x-axis or y-axis to plot intercepts.");
+                    setTimeout(clearFeedback, 2000);
+                    return;
+                }
+
+                renderMode2State();
+            }
+
+            function renderMode2State() {
+                drawGrid();
+                if (mode2UserPoints.x !== null) {
+                    drawPoint(mode2UserPoints.x, 0, '#ef4444'); // Red for x
+                }
+                if (mode2UserPoints.y !== null) {
+                    drawPoint(0, mode2UserPoints.y, '#3b82f6'); // Blue for y
+                }
+                
+                if (mode2UserPoints.x !== null && mode2UserPoints.y !== null) {
+                    btnCheck.disabled = false;
+                    btnCheck.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    btnCheck.disabled = true;
+                    btnCheck.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            }
+
+
+            // --- Problem Generation ---
+
+            function generateProblem() {
+                clearFeedback();
+                
+                if (currentReattempt) {
+                    targetXInt = currentReattempt.xInt;
+                    targetYInt = currentReattempt.yInt;
+                    progressContainer.style.visibility = 'hidden';
+                } else {
+                    targetXInt = getRandomIntercept();
+                    targetYInt = getRandomIntercept();
+                    progressContainer.style.visibility = 'visible';
+                }
+
+                inputX.value = '';
+                inputY.value = '';
+                inputX.classList.remove('bg-green-100', 'bg-red-100');
+                inputY.classList.remove('bg-green-100', 'bg-red-100');
+                btnCheck.textContent = "Check Answer";
+                btnCheck.disabled = false;
+                btnCheck.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-indigo-500', 'hover:bg-indigo-600');
+                btnCheck.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+
+                // Hide all containers first
+                Object.values(containers).forEach(c => c.classList.add('hidden'));
+
+                if (currentMode === 1) {
+                    setupMode1();
+                } else if (currentMode === 2) {
+                    setupMode2();
+                } else if (currentMode === 3) {
+                    setupMode3();
+                } else if (currentMode === 4) {
+                    setupMode4();
+                }
+            }
+
+            function setupMode1() {
+                containers.canvas.classList.remove('hidden');
+                standardInputs.classList.remove('hidden');
+                
+                graphInstructions.innerHTML = "Look at the line. What are its intercepts?";
+                drawGrid();
+                drawLine(targetXInt, targetYInt);
+                
+                // Mode 1 uses the inputs
+                inputX.focus();
+            }
+
+            function setupMode2() {
+                containers.canvas.classList.remove('hidden');
+                standardInputs.classList.add('hidden'); // Hide inputs, use canvas clicks
+                
+                graphInstructions.innerHTML = `Plot the intercepts: <strong>x-int = ${targetXInt}</strong>, <strong>y-int = ${targetYInt}</strong><br><span class="text-sm font-normal text-slate-500">Click on the axes to place the points.</span>`;
+                
+                mode2UserPoints = { x: null, y: null };
+                renderMode2State(); // Will disable check button initially
+            }
+
+            function setupMode3() {
+                containers.table.classList.remove('hidden');
+                standardInputs.classList.remove('hidden');
+
+                // Generate table data
+                // Need to include (targetXInt, 0) and (0, targetYInt)
+                // Equation: y = -(targetYInt/targetXInt) * x + targetYInt
+                const m = -targetYInt / targetXInt;
+                const c = targetYInt;
+
+                // Pick some x values to make a nice table. 
+                // Let's ensure x=0 and x=targetXInt are there.
+                // Add a few others based on targetXInt to try to get integers or nice decimals
+                let xValues = [0, targetXInt];
+                
+                // Add 3 more points. Try to step nicely.
+                let step = Math.max(1, Math.round(Math.abs(targetXInt) / 2));
+                if (targetXInt % 2 !== 0 && targetXInt % 3 === 0) step = Math.abs(targetXInt)/3;
+
+                // Add points around the intercepts
+                xValues.push(targetXInt + step);
+                xValues.push(0 - step);
+                xValues.push(targetXInt > 0 ? Math.floor(targetXInt/2) : Math.ceil(targetXInt/2));
+
+                // Remove duplicates and sort
+                xValues = [...new Set(xValues)].sort((a, b) => a - b);
+                
+                // If we don't have 5, add some
+                let offset = 1;
+                while(xValues.length < 5) {
+                    if (!xValues.includes(offset)) xValues.push(offset);
+                    else if (!xValues.includes(-offset)) xValues.push(-offset);
+                    offset++;
+                    xValues.sort((a, b) => a - b);
+                }
+                
+                // Trim to exactly 5 columns for neatness
+                if (xValues.length > 5) {
+                    // Try to keep 0 and targetXInt
+                    const essential = [0, targetXInt];
+                    const others = xValues.filter(x => !essential.includes(x));
+                    xValues = [...essential, ...others.slice(0, 3)].sort((a, b) => a - b);
+                }
+
+                // Build HTML
+                let rowX = '<td class="table-cell table-header border-r-4 border-slate-300">x</td>';
+                let rowY = '<td class="table-cell table-header border-r-4 border-slate-300">y</td>';
+
+                xValues.forEach(x => {
+                    let y = m * x + c;
+                    // Format y nicely (handle floating point errors)
+                    y = Math.round(y * 100) / 100;
+                    
+                    rowX += `<td class="table-cell">${x}</td>`;
+                    // Highlight the zero values slightly to draw attention if they look closely
+                    let yClass = y === 0 ? 'bg-amber-50 font-bold' : '';
+                    let xClass = x === 0 ? 'bg-amber-50 font-bold' : '';
+                    
+                    if (x===0) rowX = rowX.replace('class="table-cell"', `class="table-cell ${xClass}"`);
+                    rowY += `<td class="table-cell ${yClass}">${y}</td>`;
+                });
+
+                dataTable.innerHTML = `<tr>${rowX}</tr><tr>${rowY}</tr>`;
+                inputX.focus();
+            }
+
+            function setupMode4() {
+                containers.equation.classList.remove('hidden');
+                standardInputs.classList.remove('hidden');
+
+                // Generate Equation Ax + By = C
+                // Let's construct it so intercepts are integer or .5
+                // Eq: y = mx + c -> y = (-targetYInt/targetXInt)x + targetYInt
+                // (targetYInt/targetXInt)x + y = targetYInt
+                // Multiply by targetXInt:  targetYInt*x + targetXInt*y = targetXInt*targetYInt
+                
+                let A = targetYInt;
+                let B = targetXInt;
+                let C = targetXInt * targetYInt;
+
+                // Simplify if they share a factor to make it look like a standard problem
+                // Note: since we allow .5, we need to multiply by 2 if necessary to keep integer coefficients for standard form presentation
+                if (A % 1 !== 0 || B % 1 !== 0) {
+                    A *= 2; B *= 2; C *= 2;
+                }
+
+                // Simple GCD function
+                const gcd = (a, b) => b === 0 ? Math.abs(a) : gcd(b, a % b);
+                const divisor = gcd(gcd(Math.abs(A), Math.abs(B)), Math.abs(C));
+                
+                A /= divisor;
+                B /= divisor;
+                C /= divisor;
+
+                // Make leading coefficient positive generally
+                if (A < 0) {
+                    A = -A; B = -B; C = -C;
+                } else if (A === 0 && B < 0) {
+                    B = -B; C = -C;
+                }
+
+                // Format string
+                let eqStr = "";
+                
+                // A term
+                if (A === 1) eqStr += "x ";
+                else if (A === -1) eqStr += "-x ";
+                else if (A !== 0) eqStr += `${A}x `;
+
+                // B term
+                if (B > 0) {
+                    eqStr += (A !== 0 ? "+ " : "") + (B === 1 ? "y" : `${B}y`);
+                } else if (B < 0) {
+                    eqStr += (A !== 0 ? "- " : "-") + (B === -1 ? "y" : `${Math.abs(B)}y`);
+                }
+
+                eqStr += ` = ${C}`;
+
+                equationDisplay.textContent = eqStr;
+                inputX.focus();
+            }
+
+
+            // --- Verification ---
+
+            function checkAnswer() {
+                if (btnCheck.textContent === "Next Question") {
+                    generateProblem();
+                    return;
+                }
+                if (btnCheck.textContent === "Back to Mistakes") {
+                    returnToMenu();
+                    app.openMistakesBank();
+                    return;
+                }
+
+                let isCorrect = false;
+
+                if (currentMode === 1 || currentMode === 3 || currentMode === 4) {
+                    // Read inputs
+                    const userX = parseFloat(inputX.value);
+                    const userY = parseFloat(inputY.value);
+
+                    const xCorrect = userX === targetXInt;
+                    const yCorrect = userY === targetYInt;
+
+                    // Visual feedback on inputs
+                    inputX.classList.remove('bg-green-100', 'bg-red-100');
+                    inputY.classList.remove('bg-green-100', 'bg-red-100');
+                    
+                    if (xCorrect) inputX.classList.add('bg-green-100');
+                    else if (!isNaN(userX)) inputX.classList.add('bg-red-100');
+                    
+                    if (yCorrect) inputY.classList.add('bg-green-100');
+                    else if (!isNaN(userY)) inputY.classList.add('bg-red-100');
+
+                    if (isNaN(userX) || isNaN(userY)) {
+                        showFeedback(false, "Please enter numbers for both intercepts.");
+                        return;
+                    }
+
+                    if (xCorrect && yCorrect) {
+                        isCorrect = true;
+                    } else if (userX === targetYInt && userY === targetXInt) {
+                        recordMistake();
+                        showFeedback(false, "Oops! Did you swap the x and y values?");
+                        return;
+                    } else {
+                        recordMistake();
+                        showFeedback(false, "Not quite. Check your calculations and try again!");
+                        return;
+                    }
+                } 
+                else if (currentMode === 2) {
+                    // Check plotted points
+                    const xCorrect = mode2UserPoints.x === targetXInt;
+                    const yCorrect = mode2UserPoints.y === targetYInt;
+
+                    if (xCorrect && yCorrect) {
+                        isCorrect = true;
+                        // Draw the correct line to reinforce
+                        drawLine(targetXInt, targetYInt, '#22c55e'); // Green line
+                    } else {
+                        // Draw their line dashed red, correct line solid green
+                        drawGrid();
+                        // Redraw correct points for reference if they got one right
+                        if (xCorrect) drawPoint(mode2UserPoints.x, 0, '#22c55e');
+                        else drawPoint(mode2UserPoints.x, 0, '#ef4444');
+                        
+                        if (yCorrect) drawPoint(0, mode2UserPoints.y, '#22c55e');
+                        else drawPoint(0, mode2UserPoints.y, '#ef4444');
+
+                        // Show target points subtly
+                        drawPoint(targetXInt, 0, 'rgba(34, 197, 94, 0.5)');
+                        drawPoint(0, targetYInt, 'rgba(34, 197, 94, 0.5)');
+
+                        drawLine(mode2UserPoints.x, mode2UserPoints.y, '#ef4444', 2, true); // User line dashed red
+                        recordMistake();
+                        showFeedback(false, "Incorrect placement. The faint green dots show the correct spots.");
+                        
+                        // Disable canvas clicks temporarily so they look
+                        btnCheck.textContent = "Try Again";
+                        btnCheck.classList.replace('bg-emerald-500', 'bg-amber-500');
+                        btnCheck.classList.replace('hover:bg-emerald-600', 'hover:bg-amber-600');
+                        btnCheck.onclick = () => {
+                            btnCheck.textContent = "Check Answer";
+                            btnCheck.classList.replace('bg-amber-500', 'bg-emerald-500');
+                            btnCheck.classList.replace('hover:bg-amber-600', 'hover:bg-emerald-600');
+                            btnCheck.onclick = checkAnswer;
+                            setupMode2(); // Reset mode 2
+                            clearFeedback();
+                        };
+                        return;
+                    }
+                }
+
+                // If correct:
+                if (isCorrect) {
+                    Confetti.fire(window.innerWidth / 2, window.innerHeight / 2, 100);
+                    
+                    if (currentReattempt) {
+                        const mistake = mistakesBank.find(m => m.id === currentReattempt.id);
+                        if (mistake) mistake.solved = true;
+                        updateMistakesButton();
+                        
+                        showFeedback(true, "Awesome! You fixed that mistake.");
+                        btnCheck.textContent = "Back to Mistakes";
+                        btnCheck.classList.replace('bg-emerald-500', 'bg-indigo-500');
+                        btnCheck.classList.replace('hover:bg-emerald-600', 'hover:bg-indigo-600');
+                        return;
+                    }
+
+                    showFeedback(true, "Fantastic! Spot on.");
+                    score++;
+                    updateProgress();
+
+                    btnCheck.textContent = "Next Question";
+                    btnCheck.classList.replace('bg-emerald-500', 'bg-indigo-500');
+                    btnCheck.classList.replace('hover:bg-emerald-600', 'hover:bg-indigo-600');
+
+                    if (score >= pointsToWin) {
+                        const timeUsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+                        
+                        modeStats[currentMode] = {
+                            timeUsed: timeUsed,
+                            mistakes: sessionMistakes,
+                            timestamp: new Date()
+                        };
+                        document.getElementById(`trophy-${currentMode}`).classList.remove('hidden');
+                        
+                        setTimeout(showTrophy, 1000);
+                    }
+                }
+            }
+
+
+            // --- Flow Control ---
+
+            function startMode(modeNum) {
+                currentMode = modeNum;
+                
+                if (!currentReattempt) {
+                    score = 0;
+                    sessionStartTime = Date.now();
+                    sessionMistakes = 0;
+                    setupProgressBar();
+                    updateProgress();
+                }
+                
+                // UI changes
+                screens.menu.classList.add('hidden');
+                screens.game.classList.remove('hidden');
+                header.classList.remove('hidden');
+                
+                const titles = ["", "Mode 1: The Graph", "Mode 2: Plot It", "Mode 3: The Table", "Mode 4: Equation"];
+                modeTitle.textContent = currentReattempt ? `Reattempting: ${titles[modeNum]}` : titles[modeNum];
+                
+                generateProblem();
+            }
+
+            function returnToMenu() {
+                currentMode = 0;
+                currentReattempt = null;
+                screens.game.classList.add('hidden');
+                header.classList.add('hidden');
+                screens.menu.classList.remove('hidden');
+                document.getElementById('trophy-modal').classList.add('hidden');
+            }
+
+            function showTrophy() {
+                const modal = document.getElementById('trophy-modal');
+                const content = document.getElementById('trophy-content');
+                modal.classList.remove('hidden');
+                
+                // Small delay to allow display:block to apply before animation
+                requestAnimationFrame(() => {
+                    content.classList.remove('scale-95', 'opacity-0');
+                    content.classList.add('scale-100', 'opacity-100');
+                    Confetti.fire(window.innerWidth / 2, window.innerHeight * 0.3, 200);
+                });
+            }
+
+            // --- New Features Logic ---
+
+            function recordMistake() {
+                if (currentReattempt) return; // Don't log mistakes during a reattempt
+                sessionMistakes++;
+                
+                const exists = mistakesBank.find(m => m.mode === currentMode && m.xInt === targetXInt && m.yInt === targetYInt && !m.solved);
+                if (!exists) {
+                    mistakesBank.push({
+                        id: Date.now(),
+                        mode: currentMode,
+                        xInt: targetXInt,
+                        yInt: targetYInt,
+                        solved: false
+                    });
+                    updateMistakesButton();
+                }
+            }
+
+            function updateMistakesButton() {
+                const btn = document.getElementById('btn-mistakes');
+                const countSpan = document.getElementById('mistakes-count');
+                const unsolvedCount = mistakesBank.filter(m => !m.solved).length;
+                
+                countSpan.textContent = unsolvedCount;
+                if (unsolvedCount > 0) {
+                    btn.classList.remove('hidden');
+                } else {
+                    btn.classList.add('hidden');
+                }
+            }
+
+            function showStats(event, mode) {
+                event.stopPropagation(); // Prevent triggering startMode
+                const stats = modeStats[mode];
+                if (!stats) return;
+
+                const modal = document.getElementById('stats-modal');
+                const title = document.getElementById('stats-title');
+                title.textContent = `Mode ${mode} Stats`;
+                
+                const mins = Math.floor(stats.timeUsed / 60);
+                const secs = stats.timeUsed % 60;
+                document.getElementById('stat-time').textContent = `${mins}m ${secs}s`;
+                document.getElementById('stat-mistakes').textContent = stats.mistakes;
+                
+                // Format timestamp nicely
+                const options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                document.getElementById('stat-date').textContent = stats.timestamp.toLocaleString(undefined, options);
+                
+                modal.classList.remove('hidden');
+            }
+
+            function openMistakesBank() {
+                const modal = document.getElementById('mistakes-modal');
+                const list = document.getElementById('mistakes-list');
+                list.innerHTML = '';
+                
+                const unsolved = mistakesBank.filter(m => !m.solved);
+                
+                if (unsolved.length === 0) {
+                    list.innerHTML = '<p class="text-slate-500 text-center py-8 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">No mistakes to review. You are doing great!</p>';
+                } else {
+                    unsolved.forEach(m => {
+                        const div = document.createElement('div');
+                        div.className = 'bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4';
+                        div.innerHTML = `
+                            <div class="text-center md:text-left">
+                                <span class="font-extrabold text-slate-700 block mb-1">Mode ${m.mode}</span>
+                                <span class="text-sm font-semibold text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">x-int: ${m.xInt}, y-int: ${m.yInt}</span>
+                            </div>
+                            <button onclick="app.startReattempt(${m.id})" class="bg-indigo-100 hover:bg-indigo-500 text-indigo-700 hover:text-white font-bold py-2 px-6 rounded-lg transition-colors w-full md:w-auto shadow-sm">
+                                Retry It
+                            </button>
+                        `;
+                        list.appendChild(div);
+                    });
+                }
+                
+                modal.classList.remove('hidden');
+            }
+
+            function startReattempt(id) {
+                const mistake = mistakesBank.find(m => m.id === id);
+                if (!mistake) return;
+                
+                document.getElementById('mistakes-modal').classList.add('hidden');
+                currentReattempt = mistake;
+                startMode(mistake.mode);
+            }
+
+            // Expose public methods
+            return {
+                init,
+                startMode,
+                returnToMenu,
+                showStats,
+                openMistakesBank,
+                startReattempt
+            };
+        })();
+
+        // Start the app when DOM is ready
+        document.addEventListener('DOMContentLoaded', app.init);
+
+    </script>
+</body>
+</html>
