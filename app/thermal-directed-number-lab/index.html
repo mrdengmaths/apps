@@ -6,7 +6,7 @@
     <title>The Thermal Directed Number Lab</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap');
 
         body {
             font-family: 'Inter', sans-serif;
@@ -25,7 +25,7 @@
             font-weight: 800;
             font-size: 1.2rem;
             cursor: grab;
-            box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), 
+            box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4),
                         inset -2px -2px 5px rgba(0,0,0,0.2),
                         4px 4px 10px rgba(0,0,0,0.15);
             user-select: none;
@@ -167,7 +167,7 @@
     <main class="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
         
         <!-- Left: Teacher Controls -->
-        <aside class="w-full lg:w-72 bg-white border-r border-slate-200 p-6 flex flex-col gap-6 z-10 shadow-lg shrink-0 overflow-y-auto">
+        <aside class="w-full lg:w-72 bg-white border-r border-slate-200 p-6 flex flex-col gap-5 z-10 shadow-lg shrink-0 overflow-y-auto">
             <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Teacher Controls</h2>
             
             <!-- Add Cubes Buttons -->
@@ -191,6 +191,22 @@
                 </button>
             </div>
 
+            <!-- Demonstrations -->
+            <hr class="border-slate-100">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">Demonstrations</h2>
+            
+            <div class="space-y-3">
+                <button onclick="runAddDemo()" class="w-full flex flex-col items-center justify-center py-2 bg-emerald-50 text-emerald-800 font-bold rounded-lg hover:bg-emerald-100 transition border border-emerald-200 group">
+                    <span class="text-sm">Addition Demos</span>
+                    <span id="btnDemoAddText" class="text-xs font-medium opacity-70 group-hover:opacity-100 transition-opacity">Next: + add +</span>
+                </button>
+
+                <button onclick="runSubDemo()" class="w-full flex flex-col items-center justify-center py-2 bg-fuchsia-50 text-fuchsia-800 font-bold rounded-lg hover:bg-fuchsia-100 transition border border-fuchsia-200 group">
+                    <span class="text-sm">Subtraction Demos</span>
+                    <span id="btnDemoSubText" class="text-xs font-medium opacity-70 group-hover:opacity-100 transition-opacity">Next: + minus -</span>
+                </button>
+            </div>
+
             <hr class="border-slate-100">
 
             <!-- Toggle: Thermometer -->
@@ -210,59 +226,59 @@
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
                 </label>
             </div>
-
-            <div class="mt-auto p-4 bg-amber-50 rounded-lg text-xs text-amber-800 border border-amber-100">
-                <p class="font-bold mb-1">Pedagogy Note:</p>
-                Demonstrate subtraction by clicking to <strong>remove</strong> cubes. Removing a negative (ice) causes the temperature to rise. Click removed cubes to return them.
-            </div>
         </aside>
 
         <!-- Center: Visualization -->
-        <section class="flex-1 relative flex items-center justify-center p-4 lg:p-10 gap-8 lg:gap-16 overflow-hidden">
+        <section class="flex-1 relative flex flex-col items-center justify-center p-4 lg:p-10 gap-4 overflow-hidden">
             
-            <!-- Thermometer (Removed opacity-0 here) -->
-            <div class="flex flex-col items-center h-[500px] w-24 relative shrink-0 transition-opacity duration-500" id="thermometerContainer">
-                <div class="thermometer-glass w-6 h-full rounded-full border border-slate-300 relative overflow-hidden flex flex-col justify-end">
-                    <!-- Mercury -->
-                    <div id="mercury" class="mercury w-full bg-red-500" style="height: 50%;"></div>
-                </div>
-                <!-- Bulb -->
-                <div id="bulb" class="w-16 h-16 rounded-full bg-red-500 -mt-4 border-4 border-white shadow-lg z-10 transition-colors duration-1000"></div>
-                
-                <!-- Labels -->
-                <div class="absolute -right-12 top-0 h-full flex flex-col justify-between py-4 text-xs font-mono font-bold text-slate-500">
-                    <span>+20</span>
-                    <span>+10</span>
-                    <span>0</span>
-                    <span>-10</span>
-                    <span>-20</span>
-                </div>
-
-                <div id="tempDisplay" class="absolute -left-16 top-1/2 -translate-y-1/2 bg-white px-3 py-1 rounded shadow border font-mono font-bold text-lg transition-opacity duration-300">
-                    0°
-                </div>
+            <!-- Dynamic Question Display -->
+            <div id="questionDisplay" class="absolute top-8 bg-white/90 backdrop-blur px-8 py-3 rounded-2xl shadow-lg border border-slate-200 text-2xl font-bold font-mono text-slate-800 opacity-0 transition-all duration-300 transform -translate-y-4 z-30 pointer-events-none">
+                Task: 2 + 3 = ?
             </div>
 
-            <!-- The Tub -->
-            <div class="relative w-full max-w-2xl h-[400px] shrink-0">
-                <!-- Tub Top Rim (Visual Depth) -->
-                <div class="absolute -top-4 left-0 w-full h-8 bg-white opacity-20 rounded-[100%] z-20 pointer-events-none"></div>
-                
-                <div class="tub-container w-full h-full rounded-b-3xl relative" id="tub">
-                    <div class="water-surface"></div>
-                    <!-- Cubes injected here -->
+            <div class="flex items-center justify-center gap-8 lg:gap-16 w-full mt-12">
+                <!-- Thermometer -->
+                <div class="flex flex-col items-center h-[500px] w-24 relative shrink-0 transition-opacity duration-500" id="thermometerContainer">
+                    <div class="thermometer-glass w-6 h-full rounded-full border border-slate-300 relative overflow-hidden flex flex-col justify-end">
+                        <!-- Mercury -->
+                        <div id="mercury" class="mercury w-full bg-red-500" style="height: 50%;"></div>
+                    </div>
+                    <!-- Bulb -->
+                    <div id="bulb" class="w-16 h-16 rounded-full bg-red-500 -mt-4 border-4 border-white shadow-lg z-10 transition-colors duration-1000"></div>
+                    
+                    <!-- Labels -->
+                    <div class="absolute -right-12 top-0 h-full flex flex-col justify-between py-4 text-xs font-mono font-bold text-slate-500">
+                        <span>+20</span>
+                        <span>+10</span>
+                        <span>0</span>
+                        <span>-10</span>
+                        <span>-20</span>
+                    </div>
+
+                    <div id="tempDisplay" class="absolute -left-16 top-1/2 -translate-y-1/2 bg-white px-3 py-1 rounded shadow border font-mono font-bold text-lg transition-opacity duration-300">
+                        0°
+                    </div>
+                </div>
+
+                <!-- The Tub -->
+                <div class="relative w-full max-w-2xl h-[400px] shrink-0">
+                    <!-- Tub Top Rim (Visual Depth) -->
+                    <div class="absolute -top-4 left-0 w-full h-8 bg-white opacity-20 rounded-[100%] z-20 pointer-events-none"></div>
+                    
+                    <div class="tub-container w-full h-full rounded-b-3xl relative" id="tub">
+                        <div class="water-surface"></div>
+                        <!-- Cubes injected here -->
+                    </div>
                 </div>
             </div>
-
         </section>
 
     </main>
 
-    <!-- Bottom Controls: Removed Cubes Bins -->
+    <!-- Bottom Controls -->
     <footer class="bg-white border-t border-slate-200 p-6 z-20 shrink-0">
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row gap-6">
             
-            <!-- Removed Hot Bin -->
             <div class="flex-1 flex flex-col gap-2">
                 <h3 class="text-xs font-bold uppercase text-red-600 tracking-wide">Removed Hot Cubes (Subtracted +1)</h3>
                 <div id="removedHotBin" class="bin-container flex-1 bg-red-50/50 rounded-xl p-3 border-2 border-red-100 min-h-[80px] flex flex-wrap gap-2 content-start transition-colors hover:border-red-200">
@@ -270,7 +286,6 @@
                 </div>
             </div>
 
-            <!-- Removed Cold Bin -->
             <div class="flex-1 flex flex-col gap-2">
                 <h3 class="text-xs font-bold uppercase text-cyan-600 tracking-wide">Removed Ice Cubes (Subtracted -1)</h3>
                 <div id="removedColdBin" class="bin-container flex-1 bg-cyan-50/50 rounded-xl p-3 border-2 border-cyan-100 min-h-[80px] flex flex-wrap gap-2 content-start transition-colors hover:border-cyan-200">
@@ -307,21 +322,39 @@
         // --- State ---
         let cubes = []; // Stores physics objects: { id, type, x, y, vx, vy, ax, ay, rotation }
         let config = {
-            showThermometer: true, // Default ON
+            showThermometer: true, 
             showValues: true
         };
         const MAX_TEMP = 20;
         const MIN_TEMP = -20;
-        const TUB_LIMIT = 50; 
+        const TUB_LIMIT = 50;
         
         // Physics Config
         const CUBE_SIZE = 50;
         const GRAVITY = 0.4;
-        const BUOYANCY = 0.6; 
+        const BUOYANCY = 0.6;
         const DRAG_WATER = 0.92;
         const DRAG_AIR = 0.99;
         const WALL_BOUNCE = -0.6;
         const SEPARATION_FORCE = 0.5;
+
+        // --- Demo Data ---
+        const addDemos = [
+            { name: '+ add +', start: 2, q: '2 + 3 = ?' },
+            { name: '- add +', start: -1, q: '-1 + 4 = ?' },
+            { name: '+ add -', start: 4, q: '4 + (-5) = ?' },
+            { name: '- add -', start: -2, q: '-2 + (-3) = ?' }
+        ];
+        
+        const subDemos = [
+            { name: '+ minus -', start: 3, q: '3 - (-2) = ?' },
+            { name: '- minus +', start: -2, q: '-2 - 3 = ?' },
+            { name: '+ minus +', start: 5, q: '5 - 2 = ?' },
+            { name: '- minus -', start: -4, q: '-4 - (-3) = ?' }
+        ];
+
+        let addDemoIndex = 0;
+        let subDemoIndex = 0;
 
         // --- DOM Elements ---
         const tubEl = document.getElementById('tub');
@@ -330,6 +363,7 @@
         const tempDisplayEl = document.getElementById('tempDisplay');
         const bodyEl = document.body;
         const thermometerContainer = document.getElementById('thermometerContainer');
+        const questionDisplay = document.getElementById('questionDisplay');
 
         // --- Core Functions ---
 
@@ -388,18 +422,56 @@
 
         function randomizeState() {
             resetLab();
-            // Wait a tiny bit for cleanup
             setTimeout(() => {
                 const hotCount = Math.floor(Math.random() * 8) + 1;
                 const coldCount = Math.floor(Math.random() * 8) + 1;
                 
-                // Add hot cubes with slight delays
                 for(let i=0; i<hotCount; i++) {
                     setTimeout(() => addCube('hot'), i * 100);
                 }
-                // Add cold cubes
                 for(let i=0; i<coldCount; i++) {
                     setTimeout(() => addCube('cold'), (hotCount * 100) + (i * 100));
+                }
+            }, 100);
+        }
+
+        // --- Demonstrations Logic ---
+        function runAddDemo() {
+            const demo = addDemos[addDemoIndex];
+            setupDemo(demo.start, demo.q);
+            addDemoIndex = (addDemoIndex + 1) % addDemos.length;
+            document.getElementById('btnDemoAddText').innerText = `Next: ${addDemos[addDemoIndex].name}`;
+        }
+
+        function runSubDemo() {
+            const demo = subDemos[subDemoIndex];
+            setupDemo(demo.start, demo.q);
+            subDemoIndex = (subDemoIndex + 1) % subDemos.length;
+            document.getElementById('btnDemoSubText').innerText = `Next: ${subDemos[subDemoIndex].name}`;
+        }
+
+        function setupDemo(startVal, questionText) {
+            resetLab();
+            
+            // Show the task text
+            questionDisplay.innerText = `Task: ${questionText}`;
+            questionDisplay.classList.remove('opacity-0', '-translate-y-4');
+            
+            setTimeout(() => {
+                // Ensure sufficient pairs are generated so subtraction is always possible
+                const zeroPairs = 6; 
+                let hotCount = zeroPairs;
+                let coldCount = zeroPairs;
+
+                if (startVal > 0) hotCount += startVal;
+                else if (startVal < 0) coldCount += Math.abs(startVal);
+
+                // Stagger spawn to not break physics
+                for(let i=0; i<hotCount; i++) {
+                    setTimeout(() => addCube('hot'), i * 80);
+                }
+                for(let i=0; i<coldCount; i++) {
+                    setTimeout(() => addCube('cold'), (hotCount * 80) + (i * 80));
                 }
             }, 100);
         }
@@ -410,18 +482,16 @@
             const id = Date.now() + Math.random();
             const tubRect = tubEl.getBoundingClientRect();
             
-            // Spawn at top random x
             const x = Math.random() * (tubRect.width - CUBE_SIZE - 20) + 10;
-            const y = -60; // Start above visible area
+            const y = -60;
 
-            // Initial Velocity (drop in)
             const vx = (Math.random() - 0.5) * 2;
             const vy = Math.random() * 5;
 
-            const cube = { 
-                id, type, 
-                x, y, 
-                vx, vy, 
+            const cube = {
+                id, type,
+                x, y,
+                vx, vy,
                 rotation: Math.random() * 360
             };
             
@@ -431,17 +501,14 @@
         }
 
         function removeCube(id) {
-            // Find logic object
             const index = cubes.findIndex(c => c.id === id);
             if (index === -1) return;
             const cubeData = cubes[index];
             const el = document.getElementById(`cube-${id}`);
 
-            // Remove from physics engine immediately
             cubes.splice(index, 1);
             updateThermometer();
 
-            // Animate trajectory if element exists
             if (el) {
                 animateTrajectory(el, cubeData.type);
             }
@@ -453,59 +520,50 @@
             const targetEl = document.getElementById(targetId);
             const targetRect = targetEl.getBoundingClientRect();
 
-            // 1. Create a "ghost" clone and append to the body
-            // This prevents the tub's overflow:hidden or backdrop-filter from clipping the animation
             const ghost = el.cloneNode(true);
             
-            // Immediately remove the real element from the tub
             el.remove();
             
-            // Style the ghost to match the clicked position perfectly
             ghost.style.position = 'fixed';
             ghost.style.left = `${rect.left}px`;
             ghost.style.top = `${rect.top}px`;
-            ghost.style.transform = 'none'; // reset physics rotation so our new pos holds true
+            ghost.style.transform = 'none'; 
             ghost.style.margin = '0';
-            ghost.style.zIndex = '9999'; // Very high z-index to guarantee visibility
+            ghost.style.zIndex = '9999'; 
             ghost.style.pointerEvents = 'none';
             
             document.body.appendChild(ghost);
 
-            // 2. Trigger reflow
-            ghost.offsetHeight; 
+            ghost.offsetHeight; // Reflow
 
-            // 3. Set up the animation transition (0.4s for speed)
-            ghost.style.transition = 'all 0.4s cubic-bezier(0.25, 1, 0.5, 1)'; 
+            ghost.style.transition = 'all 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
 
-            // 4. Move to target center of the Bin
             const centerX = targetRect.left + targetRect.width / 2 - rect.width / 2;
             const centerY = targetRect.top + targetRect.height / 2 - rect.height / 2;
 
             ghost.style.left = `${centerX}px`;
             ghost.style.top = `${centerY}px`;
-            ghost.style.transform = 'scale(0.5)'; // Shrink down as it moves to the bin
+            ghost.style.transform = 'scale(0.5)'; 
             ghost.style.opacity = '0.5';
 
-            // 5. Cleanup and add static version to bin
             setTimeout(() => {
                 ghost.remove();
                 addStaticCubeToBin(type, targetId);
-            }, 400); // 400ms matching transition
+            }, 400); 
         }
 
         function addStaticCubeToBin(type, containerId) {
             const container = document.getElementById(containerId);
             const miniCube = document.createElement('div');
-            // classes for mini visual representation
+            
             const baseClass = "mini-cube w-10 h-10 rounded-lg border-2 flex items-center justify-center font-bold text-sm shrink-0 shadow-sm cursor-pointer hover:scale-110 transition-transform";
-            const typeClass = type === 'hot' 
-                ? 'bg-red-100 border-red-400 text-red-700' 
+            const typeClass = type === 'hot'
+                ? 'bg-red-100 border-red-400 text-red-700'
                 : 'bg-cyan-100 border-cyan-400 text-cyan-700';
             
             miniCube.className = `${baseClass} ${typeClass}`;
             miniCube.innerText = type === 'hot' ? '+1' : '-1';
             
-            // Add handler to return to tub
             miniCube.onclick = () => returnCubeToTub(miniCube, type);
             
             container.appendChild(miniCube);
@@ -517,7 +575,6 @@
             const rect = el.getBoundingClientRect();
             const tubRect = tubEl.getBoundingClientRect();
 
-            // Create flying ghost appended directly to document body to ensure visibility
             const ghost = el.cloneNode(true);
             ghost.style.position = 'fixed';
             ghost.style.left = `${rect.left}px`;
@@ -525,31 +582,24 @@
             ghost.style.zIndex = '9999';
             ghost.style.margin = '0';
             ghost.style.pointerEvents = 'none';
-            // Faster return animation
             ghost.style.transition = 'all 0.4s ease-in';
             
             document.body.appendChild(ghost);
-
-            // Remove original from bin
             el.remove();
-
-            // Force reflow
             ghost.offsetHeight;
 
-            // Target position: Random X at top of tub
-            // Matches roughly where addCube spawns them
             const targetX = tubRect.left + 20 + (Math.random() * (tubRect.width - 90));
             const targetY = tubRect.top - 50;
 
             ghost.style.left = `${targetX}px`;
             ghost.style.top = `${targetY}px`;
-            ghost.style.transform = 'scale(1.2)'; // Grow slightly to full size
-            ghost.style.opacity = '0'; // Fade out right as it plops in
+            ghost.style.transform = 'scale(1.2)'; 
+            ghost.style.opacity = '0';
 
             setTimeout(() => {
                 ghost.remove();
                 addCube(type);
-            }, 400); // Matching 400ms transition
+            }, 400);
         }
 
         function renderCubeDOM(cube) {
@@ -576,6 +626,10 @@
             tubEl.querySelectorAll('.cube').forEach(el => el.remove());
             document.getElementById('removedHotBin').innerHTML = '';
             document.getElementById('removedColdBin').innerHTML = '';
+            
+            // Hide task string when explicitly resetting
+            questionDisplay.classList.add('opacity-0', '-translate-y-4');
+            
             updateThermometer();
         }
 
@@ -587,8 +641,7 @@
             }
 
             const tubRect = tubEl.getBoundingClientRect();
-            // Water starts at 15% down
-            const waterLevel = tubRect.height * 0.15; 
+            const waterLevel = tubRect.height * 0.15;
             const bottom = tubRect.height - CUBE_SIZE;
             const right = tubRect.width - CUBE_SIZE;
 
@@ -596,20 +649,17 @@
                 // 1. Apply Forces
                 c.vy += GRAVITY;
 
-                // Buoyancy (Spring logic)
                 const cubeCenterY = c.y + (CUBE_SIZE / 2);
                 
                 if (cubeCenterY > waterLevel) {
-                    const displacement = cubeCenterY - (waterLevel + 20); 
-                    const buoyancyForce = displacement * 0.05; 
+                    const displacement = cubeCenterY - (waterLevel + 20);
+                    const buoyancyForce = displacement * 0.05;
                     
                     c.vy -= buoyancyForce;
                     
-                    // Apply Water Drag
                     c.vx *= DRAG_WATER;
                     c.vy *= DRAG_WATER;
                 } else {
-                    // Air Drag
                     c.vx *= DRAG_AIR;
                     c.vy *= DRAG_AIR;
                 }
@@ -630,8 +680,8 @@
                 if (c.y > bottom) {
                     c.y = bottom;
                     c.vy *= WALL_BOUNCE;
-                } 
-                if (c.y < -100) c.y = -100; 
+                }
+                if (c.y < -100) c.y = -100;
 
                 // 4. Cube-Cube Collisions (Repulsion)
                 cubes.forEach(other => {
@@ -640,7 +690,7 @@
                     const dx = c.x - other.x;
                     const dy = c.y - other.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
-                    const minDist = CUBE_SIZE; 
+                    const minDist = CUBE_SIZE;
 
                     if (dist < minDist && dist > 0) {
                         const overlap = minDist - dist;
@@ -693,4 +743,3 @@
     </script>
 </body>
 </html>
-
